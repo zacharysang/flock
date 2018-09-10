@@ -31,3 +31,6 @@ Using browsers allows for reuse of already implemented security functionality su
 We're approaching distributed computing from a perspective of openness. 
 Distributed computing has the potential to revolutionize parallel computing, but most distributed computing projects target high performance platforms. 
 Inspired by the success of the Folding@home project, our goal is to create a platform where anybody can submit a parallel problem and provide an algorithm for a very large number of nodes to run. In the end, we will demonstrate a series of workers running a massively parallel problem.
+
+## Background skills/interests
+All members of our team have worked with JavaScript before and created web applications as a team. 3 of us are currently taking the course Parallel Computing.
