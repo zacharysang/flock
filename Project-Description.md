@@ -12,7 +12,7 @@
 
 ## Problem Statement
 Many of today's computing demands require some form of distribution.
-To complete large data processing tasks such as classification, image processing, and model training, the work must be distributed and divded in order to get usbale results in a timely manner.
+To complete large data processing tasks such as classification, image processing, and model training, the work must be distributed and divded in order to get usable results in a timely manner.
 While this need remains to be satisfied, there is also a supply of capable but older hardware that is available to perform this work.
 This hardware has potential to complete useful comutational tasks, but is instead discarded or otherwise unused.
 
