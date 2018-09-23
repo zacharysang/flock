@@ -8,7 +8,7 @@
 |Zachary Collins|collinzy@mail.uc.edu|
 |Laura Tebben|tebbenla@mail.uc.edu|
 
-## Faculty Advisor - TBD
+## Faculty Advisor - Fred Annexstein
 
 ## Problem Statement
 Many of today's computing demands require some form of distribution.
