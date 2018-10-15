@@ -1,7 +1,7 @@
 # Task List
 This list comprises a list of tasks we will complete as part of our project.
-| Task # | Task Description | Category |Assignee |
-| ------ | ---------------- | -------- | -------- |
+| Task # | Task Description | Category |Assignee|
+|:------|:----------------|:--------|:--------|
 | 1 | Develop Master infrastructure | Master Service | |
 | 2 | Design scheduling system for assigning workers to projects | Master Service | |
 | 3 | Implement interface for accpeting projects and starting project service | Master Service | |
