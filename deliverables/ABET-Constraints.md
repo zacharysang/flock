@@ -18,3 +18,15 @@ a standard library, which will allow users to filter output data through server-
 volunteers, we will heavily rely upon browser sandboxing to protect volunteer machines from maliciously submitted code.
 All submitted code will be javascript, meaning inspecting code for distributed jobs is trivial, and malicious jobs can be
 rejected before even running. Users who continually submit malicious code can also be banned from participating in the service.
+
+A key use case for flock is for scientists performing complex distributable calculations to derive new knowledge for societal benefit. 
+Because this project is inspired by similar projects such as folding at home which has similar goals, it can be seen that there 
+is a demand from users for this use case. In this position, flock is able to aid in creating social value by giving researchers 
+a simple and ecnomical tool to power their research. To ensure flock us useful for this purpose, during planning and design, our 
+team will put a large emphasis on lowering barriers to entry such as cost and ease-of-use. The cost barrier is addressed by 
+utilizing volunteered resources for worker nodes and encouraging job submissions to utilize these resources. Whatsmore, worker 
+nodes will be coordinated via pay-as-you-go cloud providers which will further minimize cost by eliminating overhead for maintaining 
+centralized hardware such as server and storage racks. As well as this, the flock platform will provide sample projects as well as 
+a standard library to make itself a platform that is simple to onboard onto and easy to use. 
+By lowering these barriers, our team hopes to lower barriers for researchers in delivering societal value.
+
