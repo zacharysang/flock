@@ -26,7 +26,7 @@
   * [Laura Tebben](https://github.com/zacharysang/flock/blob/master/deliverables/bios/Laura-Tebben.md)
   * [Zachary Sang](https://github.com/zacharysang/flock/blob/master/deliverables/bios/Zachary-Sang.md)
   * [Zachary Collins](https://github.com/zacharysang/flock/blob/master/deliverables/bios/Zach-Collins.md)
-* Budget
+* [Budget](deliverables/Budget.md)
 * Appendix
 
 # Team Members:
