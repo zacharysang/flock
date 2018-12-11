@@ -28,6 +28,7 @@
   * [Zachary Collins](https://github.com/zacharysang/flock/blob/master/deliverables/bios/Zach-Collins.md)
 * [Budget](deliverables/Budget.md)
 * Appendix
+  * [Meeting Notes](https://drive.google.com/drive/folders/1PVwzs5Dj_kw85l8Qzl-TMyoeg3oy3s1V?usp=sharing) We unfortunately didn't realize to take official notes until the end of the fall semester.
 
 # Team Members:
 |Name | Email|
