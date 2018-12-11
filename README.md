@@ -29,6 +29,10 @@
 * [Budget](deliverables/Budget.md)
 * Appendix
   * [Meeting Notes](https://drive.google.com/drive/folders/1PVwzs5Dj_kw85l8Qzl-TMyoeg3oy3s1V?usp=sharing) We unfortunately didn't realize to take official notes until the end of the fall semester.
+  * References
+    * [MPI standard](https://www.open-mpi.org/)
+    * [mpi4py documentation](https://mpi4py.readthedocs.io/en/stable/)
+    * [Sample MPI project](https://github.com/ltebben/distributed-keyword-indexer)
 
 # Team Members:
 |Name | Email|
