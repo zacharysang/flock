@@ -48,4 +48,4 @@ Flock is a distributed computing platform-as-a-service that solves the problem o
 Devices with a browser of sufficient version will be able to subscribe as a worker to the cluster, after which it will being to receive work requests from the master.
 Overall, this will increase utilization of computing power, while fulfilling computational needs.
 We're approaching building a distributed computing platform from a perspective of openness. 
-Distributed computing has the potential to revolutionize parallel computing, but most distributed computing projects target high performance platforms.
+Distributed computing has the potential to revolutionize parallel computing, but most distributed computing projects target high performance computers or are not easily accessible on lower performance devices.
