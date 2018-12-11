@@ -44,8 +44,8 @@
 * Faculty Advisor - Fred Annexstein
 
 # Project Abstract
-Flock is a distributed computing platform that solves the problem of sourcing distributed computing resources by building an avenue for under-utilized hardware to fulfill computational needs by becoming a member of a cluster.
+Flock is a distributed computing platform-as-a-service that solves the problem of sourcing distributed computing resources by making it easier for underutilized hardware to fulfill computational needs by becoming a member of a cluster.
 Devices with a browser of sufficient version will be able to subscribe as a worker to the cluster, after which it will being to receive work requests from the master.
 Overall, this will increase utilization of computing power, while fulfilling computational needs.
-We're approaching distributed computing from a perspective of openness. 
+We're approaching building a distributed computing platform from a perspective of openness. 
 Distributed computing has the potential to revolutionize parallel computing, but most distributed computing projects target high performance platforms.
