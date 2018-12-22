@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <script type="text/javascript" src="/lib/socket.io.js"></script>
+        <script type="text/javascript" src="/lib/easyrtc.js"></script>
+        <script type="text/javascript" src="/index.js"></script>
+    </head>
+    <body>
+        Test Application
+        <script type="text/javascript">
+            // join the mpi cluster
+            join();
+            
+            // send a random number
+            function doIt() {
+                console.log('doing it');
+                let sendVal = Math.random();
+                console.log('getRank(default): ' + getRank('default'));
+                
+                if (getRank('default') === 0) {
+                    isend(sendVal, 1 - getRank('default'), 'default').then((status) => {console.log("sent val with status: " + status)});
+                } else {
+                    irecv(1 - getRank('default'), 'default').then((val) => {console.log("received value: " + val)});
+                }
+            }
+        </script>
+        <input type="button" onclick="doIt()">Go</input>
+    </body>
+</html>
