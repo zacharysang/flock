@@ -30,8 +30,17 @@
                 let req = iscatter(arr, 0, 'default');
                 req.then((val) => {console.log(`val: ${JSON.stringify(val)}`)});
             }
+            
+            function bcastStuff() {
+                console.log('broadcasting something');
+                let data = 42;
+                
+                let req = ibcast(data, 0, 'default');
+                req.then((res) => {console.log(`got broadcasted value: ${res}`)})
+            }
         </script>
         <input type="button" onclick="doIt()" value="Go"></input>
         <input type="button" onclick="scatterStuff()" value="Scatter!"></input>
+        <input type="button" onclick="bcastStuff()" value="broadcast"></input>
     </body>
 </html>

@@ -235,8 +235,38 @@ function getId(comm, rank) {
     
  }
  
+// broadcast a value from a root node to all nodes in a group
+/**
+    @param data : the value to broadcast
+    @param root : the node with the data
+    @param comm : the communication group to broadcast across
+*/
+function ibcast(data, root, comm) {
+    if (getRank(comm) === root) {
+        // get list of other nodes to send
+        let nodes = [...Array(getSize(comm)).keys()].filter((val) => val !== root);
+        
+        // send to other nodes
+        let reqs = [];
+        nodes.forEach((rank) => {
+            let req = isend(data, rank, comm);
+            reqs.push(req);
+        });
+        
+        return Promise.all(reqs).then((val) => {return data});
+        
+    } else {
+        // receive from root
+        // TODO consider making a bcast tag?
+        let res = irecv(root, comm);
+        
+        return res;
+        
+    }
+}
  
-// scatter an array to many nodes in a group
+ 
+// scatter an array from a root node to all nodes in a group
 /**
     @param sendArr : the array to send across the communication group
     @param numEls : the number of elements to send to each node
@@ -263,6 +293,7 @@ function iscatter(sendArr, root, comm, tag=null) {
         res = sendArr.slice(0,numEls);
         
         // send to others
+        // TODO this assumes that root = 0, should make an array of ranks of comm excluding root
         let currRank = 1;
         let currIdx = numEls;
         
@@ -297,7 +328,7 @@ function iscatter(sendArr, root, comm, tag=null) {
         
     } else {
         // receive from root
-        res = irecv(0, comm);
+        res = irecv(root, comm);
         
         return res;
     }
