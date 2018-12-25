@@ -22,7 +22,16 @@
                     irecv(1 - getRank('default'), 'default').then((val) => {console.log("received value: " + val)});
                 }
             }
+            
+            function scatterStuff() {
+                console.log('scattering!');
+                let arr = [1,2,3,4,5,6];
+                
+                let req = iscatter(arr, 0, 'default');
+                req.then((val) => {console.log(`val: ${JSON.stringify(val)}`)});
+            }
         </script>
-        <input type="button" onclick="doIt()">Go</input>
+        <input type="button" onclick="doIt()" value="Go"></input>
+        <input type="button" onclick="scatterStuff()" value="Scatter!"></input>
     </body>
 </html>

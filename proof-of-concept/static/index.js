@@ -160,6 +160,8 @@ function getId(comm, rank) {
  */
  function isend(data, dest, comm, tag=null) {
      
+    // TODO check that destination rank is valid
+     
     let msg = {tag: tag, data: data};
     
     let destId = getId(comm, dest);
@@ -194,6 +196,8 @@ function getId(comm, rank) {
     @param comm : the communication group to receive over
  */
  function irecv(source, comm, tag=null) {
+     
+    // TODO check that source rank is valid
     
     // convert source rank to id
     let sourceId = getId(comm, source);
@@ -240,32 +244,72 @@ function getId(comm, rank) {
     @param comm : the communication group to send array over
 */
 function iscatter(sendArr, root, comm, tag=null) {
+    let commSize = getSize(comm);
+    
     if (!Array.isArray(sendArr)) {
         console.error("Argument sendArr in scatter must be an array");
         return;
     }
 
-    let numEls = Math.max(1, sendArr.length / getSize(comm));
+    // calculate the number of elements to send per node
+    let numEls = Math.max(1, Math.floor(sendArr.length / commSize));
     
-    if (getRank(comm) == 0) {
+    let res;
+    
+    if (getRank(comm) === root) {
+        
+        // get own result
+        console.log(`scattering: ${JSON.stringify(sendArr.slice(0, numEls))} to rank 0`);
+        res = sendArr.slice(0,numEls);
         
         // send to others
-        let idx = 0;
-        let rank = 1;
-        while (idx < getSize(comm)) {
+        let currRank = 1;
+        let currIdx = numEls;
+        
+        // TODO change move this to implementation of ibcast
+        let reqs = [];
+        
+        // while there is no less than than double numEls left to send
+        while (!(sendArr.length - currIdx - 1 < 2 * numEls)) {
             
-            isend(sendArr.slice(idx, idx + numEls), rank, comm, tag);
+            console.log(`sending slice: ${JSON.stringify(currIdx, currIdx + numEls)} to rank: ${currRank}`);
             
-            rank++;
-            idx += numEls;
+            let req = isend(sendArr.slice(currIdx, currIdx + numEls), currRank, comm, tag);
+            
+            reqs.push(req);
+            
+            // advance iterators
+            currRank++;
+            currIdx += numEls;
         }
+        
+        // send partial slice if applicable
+        if (currIdx !== sendArr.length) {
+            
+            console.log(`partial detected, sending slice: ${JSON.stringify(sendArr.slice(currIdx, sendArr.length))} to rank: ${currRank}`);
+            
+            let req = isend(sendArr.slice(currIdx, sendArr.length), currRank, comm, tag);
+            reqs.push(req);
+        }
+        
+        // return this node's result when all sends have been acked
+        return Promise.all(reqs).then((val) => {return res;}); 
         
     } else {
         // receive from root
-        recv(0, comm);
+        res = irecv(0, comm);
+        
+        return res;
     }
     
 }
 
+
+
 // reduce values using a given binary operation
-function ireduce(){}
+function ireduce(sendArr, op, comm){
+    // do local reduction
+    sendArr.reduce(op);
+    
+    // get the reduction down to a power of 2
+}
