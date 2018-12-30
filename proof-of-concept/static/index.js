@@ -33,6 +33,8 @@ function acceptMessage(source, msgType, content) {
             inbox[content.tag] = [];
         }
         
+        console.log(`got message with ${(new Date()).getTime() - content.sendTime} ms of latency`);
+        
         inbox[content.tag].push(content.data);
     
         // event holds source and tag so listener can opt to ignore message and send ack
@@ -49,7 +51,7 @@ function acceptMessage(source, msgType, content) {
 
 }
 
-function ackMsg(comm, source, tag) {
+function ackMsgFunc(comm, source, tag) {
     let sourceId = getId(comm, source);
     return function(val) {
         
@@ -148,9 +150,14 @@ function getId(comm, rank) {
     return (occupants.sort())[rank];
 }
 
+// barrier between node executions in a given communication group
+async function barrier(comm) {
+    await ibcast('barrier', 0, comm);
+    
+    return;
+}
 
-
-// blocking send from to another node
+// non-blocking send from to another node
 /**
     @param buff : buffer to send from
     @param count : number of elements to send
@@ -161,8 +168,8 @@ function getId(comm, rank) {
  function isend(data, dest, comm, tag=null) {
      
     // TODO check that destination rank is valid
-     
-    let msg = {tag: tag, data: data};
+    let now = (new Date()).getTime();
+    let msg = {tag: tag, data: data, sendTime: now};
     
     let destId = getId(comm, dest);
     
@@ -188,7 +195,7 @@ function getId(comm, rank) {
     });
  }
  
-// blocking receive from a node
+// non-blocking receive from a node
 /**
     @param count : the number of elements to receive
     @param source : the rank of the node to receive from
@@ -231,13 +238,13 @@ function getId(comm, rank) {
         });
     }
     
-    return res.then(ackMsg(comm, source, tag));
+    return res.then(ackMsgFunc(comm, source, tag));
     
  }
  
 // broadcast a value from a root node to all nodes in a group
 /**
-    @param data : the value to broadcast
+    @param data : the value to broadcast (only used if rank === 0)
     @param root : the node with the data
     @param comm : the communication group to broadcast across
 */
@@ -268,69 +275,59 @@ function ibcast(data, root, comm) {
  
 // scatter an array from a root node to all nodes in a group
 /**
-    @param sendArr : the array to send across the communication group
+    @param sendArr : the array to send across the communication group (only used if rank === root)
     @param numEls : the number of elements to send to each node
     @param root : the node to send from
     @param comm : the communication group to send array over
+    
+    returns a slice of the given array to each node
 */
 function iscatter(sendArr, root, comm, tag=null) {
+    
+    let rank = getRank(comm);
     let commSize = getSize(comm);
-    
-    if (!Array.isArray(sendArr)) {
-        console.error("Argument sendArr in scatter must be an array");
-        return;
-    }
-
-    // calculate the number of elements to send per node
-    let numEls = Math.max(1, Math.floor(sendArr.length / commSize));
-    
-    let res;
     
     if (getRank(comm) === root) {
         
-        // get own result
-        console.log(`scattering: ${JSON.stringify(sendArr.slice(0, numEls))} to rank 0`);
-        res = sendArr.slice(0,numEls);
-        
-        // send to others
-        // TODO this assumes that root = 0, should make an array of ranks of comm excluding root
-        let currRank = 1;
-        let currIdx = numEls;
-        
-        // TODO change move this to implementation of ibcast
-        let reqs = [];
-        
-        // while there is no less than than double numEls left to send
-        while (!(sendArr.length - currIdx - 1 < 2 * numEls)) {
-            
-            console.log(`sending slice: ${JSON.stringify(currIdx, currIdx + numEls)} to rank: ${currRank}`);
-            
-            let req = isend(sendArr.slice(currIdx, currIdx + numEls), currRank, comm, tag);
-            
-            reqs.push(req);
-            
-            // advance iterators
-            currRank++;
-            currIdx += numEls;
+        if (!Array.isArray(sendArr)) {
+            console.error("Argument sendArr in scatter must be an array");
+            return;
         }
         
-        // send partial slice if applicable
-        if (currIdx !== sendArr.length) {
+        // get list of nodes to send to
+        let nodes = [...Array(commSize).keys()];
+        
+        // currIdx is the next idx in sendArr to be sent
+        let currIdx = 0; // remaining = sendArr.length - currIdx
+        let numEls = Math.max(1, Math.floor(sendArr.length / nodes.length));
+        
+        // get own result
+        let res = sendArr.slice(0,numEls);
+        
+        // remove root from nodes list and increment currIdx by the number of els sent
+        currIdx += numEls;
+        nodes = nodes.filter((el) => el !== root);
+        
+        // send to others
+        let reqs = [];
+        while (nodes.length > 0) {
+            // update numEls
+            numEls = Math.max(1, Math.floor((sendArr.length - currIdx) / nodes.length));
             
-            console.log(`partial detected, sending slice: ${JSON.stringify(sendArr.slice(currIdx, sendArr.length))} to rank: ${currRank}`);
-            
-            let req = isend(sendArr.slice(currIdx, sendArr.length), currRank, comm, tag);
+            let req = isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm);
             reqs.push(req);
+            
+            // after sending to a new node, update the index and remove this node from the nodes list
+            currIdx += numEls;
+            nodes.shift();
         }
         
         // return this node's result when all sends have been acked
-        return Promise.all(reqs).then((val) => {return res;}); 
+        return Promise.all(reqs).then((val) => {return res}); 
         
     } else {
         // receive from root
-        res = irecv(root, comm);
-        
-        return res;
+        return irecv(root, comm);
     }
     
 }
@@ -338,9 +335,57 @@ function iscatter(sendArr, root, comm, tag=null) {
 
 
 // reduce values using a given binary operation
-function ireduce(sendArr, op, comm){
+async function ireduce(sendArr, op, comm) {
+    
     // do local reduction
-    sendArr.reduce(op);
+    let local = sendArr.reduce(op);
+    
+    // for trivial case that only 1 node is in the communicating group, return local sum
+    if (getSize(comm) === 1) {
+        return local;
+    }
     
     // get the reduction down to a power of 2
+    let size = getSize(comm);
+    let rank = getRank(comm);
+    let twoSize = Math.pow(2, Math.floor(Math.log(size) / Math.log(2)));
+    let extraSize = size - twoSize;
+    
+    let extraNodes = [...Array(extraSize).keys()].map((val) => size - 1 - val);
+    
+    // send the extra vals to the previous nodes with extraSize as the offset
+    if (rank >= twoSize) {
+        
+        let status = isend(sendArr, rank - extraSize, comm);
+        
+    } else if (rank > size - extraSize) {
+        let arr = await irecv(rank + extraSize, comm);
+        
+        let agg = arr.reduce(op);
+        
+        local = op(local, agg);
+    }
+    
+    await barrier(comm);
+    
+    // update size to be twoSize since we have trimmed extras
+    // TODO consider making a new communication group with just the power of 2 so that other nodes are freed
+    size = twoSize;
+    
+    // recursive halving as we apply the given binary operation, 'op'
+    for (let offset = size / 2; offset >= 1; offset /= 2) {
+        
+        if (rank >= offset && rank < size) {
+            let status = isend(local, rank - offset, comm);
+        } else if (rank < offset){
+            let remote = await irecv(rank + offset, comm);
+            local = op(local, remote);
+        }
+        
+        await barrier(comm);
+    }
+    
+    if (rank === 0) {
+        return local;
+    }
 }
