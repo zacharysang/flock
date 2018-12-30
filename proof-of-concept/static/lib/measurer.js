@@ -11,6 +11,8 @@ function time(func, args=[], timerName='', trials=10) {
     func(...args);
     let duration = (new Date()).valueOf() - start.valueOf();
     
+    console.log(`duration for trial ${i}: ${duration}`);
+    
     totalTime += duration;
   }
   

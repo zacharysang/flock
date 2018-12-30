@@ -65,6 +65,8 @@
                 return a + b;
             }
             
+            let sumSize = 175;
+            
             function sumStuff() {
                 console.log('summing');
                 
@@ -72,7 +74,7 @@
                 
                 let arr = [];
                 if (getRank('default') === 0) {
-                    arr = [...Array(100).keys()].map((val) => val + 1);
+                    arr = [...Array(sumSize).keys()].map((val) => val + 1);
                 }
                 
                 let req = iscatter(arr, 0, 'default');
@@ -86,7 +88,7 @@
             }
             
             function sumStuffNormally() {
-                let arr = [...Array(100).keys()].map((val) => val + 1);
+                let arr = [...Array(sumSize).keys()].map((val) => val + 1);
                 return arr.reduce(lowGrainSum);
             }
         </script>
