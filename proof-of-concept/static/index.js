@@ -1,8 +1,8 @@
-// let a room represent a communication group
+let APP_PATH = '/tests.js';
 
+// let a room represent a communication group
 // define MPI_COMM_WORLD as the default room
 let MPI_COMM_WORLD = "default";
-let NULL_FUNC = () => {};
 
 let MSG_TYPE_MSG = "message";
 let MSG_TYPE_ACK = "ack";
@@ -10,8 +10,38 @@ let MSG_TYPE_ACK = "ack";
 let EV_RCV_MSG = "receivedMessage";
 let EV_RCV_ACK = "receivedAck";
 
-// stores incoming messages by the tag
-let inbox = {};
+function initWorker() {
+    /* Code for talking to the WebWorker */
+    let worker = new Worker(APP_PATH);
+    
+    worker.onmessage = async function(ev) {
+        
+        // switch on the type of function and respond to worker
+        switch (ev.data.op) {
+            case 'getId':
+                worker.postMessage({id: ev.data.id, value: getId(...ev.data.args)});
+                break;
+            case 'getRank':
+                worker.postMessage({id: ev.data.id, value: getRank(...ev.data.args)});
+                break;
+            case 'getSize':
+                worker.postMessage({id: ev.data.id, value: getSize(...ev.data.args)});
+                break;
+            case 'isend':
+                worker.postMessage({id: ev.data.id, value: await isend(...ev.data.args)});
+                break;
+            case 'irecv':
+                worker.postMessage({id: ev.data.id, value: await irecv(...ev.data.args)});
+                break;
+            default:
+                console.error('worker requested invalid operation');
+        }
+    }
+    
+    return worker;
+
+}
+
 
 /*
     Messages should be in the format:
@@ -23,7 +53,6 @@ let inbox = {};
             }
         }
 */
-
 // when receiving a message, put it in the inbox
 function acceptMessage(source, msgType, content) {
     
@@ -94,7 +123,10 @@ function join() {
     }
     
     // establish connection to other peers in the cluster
-    connectToPeers();
+    let peerCalls = connectToPeers();
+    
+    // once all peers are called, initialize the worker
+    window.worker = peerCalls.then(initWorker);
     
 }
 
@@ -105,23 +137,32 @@ function connectToPeers() {
         return (peerId !== window.rtcId && easyrtc.getConnectStatus(peerId) === easyrtc.NOT_CONNECTED)
     });
     
-    unconnectedPeers.forEach(callPeer);
+    // convert all unconnected peers to call promises
+    let calls = unconnectedPeers.map(callPeer);
+    
+    return Promise.all(calls);
 }
 
 // initiate a webrtc call with a peer
 function callPeer(peerId) {
     
+    let callAck;
+    let res = new Promise((resolve, reject) => {
+        callAck = resolve;
+    });
+    
     try {
         easyrtc.call(peerId,
-                (caller, media) => {},
+                (caller, media) => {callAck()},
                 (errorCode, errorText) => {
                     easyrtc.showError(errorCode, errorText);
-                },
-                (wasAccepted) => {}
+                }
         );
     } catch(callerror) {
         console.log("saw call error ", callerror);
     }
+    
+    return res;
 }
 
 // get the current node's rank in the given communication group
@@ -148,13 +189,6 @@ function getId(comm, rank) {
     let occupants = easyrtc.getRoomOccupantsAsArray(comm) || [];
     
     return (occupants.sort())[rank];
-}
-
-// barrier between node executions in a given communication group
-async function barrier(comm) {
-    await ibcast('barrier', 0, comm);
-    
-    return;
 }
 
 // non-blocking send from to another node
@@ -241,151 +275,3 @@ async function barrier(comm) {
     return res.then(ackMsgFunc(comm, source, tag));
     
  }
- 
-// broadcast a value from a root node to all nodes in a group
-/**
-    @param data : the value to broadcast (only used if rank === 0)
-    @param root : the node with the data
-    @param comm : the communication group to broadcast across
-*/
-function ibcast(data, root, comm) {
-    if (getRank(comm) === root) {
-        // get list of other nodes to send
-        let nodes = [...Array(getSize(comm)).keys()].filter((val) => val !== root);
-        
-        // send to other nodes
-        let reqs = [];
-        nodes.forEach((rank) => {
-            let req = isend(data, rank, comm);
-            reqs.push(req);
-        });
-        
-        return Promise.all(reqs).then((val) => {return data});
-        
-    } else {
-        // receive from root
-        // TODO consider making a bcast tag?
-        let res = irecv(root, comm);
-        
-        return res;
-        
-    }
-}
- 
- 
-// scatter an array from a root node to all nodes in a group
-/**
-    @param sendArr : the array to send across the communication group (only used if rank === root)
-    @param numEls : the number of elements to send to each node
-    @param root : the node to send from
-    @param comm : the communication group to send array over
-    
-    returns a slice of the given array to each node
-*/
-function iscatter(sendArr, root, comm, tag=null) {
-    
-    let rank = getRank(comm);
-    let commSize = getSize(comm);
-    
-    if (getRank(comm) === root) {
-        
-        if (!Array.isArray(sendArr)) {
-            console.error("Argument sendArr in scatter must be an array");
-            return;
-        }
-        
-        // get list of nodes to send to
-        let nodes = [...Array(commSize).keys()];
-        
-        // currIdx is the next idx in sendArr to be sent
-        let currIdx = 0; // remaining = sendArr.length - currIdx
-        let numEls = Math.max(1, Math.floor(sendArr.length / nodes.length));
-        
-        // get own result
-        let res = sendArr.slice(0,numEls);
-        
-        // remove root from nodes list and increment currIdx by the number of els sent
-        currIdx += numEls;
-        nodes = nodes.filter((el) => el !== root);
-        
-        // send to others
-        let reqs = [];
-        while (nodes.length > 0) {
-            // update numEls
-            numEls = Math.max(1, Math.floor((sendArr.length - currIdx) / nodes.length));
-            
-            let req = isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm);
-            reqs.push(req);
-            
-            // after sending to a new node, update the index and remove this node from the nodes list
-            currIdx += numEls;
-            nodes.shift();
-        }
-        
-        // return this node's result when all sends have been acked
-        return Promise.all(reqs).then((val) => {return res}); 
-        
-    } else {
-        // receive from root
-        return irecv(root, comm);
-    }
-    
-}
-
-
-
-// reduce values using a given binary operation
-async function ireduce(sendArr, op, comm) {
-    
-    // do local reduction
-    let local = sendArr.reduce(op);
-    
-    // for trivial case that only 1 node is in the communicating group, return local sum
-    if (getSize(comm) === 1) {
-        return local;
-    }
-    
-    // get the reduction down to a power of 2
-    let size = getSize(comm);
-    let rank = getRank(comm);
-    let twoSize = Math.pow(2, Math.floor(Math.log(size) / Math.log(2)));
-    let extraSize = size - twoSize;
-    
-    let extraNodes = [...Array(extraSize).keys()].map((val) => size - 1 - val);
-    
-    // send the extra vals to the previous nodes with extraSize as the offset
-    if (rank >= twoSize) {
-        
-        let status = isend(sendArr, rank - extraSize, comm);
-        
-    } else if (rank > size - extraSize) {
-        let arr = await irecv(rank + extraSize, comm);
-        
-        let agg = arr.reduce(op);
-        
-        local = op(local, agg);
-    }
-    
-    await barrier(comm);
-    
-    // update size to be twoSize since we have trimmed extras
-    // TODO consider making a new communication group with just the power of 2 so that other nodes are freed
-    size = twoSize;
-    
-    // recursive halving as we apply the given binary operation, 'op'
-    for (let offset = size / 2; offset >= 1; offset /= 2) {
-        
-        if (rank >= offset && rank < size) {
-            let status = isend(local, rank - offset, comm);
-        } else if (rank < offset){
-            let remote = await irecv(rank + offset, comm);
-            local = op(local, remote);
-        }
-        
-        await barrier(comm);
-    }
-    
-    if (rank === 0) {
-        return local;
-    }
-}
