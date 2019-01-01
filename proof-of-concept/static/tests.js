@@ -1,18 +1,18 @@
 // import the worker lib
-self.importScripts('/worker.js', '/lib/measurer.js');
+self.importScripts('/mpi.js', '/lib/measurer.js');
 
 // send a random number
 function sendStuff() {
     console.log('doing it');
     let sendVal = Math.random();
-    console.log('getRank(default): ' + getRank('default'));
+    console.log('getRank(default): ' + mpi.getRank('default'));
     
-    let rank = getRank('default');
+    let rank = mpi.getRank('default');
     
     if (rank === 0) {
-        isend(sendVal, 1 - rank, 'default').then((status) => {console.log("sent val with status: " + status)});
+        mpi.isend(sendVal, 1 - rank, 'default').then((status) => {console.log("sent val with status: " + status)});
     } else if (rank === 1){
-        irecv(1 - rank, 'default').then((val) => {console.log("received value: " + val);});
+        mpi.irecv(1 - rank, 'default').then((val) => {console.log("received value: " + val);});
     }
 }
 
@@ -21,14 +21,14 @@ function sendStuffWithTag() {
     let sendValA = Math.random();
     let sendValB = Math.random();
     
-    let rank = getRank('default');
+    let rank = mpi.getRank('default');
     
     if (rank === 0) {
-        isend(sendValA, 1 - rank, 'default', 'a').then((status) => {console.log(`send val A with status: ${status}`)});
-        isend(sendValB, 1 - rank, 'default', 'b').then((status) => {console.log(`send val B with status: ${status}`)});
+        mpi.isend(sendValA, 1 - rank, 'default', 'a').then((status) => {console.log(`send val A with status: ${status}`)});
+        mpi.isend(sendValB, 1 - rank, 'default', 'b').then((status) => {console.log(`send val B with status: ${status}`)});
     } else if (rank === 1) {
-        irecv(1 - rank, 'default', 'a').then((val) => {console.log(`received value: ${val} for tag 'a'`)});
-        irecv(1 - rank, 'default', 'b').then((val) => {console.log(`received value: ${val} for tag 'b'`)});
+        mpi.irecv(1 - rank, 'default', 'a').then((val) => {console.log(`received value: ${val} for tag 'a'`)});
+        mpi.irecv(1 - rank, 'default', 'b').then((val) => {console.log(`received value: ${val} for tag 'b'`)});
     }
     
 }
@@ -37,7 +37,7 @@ function scatterStuff() {
     console.log('scattering!');
     let arr = [1,2,3,4,5,6];
     
-    let req = iscatter(arr, 0, 'default');
+    let req = mpi.iscatter(arr, 0, 'default');
     req.then((val) => {console.log(`val: ${JSON.stringify(val)}`)});
 }
 
@@ -45,7 +45,7 @@ function bcastStuff() {
     console.log('broadcasting something');
     let data = 42;
     
-    let req = ibcast(data, 0, 'default');
+    let req = mpi.ibcast(data, 0, 'default');
     req.then((res) => {console.log(`got broadcasted value: ${res}`)})
 }
 
@@ -58,20 +58,19 @@ function lowGrainSum(a,b) {
 let sumSize = 180;
 
 function sumStuff() {
-    console.log('summing');
     
     let startTime = (new Date()).getTime();
     
     let arr = [];
-    if (getRank('default') === 0) {
+    if (mpi.getRank('default') === 0) {
         arr = [...Array(sumSize).keys()].map((val) => val + 1);
     }
     
-    let req = iscatter(arr, 0, 'default');
+    let req = mpi.iscatter(arr, 0, 'default');
     
     req = req.then((val) => {
         console.log(`from scatter got: ${JSON.stringify(val)}`);
-        return ireduce(val, lowGrainSum, 'default');
+        return mpi.ireduce(val, lowGrainSum, 'default');
     });
     
     return req.then((val) => {console.log(`got result: ${val}, took: ${(new Date()).getTime() - startTime} ms`); return val;});

@@ -1,9 +1,10 @@
 // store resolve function for outstanding requests
 let outbox = {};
 
-let MPI_JS = {};
+let mpi = {};
 
-// assumes id will not have conflicting ids
+// route messages from the main thread back to the source function
+// assumes operations will not have conflicting ids
 self.onmessage = function(ev) {
     let id = ev.data.id;
     
@@ -11,7 +12,8 @@ self.onmessage = function(ev) {
     outbox[id](ev.data.value);
 }
 
-function getId(comm, rank) {
+// get the easyrtc id of the node with 'rank' in 'comm'
+mpi.getId = function (comm, rank) {
     // generate a key for this function call
     let id = Math.random();
     
@@ -24,7 +26,8 @@ function getId(comm, rank) {
     });
 }
 
-function getRank(comm) {
+// get the rank of this node in 'comm'
+mpi.getRank = function (comm) {
     // generate a key for this function call
     let id = Math.random();
     
@@ -37,7 +40,8 @@ function getRank(comm) {
     });
 }
 
-function getSize(comm) {
+// get the size of the given communicting group, 'comm'
+mpi.getSize = function (comm) {
     // generate a key for this function call
     let id = Math.random();
     
@@ -50,7 +54,8 @@ function getSize(comm) {
     });
 }
 
-async function isend(data, dest, comm, tag=null) {
+// send a request to the main thread to send an mpi message
+mpi.isend = async function (data, dest, comm, tag=null) {
     // generate a key for this function call
     let id = Math.random();
     
@@ -63,7 +68,8 @@ async function isend(data, dest, comm, tag=null) {
     });
 }
 
-async function irecv(source, comm, tag=null) {
+// send a request to the main thread to receive an mpi message
+mpi.irecv = async function (source, comm, tag=null) {
     // generate a key for this function call
     let id = Math.random();
     
@@ -77,9 +83,9 @@ async function irecv(source, comm, tag=null) {
 }
 
 
-// barrier between node executions in a given communication group
-async function barrier(comm) {
-    await ibcast('barrier', 0, comm);
+// synchronize node executions in a given communication group
+mpi.barrier = async function (comm) {
+    await mpi.ibcast('barrier', 0, comm);
     
     return;
 }
@@ -91,15 +97,15 @@ async function barrier(comm) {
     @param root : the node with the data
     @param comm : the communication group to broadcast across
 */
-async function ibcast(data, root, comm) {
-    if (getRank(comm) === root) {
+mpi.ibcast = async function (data, root, comm) {
+    if (mpi.getRank(comm) === root) {
         // get list of other nodes to send
-        let nodes = [...Array(getSize(comm)).keys()].filter((val) => val !== root);
+        let nodes = [...Array(mpi.getSize(comm)).keys()].filter((val) => val !== root);
         
         // send to other nodes
         let reqs = [];
         nodes.forEach((rank) => {
-            let req = isend(data, rank, comm);
+            let req = mpi.isend(data, rank, comm);
             reqs.push(req);
         });
         
@@ -108,7 +114,7 @@ async function ibcast(data, root, comm) {
     } else {
         // receive from root
         // TODO consider making a bcast tag?
-        let res = irecv(root, comm);
+        let res = mpi.irecv(root, comm);
         
         return res;
         
@@ -125,12 +131,12 @@ async function ibcast(data, root, comm) {
     
     returns a slice of the given array to each node
 */
-function iscatter(sendArr, root, comm, tag=null) {
+mpi.iscatter = async function (sendArr, root, comm, tag=null) {
     
-    let rank = getRank(comm);
-    let commSize = getSize(comm);
+    let rank = mpi.getRank(comm);
+    let commSize = mpi.getSize(comm);
     
-    if (getRank(comm) === root) {
+    if (rank === root) {
         
         if (!Array.isArray(sendArr)) {
             console.error("Argument sendArr in scatter must be an array");
@@ -157,7 +163,7 @@ function iscatter(sendArr, root, comm, tag=null) {
             // update numEls
             numEls = Math.max(1, Math.floor((sendArr.length - currIdx) / nodes.length));
             
-            let req = isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm);
+            let req = mpi.isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm);
             reqs.push(req);
             
             // after sending to a new node, update the index and remove this node from the nodes list
@@ -170,27 +176,25 @@ function iscatter(sendArr, root, comm, tag=null) {
         
     } else {
         // receive from root
-        return irecv(root, comm);
+        return mpi.irecv(root, comm);
     }
     
 }
 
-
-
 // reduce values using a given binary operation
-async function ireduce(sendArr, op, comm) {
+mpi.ireduce = async function (sendArr, op, comm) {
     
     // do local reduction
     let local = sendArr.reduce(op);
     
     // for trivial case that only 1 node is in the communicating group, return local sum
-    if (getSize(comm) === 1) {
+    if (mpi.getSize(comm) === 1) {
         return local;
     }
     
     // get the reduction down to a power of 2
-    let size = getSize(comm);
-    let rank = getRank(comm);
+    let size = mpi.getSize(comm);
+    let rank = mpi.getRank(comm);
     let twoSize = Math.pow(2, Math.floor(Math.log(size) / Math.log(2)));
     let extraSize = size - twoSize;
     
@@ -199,17 +203,17 @@ async function ireduce(sendArr, op, comm) {
     // send the extra vals to the previous nodes with extraSize as the offset
     if (rank >= twoSize) {
         
-        let status = isend(sendArr, rank - extraSize, comm);
+        let status = mpi.isend(sendArr, rank - extraSize, comm);
         
     } else if (rank > size - extraSize) {
-        let arr = await irecv(rank + extraSize, comm);
+        let arr = await mpi.irecv(rank + extraSize, comm);
         
         let agg = arr.reduce(op);
         
         local = op(local, agg);
     }
     
-    await barrier(comm);
+    await mpi.barrier(comm);
     
     // update size to be twoSize since we have trimmed extras
     // TODO consider making a new communication group with just the power of 2 so that other nodes are freed
@@ -219,16 +223,18 @@ async function ireduce(sendArr, op, comm) {
     for (let offset = size / 2; offset >= 1; offset /= 2) {
         
         if (rank >= offset && rank < size) {
-            let status = isend(local, rank - offset, comm);
+            let status = mpi.isend(local, rank - offset, comm);
         } else if (rank < offset){
-            let remote = await irecv(rank + offset, comm);
+            let remote = await mpi.irecv(rank + offset, comm);
             local = op(local, remote);
         }
         
-        await barrier(comm);
+        await mpi.barrier(comm);
     }
     
     if (rank === 0) {
         return local;
     }
 }
+
+export default mpi;
