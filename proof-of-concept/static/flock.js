@@ -10,28 +10,38 @@ let MSG_TYPE_ACK = "ack";
 let EV_RCV_MSG = "receivedMessage";
 let EV_RCV_ACK = "receivedAck";
 
-function initWorker() {
+let flock = {};
+
+// stores incoming messages by tag
+let inbox = {};
+
+// connection status
+flock.isConnected = false;
+
+flock.initWorker = function() {
     /* Code for talking to the WebWorker */
     let worker = new Worker(APP_PATH);
     
     worker.onmessage = async function(ev) {
         
+        let start = (new Date()).getTime();
+        
         // switch on the type of function and respond to worker
         switch (ev.data.op) {
             case 'getId':
-                worker.postMessage({id: ev.data.id, value: getId(...ev.data.args)});
+                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getId(...ev.data.args)});
                 break;
             case 'getRank':
-                worker.postMessage({id: ev.data.id, value: getRank(...ev.data.args)});
+                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getRank(...ev.data.args)});
                 break;
             case 'getSize':
-                worker.postMessage({id: ev.data.id, value: getSize(...ev.data.args)});
+                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getSize(...ev.data.args)});
                 break;
             case 'isend':
-                worker.postMessage({id: ev.data.id, value: await isend(...ev.data.args)});
+                worker.postMessage({id: ev.data.id, op: ev.data.op, value: await flock.isend(...ev.data.args)});
                 break;
             case 'irecv':
-                worker.postMessage({id: ev.data.id, value: await irecv(...ev.data.args)});
+                worker.postMessage({id: ev.data.id, op: ev.data.op, value: await flock.irecv(...ev.data.args)});
                 break;
             default:
                 console.error('worker requested invalid operation');
@@ -54,7 +64,7 @@ function initWorker() {
         }
 */
 // when receiving a message, put it in the inbox
-function acceptMessage(source, msgType, content) {
+flock.acceptMessage = function(source, msgType, content) {
     
     // where an ack is expected, there should be a listener active and no need for an inbox
     if (msgType === MSG_TYPE_MSG) {
@@ -80,8 +90,8 @@ function acceptMessage(source, msgType, content) {
 
 }
 
-function ackMsgFunc(comm, source, tag) {
-    let sourceId = getId(comm, source);
+flock.ackMsgFunc = function(comm, source, tag) {
+    let sourceId = flock.getId(comm, source);
     return function(val) {
         
         easyrtc.sendData(sourceId, MSG_TYPE_ACK, {tag: tag, data: {status: 200, msg: "Received"}}, ()=>{});
@@ -91,21 +101,27 @@ function ackMsgFunc(comm, source, tag) {
     }
 }
 
-function consumeFromInbox(tag=null) {
+flock.consumeFromInbox = function(tag=null) {
     return inbox[tag].shift();
 }
 
-function joinSuccess(rtcId) {
+flock.joinSuccess = function(rtcId) {
     console.log("successfully joined application with rtcId: " + rtcId);
     window.rtcId = rtcId;
+    
+    // establish connection to other peers in the cluster
+    let peerCalls = flock.connectToPeers();
+    
+    // once all peers are called, update the isConnected att
+    peerCalls.then(() => {flock.isConnected = true; return;});
 }
 
-function joinFailure(errCode, message) {
+flock.joinFailure = function(errCode, message) {
     easyrtc.showError(errorCode, message);
 }
 
 // initialize client connections with the cluster
-function join() {
+flock.join = function() {
     
     easyrtc.enableDataChannels(true);
     
@@ -116,21 +132,15 @@ function join() {
     easyrtc.enableAudioReceive(false);
     
     // register callback when message is received
-    easyrtc.setPeerListener(acceptMessage);
+    easyrtc.setPeerListener(flock.acceptMessage);
     
     if (!easyrtc.webSocket) {
-        easyrtc.connect("testapp", joinSuccess, joinFailure);
+        easyrtc.connect("testapp", flock.joinSuccess, flock.joinFailure);
     }
-    
-    // establish connection to other peers in the cluster
-    let peerCalls = connectToPeers();
-    
-    // once all peers are called, initialize the worker
-    window.worker = peerCalls.then(initWorker);
     
 }
 
-function connectToPeers() {
+flock.connectToPeers = function() {
     let peers = easyrtc.getRoomOccupantsAsArray(MPI_COMM_WORLD) || [];
     
     let unconnectedPeers = peers.filter((peerId) => {
@@ -138,13 +148,13 @@ function connectToPeers() {
     });
     
     // convert all unconnected peers to call promises
-    let calls = unconnectedPeers.map(callPeer);
+    let calls = unconnectedPeers.map(flock.callPeer);
     
     return Promise.all(calls);
 }
 
 // initiate a webrtc call with a peer
-function callPeer(peerId) {
+flock.callPeer = function(peerId) {
     
     let callAck;
     let res = new Promise((resolve, reject) => {
@@ -166,14 +176,14 @@ function callPeer(peerId) {
 }
 
 // get the current node's rank in the given communication group
-function getRank(comm) {
+flock.getRank = function(comm) {
     let occupants = easyrtc.getRoomOccupantsAsArray(comm) || [];
     
     return occupants.sort().indexOf(window.rtcId);;
 }
 
 // get the size of the given communication group
-function getSize(comm) {
+flock.getSize = function(comm) {
     
     let occupants = easyrtc.getRoomOccupantsAsArray(comm) || [];
     
@@ -181,7 +191,7 @@ function getSize(comm) {
 }
 
 // get rtcId from rank
-function getId(comm, rank) {
+flock.getId = function(comm, rank) {
     
     // temporary while only using global communication group
     // will need to change id setup so that terminated nodes are replaced
@@ -199,15 +209,15 @@ function getId(comm, rank) {
     @param tag : tag of number type
     @param comm : the communication group to send array over
  */
- function isend(data, dest, comm, tag=null) {
-     
+ flock.isend = function(data, dest, comm, tag=null) {
+    
     // TODO check that destination rank is valid
     let now = (new Date()).getTime();
     let msg = {tag: tag, data: data, sendTime: now};
     
-    let destId = getId(comm, dest);
+    let destId = flock.getId(comm, dest);
     
-    easyrtc.sendData(getId(comm, dest), MSG_TYPE_MSG, msg, ()=>{});
+    easyrtc.sendData(flock.getId(comm, dest), MSG_TYPE_MSG, msg, ()=>{});
     
     let resolveOnAck;
     
@@ -236,18 +246,18 @@ function getId(comm, rank) {
     @param tag : a tag of number type
     @param comm : the communication group to receive over
  */
- function irecv(source, comm, tag=null) {
+ flock.irecv = function(source, comm, tag=null) {
      
     // TODO check that source rank is valid
     
     // convert source rank to id
-    let sourceId = getId(comm, source);
+    let sourceId = flock.getId(comm, source);
     
     let res;
     
     // check if we have already received this message
     if (inbox[tag] && inbox[tag].length > 0) {
-        res = Promise.resolve(consumeFromInbox(tag));
+        res = Promise.resolve(flock.consumeFromInbox(tag));
     } else {
         // if not, wait for the next received message
      
@@ -259,7 +269,7 @@ function getId(comm, rank) {
             resolveOnMsgEvent = function resolveOnMsgEvent(ev) {
                 
                 if (ev.detail.source === sourceId && ev.detail.tag === tag) {
-                    let val = consumeFromInbox(tag);
+                    let val = flock.consumeFromInbox(tag);
                     resolve(val);
                 }
             }
@@ -272,6 +282,6 @@ function getId(comm, rank) {
         });
     }
     
-    return res.then(ackMsgFunc(comm, source, tag));
+    return res.then(flock.ackMsgFunc(comm, source, tag));
     
  }

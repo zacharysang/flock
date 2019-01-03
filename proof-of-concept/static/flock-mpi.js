@@ -5,11 +5,18 @@ let mpi = {};
 
 // route messages from the main thread back to the source function
 // assumes operations will not have conflicting ids
-self.onmessage = function(ev) {
-    let id = ev.data.id;
+if (self) {
+    self.onmessage = function(ev) {
+        let id = ev.data.id;
     
-    // resolve the promise with this id
-    outbox[id](ev.data.value);
+        // resolve the promise with this id
+        outbox[id](ev.data.value);
+    
+        // clear the entry
+        delete outbox[id];
+    }
+} else {
+    console.error('self undefined in flock-mpi.js. This should be running in a WebWorker context');
 }
 
 // get the easyrtc id of the node with 'rank' in 'comm'
@@ -22,7 +29,7 @@ mpi.getId = function (comm, rank) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getId', args: {comm: comm, rank: rank}});
+        self.postMessage({id: id, op: 'getId', args: [comm, rank]});
     });
 }
 
@@ -36,7 +43,7 @@ mpi.getRank = function (comm) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getRank', args: {comm: comm}});
+        self.postMessage({id: id, op: 'getRank', args: [comm]});
     });
 }
 
@@ -50,12 +57,13 @@ mpi.getSize = function (comm) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getSize', args: {comm: comm}});
+        self.postMessage({id: id, op: 'getSize', args: [comm]});
     });
 }
 
 // send a request to the main thread to send an mpi message
 mpi.isend = async function (data, dest, comm, tag=null) {
+    
     // generate a key for this function call
     let id = Math.random();
     
@@ -64,7 +72,7 @@ mpi.isend = async function (data, dest, comm, tag=null) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'isend', args: {data: data, dest: dest, comm: comm, tag: tag}});
+        self.postMessage({id: id, op: 'isend', args: [data, dest, comm, tag]});
     });
 }
 
@@ -78,7 +86,7 @@ mpi.irecv = async function (source, comm, tag=null) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'irecv', args: {source: source, comm: comm, tag: tag}});
+        self.postMessage({id: id, op: 'irecv', args: [source, comm, tag]});
     });
 }
 
@@ -98,9 +106,9 @@ mpi.barrier = async function (comm) {
     @param comm : the communication group to broadcast across
 */
 mpi.ibcast = async function (data, root, comm) {
-    if (mpi.getRank(comm) === root) {
+    if (await mpi.getRank(comm) === root) {
         // get list of other nodes to send
-        let nodes = [...Array(mpi.getSize(comm)).keys()].filter((val) => val !== root);
+        let nodes = [...Array(await mpi.getSize(comm)).keys()].filter((val) => val !== root);
         
         // send to other nodes
         let reqs = [];
@@ -132,9 +140,8 @@ mpi.ibcast = async function (data, root, comm) {
     returns a slice of the given array to each node
 */
 mpi.iscatter = async function (sendArr, root, comm, tag=null) {
-    
-    let rank = mpi.getRank(comm);
-    let commSize = mpi.getSize(comm);
+    let rank = await mpi.getRank(comm);
+    let commSize = await mpi.getSize(comm);
     
     if (rank === root) {
         
@@ -162,7 +169,7 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
         while (nodes.length > 0) {
             // update numEls
             numEls = Math.max(1, Math.floor((sendArr.length - currIdx) / nodes.length));
-            
+
             let req = mpi.isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm);
             reqs.push(req);
             
@@ -175,26 +182,30 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
         return Promise.all(reqs).then((val) => {return res}); 
         
     } else {
+        
         // receive from root
-        return mpi.irecv(root, comm);
+        let res = await mpi.irecv(root, comm);
+        
+        return res;
     }
+    
+    
     
 }
 
 // reduce values using a given binary operation
 mpi.ireduce = async function (sendArr, op, comm) {
-    
     // do local reduction
     let local = sendArr.reduce(op);
     
     // for trivial case that only 1 node is in the communicating group, return local sum
-    if (mpi.getSize(comm) === 1) {
+    if (await mpi.getSize(comm) === 1) {
         return local;
     }
     
     // get the reduction down to a power of 2
-    let size = mpi.getSize(comm);
-    let rank = mpi.getRank(comm);
+    let size = await mpi.getSize(comm);
+    let rank = await mpi.getRank(comm);
     let twoSize = Math.pow(2, Math.floor(Math.log(size) / Math.log(2)));
     let extraSize = size - twoSize;
     
@@ -221,7 +232,6 @@ mpi.ireduce = async function (sendArr, op, comm) {
     
     // recursive halving as we apply the given binary operation, 'op'
     for (let offset = size / 2; offset >= 1; offset /= 2) {
-        
         if (rank >= offset && rank < size) {
             let status = mpi.isend(local, rank - offset, comm);
         } else if (rank < offset){
@@ -236,5 +246,3 @@ mpi.ireduce = async function (sendArr, op, comm) {
         return local;
     }
 }
-
-export default mpi;

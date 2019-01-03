@@ -1,8 +1,10 @@
+let measurer = {};
+
 // define scale for tests
 const CAP = 100;
 
 // custom time function
-function time(func, args=[], timerName='', trials=10) {
+measurer.time = function(func, args=[], timerName='', trials=10) {
   
   let totalTime = 0;
   
@@ -11,7 +13,7 @@ function time(func, args=[], timerName='', trials=10) {
     func(...args);
     let duration = (new Date()).valueOf() - start.valueOf();
     
-    console.log(`duration for trial ${i}: ${duration}`);
+    console.log(`duration for trial ${i+1}: ${duration} ms`);
     
     totalTime += duration;
   }
@@ -22,10 +24,10 @@ function time(func, args=[], timerName='', trials=10) {
 }
 
 // function that runs the timer on multilpe size inputs
-function timeWithIncreasingInputs(func, argsList=[], trials=10) {
+measurer.timeWithIncreasingInputs = function(func, argsList=[], trials=10) {
   let results = [];
   for (let i = 0; i < argsList.length; i++) {
-    let result = time(func, argsList[i], i.toString(), trials);
+    let result = measurer.time(func, argsList[i], i.toString(), trials);
     results.push(result);
   }
   
@@ -33,7 +35,7 @@ function timeWithIncreasingInputs(func, argsList=[], trials=10) {
 }
 
 // generate random list
-function makeList(n=CAP) {
+measurer.makeList = function(n=CAP) {
   let list = [];
   for (let i = 0; i < n; i++) {
     list.push(Math.random())

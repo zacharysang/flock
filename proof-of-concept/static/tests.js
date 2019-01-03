@@ -1,5 +1,5 @@
 // import the worker lib
-self.importScripts('/mpi.js', '/lib/measurer.js');
+self.importScripts('/flock-mpi.js', '/lib/measurer.js');
 
 // send a random number
 function sendStuff() {
@@ -55,21 +55,24 @@ function lowGrainSum(a,b) {
     return a + b;
 }
 
-let sumSize = 180;
+let sumSize = 150;
 
-function sumStuff() {
+async function sumStuff() {
     
     let startTime = (new Date()).getTime();
     
     let arr = [];
-    if (mpi.getRank('default') === 0) {
+    let rank = await mpi.getRank('default');
+    
+    if (rank === 0) {
         arr = [...Array(sumSize).keys()].map((val) => val + 1);
     }
     
+    console.log(`iscattering array of length: ${arr.length}`);
     let req = mpi.iscatter(arr, 0, 'default');
     
     req = req.then((val) => {
-        console.log(`from scatter got: ${JSON.stringify(val)}`);
+        console.log(`from scatter got: ${JSON.stringify(val)}.. reducing...`);
         return mpi.ireduce(val, lowGrainSum, 'default');
     });
     
@@ -86,4 +89,10 @@ function sumStuffNormally() {
 }
 
 // time sequential time
-time(sumStuffNormally, [], '', 10);
+//measurer.time(sumStuffNormally, [], 'seq', 5);
+sumStuff().then(() => {
+    if (mpi.getRank('default') === 0) {
+        console.log('completed dist. doing seq')
+        time(sumStuffNormally, [], '', 5);
+    }  
+})
