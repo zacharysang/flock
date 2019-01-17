@@ -34,7 +34,7 @@ class FlockMock {
         
         return async function (data, dest, comm, tag=null) {
         
-            //await FlockMock.simLatency();
+            await FlockMock.simLatency();
             
             // create list for this worker under tag if none already
             if (!(workerInboxes[dest] && workerInboxes[dest][tag] && Array.isArray(workerInboxes[dest][tag]))) {
@@ -106,21 +106,21 @@ class FlockMock {
             
             switch (data.op) {
                 case 'getId':
-                    worker.postMessage({id: data.id, op: data.op, value: id});
+                    worker.postMessage({key: data.key, op: data.op, value: id});
                     break;
                 case 'getRank':
-                    worker.postMessage({id: data.id, op: data.op, value: id});
+                    worker.postMessage({key: data.key, op: data.op, value: id});
                     break;
                 case 'getSize':
-                    worker.postMessage({id: data.id, op: data.op, value: workerIds.length});
+                    worker.postMessage({key: data.key, op: data.op, value: workerIds.length});
                     break;
                 case 'isend':
-                    let req = (this.getIsendMock(id))(...data.args);
-                    worker.postMessage({id: data.id, op: data.op, value: await req});
+                    let sendReq = (this.getIsendMock(id))(...data.args);
+                    worker.postMessage({key: data.key, op: data.op, value: await sendReq});
                     break;
                 case 'irecv':
-                    let req = (this.getIrecvMock(id))(...data.args);
-                    worker.postMessage({id: data.id, op: data.op, value: await req});
+                    let recvReq = (this.getIrecvMock(id))(...data.args);
+                    worker.postMessage({key: data.key, op: data.op, value: await recvReq});
                     break;
                 case 'pass':
                     console.log(`Test Passed: ${testFile} (${(new Date()).getTime() - startTime}ms)`);

@@ -21,13 +21,13 @@ if (typeof window === 'undefined') {
     postMessage = (data) => {parentPort.postMessage(data)};
     
     parentPort.on('message', (data) => {
-                    let id = data.id;
+                    let key = data.key;
                 
-                    // resolve the promise with this id
-                    outbox[id](data.value);
+                    // resolve the promise with this key value
+                    outbox[key](data.value);
                 
                     // clear the entry
-                    delete outbox[id];
+                    delete outbox[key];
                 });
                 
 } else if (self) {
@@ -36,13 +36,13 @@ if (typeof window === 'undefined') {
     postMessage = (data) => {self.postMessage(data)};
     
     self.onmessage = function(ev) {
-                        let id = ev.data.id;
+                        let key = ev.data.key;
                     
-                        // resolve the promise with this id
-                        outbox[id](ev.data.value);
+                        // resolve the promise with this key value
+                        outbox[key](ev.data.value);
                     
                         // clear the entry
-                        delete outbox[id];
+                        delete outbox[key];
                     };
                     
 } else {
@@ -51,45 +51,47 @@ if (typeof window === 'undefined') {
     throw "Invalid Context: Not node, not configured browser";
 }
 
+
+
 // get the easyrtc id of the node with 'rank' in 'comm'
 mpi.getId = function (comm, rank) {
     // generate a key for this function call
-    let id = Math.random();
+    let key = Math.random();
     
     // return a promise, the resolve function is stored in outbox under the key: 'id'
     return new Promise((resolve, reject) => {
-        outbox[id] = resolve;
+        outbox[key] = resolve;
         
-        // after the resolve function is registered to the id, request the result
-        postMessage({id: id, op: 'getId', args: [comm, rank]});
+        // after the resolve function is registered to this key, request the result
+        postMessage({key: key, op: 'getId', args: [comm, rank]});
     });
 }
 
 // get the rank of this node in 'comm'
 mpi.getRank = function (comm) {
     // generate a key for this function call
-    let id = Math.random();
+    let key = Math.random();
     
     // return a promise, the resolve function is stored in outbox under the key: 'id'
     return new Promise((resolve, reject) => {
-        outbox[id] = resolve;
+        outbox[key] = resolve;
         
-        // after the resolve function is registered to the id, request the result
-        postMessage({id: id, op: 'getRank', args: [comm]});
+        // after the resolve function is registered to this key, request the result
+        postMessage({key: key, op: 'getRank', args: [comm]});
     });
 }
 
 // get the size of the given communicting group, 'comm'
 mpi.getSize = function (comm) {
     // generate a key for this function call
-    let id = Math.random();
+    let key = Math.random();
     
     // return a promise, the resolve function is stored in outbox under the key: 'id'
     return new Promise((resolve, reject) => {
-        outbox[id] = resolve;
+        outbox[key] = resolve;
         
-        // after the resolve function is registered to the id, request the result
-        postMessage({id: id, op: 'getSize', args: [comm]});
+        // after the resolve function is registered to this key, request the result
+        postMessage({key: key, op: 'getSize', args: [comm]});
     });
 }
 
@@ -97,28 +99,28 @@ mpi.getSize = function (comm) {
 mpi.isend = async function (data, dest, comm, tag=null) {
     
     // generate a key for this function call
-    let id = Math.random();
+    let key = Math.random();
     
     // return a promise, the resolve function is stored in outbox under the key: 'id'
     return new Promise((resolve, reject) => {
-        outbox[id] = resolve;
+        outbox[key] = resolve;
         
-        // after the resolve function is registered to the id, request the result
-        postMessage({id: id, op: 'isend', args: [data, dest, comm, tag]});
+        // after the resolve function is registered to this key, request the result
+        postMessage({key: key, op: 'isend', args: [data, dest, comm, tag]});
     });
 }
 
 // send a request to the main thread to receive an mpi message
 mpi.irecv = async function (source, comm, tag=null) {
     // generate a key for this function call
-    let id = Math.random();
+    let key = Math.random();
     
     // return a promise, the resolve function is stored in outbox under the key: 'id'
     return new Promise((resolve, reject) => {
-        outbox[id] = resolve;
+        outbox[key] = resolve;
         
-        // after the resolve function is registered to the id, request the result
-        postMessage({id: id, op: 'irecv', args: [source, comm, tag]});
+        // after the resolve function is registered to this key, request the result
+        postMessage({key: key, op: 'irecv', args: [source, comm, tag]});
     });
 }
 
@@ -210,15 +212,12 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
             nodes.shift();
         }
         
-        console.log('in iscatter, sent!');
         // return this node's result when all sends have been acked
         return Promise.all(reqs).then((val) => {return res}); 
         
     } else {
-        console.log('in iscatter, receiving...');
         // receive from root
         let res = await mpi.irecv(root, comm);
-        console.log('in iscatter, recevied!');
         
         return res;
     }
@@ -232,7 +231,6 @@ mpi.ireduce = async function (sendArr, op, comm) {
     
     // do local reduction
     let local = sendArr.reduce(op);
-    console.log(`local: ${local}`);
     
     // for trivial case that only 1 node is in the communicating group, return local sum
     if (await mpi.getSize(comm) === 1) {
