@@ -4,16 +4,17 @@ const EventEmitter = require('events');
 
 let emitter = new EventEmitter();
 
-let workerIds = [0,1,2,3];
-let tests = ['./tests/tests.js'];
+let workerIds = [0,1];
+let tests = ['./tests/isend.test.js', './tests/isend-with-tag.test.js'];
 
 const EV_RCV_MSG = 'EV_RCV_MSG';
 
 class FlockMock {
     
-    constructor() {
+    constructor(isPerf=false) {
         // initialize an inbox for each worker
         this.workerInboxes = {};
+        this.isPerf = isPerf;
         workerIds.forEach((id) => { this.workerInboxes[id] = {} });
     }
     
@@ -31,11 +32,14 @@ class FlockMock {
 
     getIsendMock(id) {
         let workerInboxes = this.workerInboxes;
+        let isPerf = this.isPerf;
         
         return async function (data, dest, comm, tag=null) {
         
-            await FlockMock.simLatency();
-            
+            if (isPerf) {
+                await FlockMock.simLatency();
+            }
+        
             // create list for this worker under tag if none already
             if (!(workerInboxes[dest] && workerInboxes[dest][tag] && Array.isArray(workerInboxes[dest][tag]))) {
                 workerInboxes[dest][tag] = [];
@@ -44,7 +48,7 @@ class FlockMock {
             // put data in the inbox
             workerInboxes[dest][tag].push(data);
             
-            emitter.emit(EV_RCV_MSG, {source: id, dest: dest});
+            emitter.emit(EV_RCV_MSG, {source: id, dest: dest, tag: tag});
             
             return 200;
             
@@ -72,11 +76,10 @@ class FlockMock {
                     
                     // function to resolve to value on message event
                     let resolveOnMsg;
-                    resolveOnMsg = function(data) {
-                        
+                    resolveOnMsg = function(msg) {
                         
                         // resolve if the message is meant for this communication
-                        if (data.source === source && data.dest === id) {
+                        if (msg.source === source && msg.dest === id && msg.tag === tag) {
                             resolve(workerInboxes[id][tag].shift());
                         } else {
                             // re-register the listener in the case that we did not handle the message
@@ -104,33 +107,33 @@ class FlockMock {
         
         let onMessage;
         worker.running = new Promise((resolve, reject) => {
-            onMessage = async (data) => {
+            onMessage = async (msg) => {
             
-                switch (data.op) {
+                switch (msg.op) {
                     case 'getId':
-                        worker.postMessage({key: data.key, op: data.op, value: id});
+                        worker.postMessage({key: msg.key, op: msg.op, value: id});
                         break;
                     case 'getRank':
-                        worker.postMessage({key: data.key, op: data.op, value: id});
+                        worker.postMessage({key: msg.key, op: msg.op, value: id});
                         break;
                     case 'getSize':
-                        worker.postMessage({key: data.key, op: data.op, value: workerIds.length});
+                        worker.postMessage({key: msg.key, op: msg.op, value: workerIds.length});
                         break;
                     case 'isend':
-                        let sendReq = (this.getIsendMock(id))(...data.args);
-                        worker.postMessage({key: data.key, op: data.op, value: await sendReq});
+                        let sendReq = (this.getIsendMock(id))(...msg.args);
+                        worker.postMessage({key: msg.key, op: msg.op, value: await sendReq});
                         break;
                     case 'irecv':
-                        let recvReq = (this.getIrecvMock(id))(...data.args);
-                        worker.postMessage({key: data.key, op: data.op, value: await recvReq});
+                        let recvReq = (this.getIrecvMock(id))(...msg.args);
+                        worker.postMessage({key: msg.key, op: msg.op, value: await recvReq});
                         break;
                     case 'pass':
                         worker.unref();
-                        resolve({id: id, name: testFile, passed: true, msg: data.msg, time: (new Date()).getTime() - startTime});
+                        resolve({id: id, name: testFile, passed: true, msg: msg.msg, time: (new Date()).getTime() - startTime});
                         break;
-                    case 'failed':
+                    case 'fail':
                         worker.unref();
-                        resolve({name: testFile, passed: false, msg: data.msg || ''});
+                        resolve({name: testFile, passed: false, msg: msg.msg || ''});
                         break;
                     default:
                         console.error('worker requested invalid operation');
@@ -152,11 +155,11 @@ function runTest(testFile) {
     // initialize workers for this test
     let workers = workerIds.map( (id) => flock.initWorker(id, testFile) );
     
-    let statuses = workers.map((worker) => worker.running);
+    let completions = workers.map((worker) => worker.running);
     
-    Promise.all(statuses).then((results) => {
+    Promise.all(completions).then((results) => {
         // check if any failed
-        let failed = results.filter((el) => !el.passed);
+        let failed = results.map((res, idx) => {res.id = idx; return res;}).filter((el) => !el.passed);
         
         if (failed.length > 0) {
             let failIds = failed.map((el) => el.id);
