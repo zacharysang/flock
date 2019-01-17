@@ -222,8 +222,6 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
         return res;
     }
     
-    
-    
 }
 
 // reduce values using a given binary operation

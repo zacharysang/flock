@@ -102,51 +102,74 @@ class FlockMock {
         
         worker.id = id;
         
-        worker.on('message', async function(data) {
+        let onMessage;
+        worker.running = new Promise((resolve, reject) => {
+            onMessage = async (data) => {
             
-            switch (data.op) {
-                case 'getId':
-                    worker.postMessage({key: data.key, op: data.op, value: id});
-                    break;
-                case 'getRank':
-                    worker.postMessage({key: data.key, op: data.op, value: id});
-                    break;
-                case 'getSize':
-                    worker.postMessage({key: data.key, op: data.op, value: workerIds.length});
-                    break;
-                case 'isend':
-                    let sendReq = (this.getIsendMock(id))(...data.args);
-                    worker.postMessage({key: data.key, op: data.op, value: await sendReq});
-                    break;
-                case 'irecv':
-                    let recvReq = (this.getIrecvMock(id))(...data.args);
-                    worker.postMessage({key: data.key, op: data.op, value: await recvReq});
-                    break;
-                case 'pass':
-                    console.log(`Test Passed: ${testFile} (${(new Date()).getTime() - startTime}ms)`);
-                    worker.unref()
-                    break;
-                case 'failed':
-                    console.log(`Test Failed: ${testFile} - ${data.msg} (${(new Date()).getTime() - startTime}ms)`);
-                    worker.unref();
-                    break;
-                default:
-                    console.error('worker requested invalid operation');
+                switch (data.op) {
+                    case 'getId':
+                        worker.postMessage({key: data.key, op: data.op, value: id});
+                        break;
+                    case 'getRank':
+                        worker.postMessage({key: data.key, op: data.op, value: id});
+                        break;
+                    case 'getSize':
+                        worker.postMessage({key: data.key, op: data.op, value: workerIds.length});
+                        break;
+                    case 'isend':
+                        let sendReq = (this.getIsendMock(id))(...data.args);
+                        worker.postMessage({key: data.key, op: data.op, value: await sendReq});
+                        break;
+                    case 'irecv':
+                        let recvReq = (this.getIrecvMock(id))(...data.args);
+                        worker.postMessage({key: data.key, op: data.op, value: await recvReq});
+                        break;
+                    case 'pass':
+                        worker.unref();
+                        resolve({id: id, name: testFile, passed: true, msg: data.msg, time: (new Date()).getTime() - startTime});
+                        break;
+                    case 'failed':
+                        worker.unref();
+                        resolve({name: testFile, passed: false, msg: data.msg || ''});
+                        break;
+                    default:
+                        console.error('worker requested invalid operation');
+                }
+            
             }
-            
-        }.bind(this));
+        });
+        
+        worker.on('message', onMessage);
         
         return worker;
     }
     
 }
 
-
-// run the tests
-for (let i = 0; i < tests.length; i++) {
+function runTest(testFile) {
     let flock = new FlockMock();
-    let currTest = tests[i];
     
     // initialize workers for this test
-    let workers = workerIds.map( (id) => flock.initWorker(id, currTest) );
+    let workers = workerIds.map( (id) => flock.initWorker(id, testFile) );
+    
+    let statuses = workers.map((worker) => worker.running);
+    
+    Promise.all(statuses).then((results) => {
+        // check if any failed
+        let failed = results.filter((el) => !el.passed);
+        
+        if (failed.length > 0) {
+            let failIds = failed.map((el) => el.id);
+            let failReasons = failed.map((el) => el.msg);
+            
+            console.error(`${testFile}: Failed on workers ${JSON.stringify(failIds)} with messages: ${JSON.stringify(failReasons)}`);
+        } else {
+            let times = results.map((el) => `${el.time}ms`);
+            console.log(`${testFile}: Passed (${JSON.stringify(times)})`);
+        }
+        
+    });
 }
+
+// run the tests
+tests.map(runTest);

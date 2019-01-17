@@ -7,7 +7,7 @@ let parentPort = WorkerThreads.parentPort;
 let postMessage = (data) => {parentPort.postMessage(data)};
 
 // import the worker lib
-mpi = require('../static/flock-mpi.js');
+let mpi = require('../static/flock-mpi.js');
 
 // send a random number
 function sendStuff() {
