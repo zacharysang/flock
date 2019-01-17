@@ -116,7 +116,7 @@ flock.joinSuccess = function(rtcId) {
     peerCalls.then(() => {flock.isConnected = true; return;});
 }
 
-flock.joinFailure = function(errCode, message) {
+flock.joinFailure = function(errorCode, message) {
     easyrtc.showError(errorCode, message);
 }
 
@@ -255,6 +255,7 @@ flock.getId = function(comm, rank) {
     
     let res;
     
+    // TODO make sure that we check the source before matching a recv
     // check if we have already received this message
     if (inbox[tag] && inbox[tag].length > 0) {
         res = Promise.resolve(flock.consumeFromInbox(tag));

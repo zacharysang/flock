@@ -1,5 +1,7 @@
+console.log('testing...');
+
 // import the worker lib
-self.importScripts('/flock-mpi.js', '/lib/measurer.js');
+self.importScripts('static/flock-mpi.js', 'static/lib/measurer.js');
 
 // send a random number
 function sendStuff() {
@@ -58,11 +60,12 @@ function lowGrainSum(a,b) {
 let sumSize = 150;
 
 async function sumStuff() {
-    
+    console.log('summing stuff...');
     let startTime = (new Date()).getTime();
-    
     let arr = [];
     let rank = await mpi.getRank('default');
+    
+    console.log('got rank: ' + rank);
     
     if (rank === 0) {
         arr = [...Array(sumSize).keys()].map((val) => val + 1);
@@ -89,10 +92,6 @@ function sumStuffNormally() {
 }
 
 // time sequential time
-//measurer.time(sumStuffNormally, [], 'seq', 5);
 sumStuff().then(() => {
-    if (mpi.getRank('default') === 0) {
-        console.log('completed dist. doing seq')
-        time(sumStuffNormally, [], '', 5);
-    }  
+    self.postMessage({op: 'pass'});
 })

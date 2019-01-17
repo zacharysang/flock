@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node app.js & lt --port 4002",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node tests/runner.js"
   },
   "author": "",
   "license": "ISC",
@@ -20,6 +20,7 @@
     "socket.io": "^2.2.0"
   },
   "devDependencies": {
-    "localtunnel": "^1.9.1"
+    "localtunnel": "^1.9.1",
+    "webworker-threads": "^0.7.17"
   }
 }
