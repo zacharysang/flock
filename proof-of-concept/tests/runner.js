@@ -1,11 +1,13 @@
 // runs flock tests in nodejs
-const {Worker, MessageChannel, MessagePort, isMainThread, parentPort} = require('worker_threads');
+const Worker = require('worker_threads').Worker;
 const EventEmitter = require('events');
 
 let emitter = new EventEmitter();
 
 let workerIds = [0,1,2,3];
-let tests = ['tests/tests.js'];
+let tests = ['./tests/tests.js'];
+
+const EV_RCV_MSG = 'EV_RCV_MSG';
 
 class FlockMock {
     
@@ -30,7 +32,7 @@ class FlockMock {
     getIsendMock(id) {
         let workerInboxes = this.workerInboxes;
         
-        return function (data, dest, comm, tag=null) {
+        return async function (data, dest, comm, tag=null) {
         
             //await FlockMock.simLatency();
             
@@ -42,10 +44,9 @@ class FlockMock {
             // put data in the inbox
             workerInboxes[dest][tag].push(data);
             
-            emitter.emit('message', {source: id, dest: dest});
-            console.log(`resolving isend, id: ${id}`);
+            emitter.emit(EV_RCV_MSG, {source: id, dest: dest});
             
-            return 200;//Promise.resolve(200);
+            return 200;
             
         };
     }
@@ -62,7 +63,6 @@ class FlockMock {
             // if the id is valid, and there is a message in the inbox under this tag
             // then go ahead and resolve with the message value
             if (workerInboxes[id] && workerInboxes[id][tag] && workerInboxes[id][tag].length > 0) {
-                console.log(`immediately returning for id: ${id}`);
                 return Promise.resolve(workerInboxes[id][tag].shift());
             } else {
                 
@@ -77,18 +77,16 @@ class FlockMock {
                         
                         // resolve if the message is meant for this communication
                         if (data.source === source && data.dest === id) {
-                            console.log(`about to resolve listener promise for id: ${id}`);
                             resolve(workerInboxes[id][tag].shift());
-                            console.log(`resolved in resolveOnMsg: ${id}`);
                         } else {
                             // re-register the listener in the case that we did not handle the message
-                            emitter.once('message', resolveOnMsg);
+                            emitter.once(EV_RCV_MSG, resolveOnMsg);
                         }
                         
                     };
                     
                     // add a one-time event listener that resolves the promise to the received value
-                    emitter.once('message', resolveOnMsg);
+                    emitter.once(EV_RCV_MSG, resolveOnMsg);
                 });
                 
                 return p;
@@ -98,49 +96,45 @@ class FlockMock {
     }
     
     initWorker(id, testFile) {
+        let startTime = (new Date()).getTime();
+        
         let worker = new Worker(testFile);
         
         worker.id = id;
         
-        worker.onmessage = async function(ev) {
+        worker.on('message', async function(data) {
             
-            switch (ev.data.op) {
+            switch (data.op) {
                 case 'getId':
-                    worker.postMessage({id: ev.data.id, op: ev.data.op, value: id});
+                    worker.postMessage({id: data.id, op: data.op, value: id});
                     break;
                 case 'getRank':
-                    worker.postMessage({id: ev.data.id, op: ev.data.op, value: id});
+                    worker.postMessage({id: data.id, op: data.op, value: id});
                     break;
                 case 'getSize':
-                    worker.postMessage({id: ev.data.id, op: ev.data.op, value: workerIds.length});
+                    worker.postMessage({id: data.id, op: data.op, value: workerIds.length});
                     break;
                 case 'isend':
-                    let req = (this.getIsendMock(id))(...ev.data.args);
-                    console.log(req);
-                    console.log('^req. about to await in isend');
-                    worker.postMessage({id: ev.data.id, op: ev.data.op, value: req});
-                    console.log('breaking in isend');
+                    let req = (this.getIsendMock(id))(...data.args);
+                    worker.postMessage({id: data.id, op: data.op, value: await req});
                     break;
                 case 'irecv':
-                    let val = (this.getIrecvMock(id))(...ev.data.args);
-                    console.log(val);
-                    console.log('^val');
-                    worker.postMessage({id: ev.data.id, op: ev.data.op, value: await val});
-                    console.log('breaking from irecv op');
+                    let req = (this.getIrecvMock(id))(...data.args);
+                    worker.postMessage({id: data.id, op: data.op, value: await req});
                     break;
                 case 'pass':
-                    console.log(`Test Passed: ${testFile} (${ev.data.time}ms)`);
-                    worker.terminate();
+                    console.log(`Test Passed: ${testFile} (${(new Date()).getTime() - startTime}ms)`);
+                    worker.unref()
                     break;
                 case 'failed':
-                    console.log(`Test Failed: ${testFile} - ${ev.data.msg} (${ev.data.time}ms)`);
-                    worker.terminate();
+                    console.log(`Test Failed: ${testFile} - ${data.msg} (${(new Date()).getTime() - startTime}ms)`);
+                    worker.unref();
                     break;
                 default:
                     console.error('worker requested invalid operation');
             }
             
-        }.bind(this);
+        }.bind(this));
         
         return worker;
     }

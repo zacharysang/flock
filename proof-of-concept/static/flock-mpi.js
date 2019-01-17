@@ -1,22 +1,54 @@
+mpi = {};
+
 // store resolve function for outstanding requests
 let outbox = {};
 
-let mpi = {};
+// get reference for function to send messages to the main thread
+let postMessage;
 
-// route messages from the main thread back to the source function
-// assumes operations will not have conflicting ids
-if (self) {
-    self.onmessage = function(ev) {
-        let id = ev.data.id;
+// if running in node, postMessage = WorkerThread.parentPort.postMessage
+if (typeof window === 'undefined') {
     
-        // resolve the promise with this id
-        outbox[id](ev.data.value);
+    const WorkerThread = require('worker_threads');
     
-        // clear the entry
-        delete outbox[id];
+    // make sure this is inside a worker
+    if (WorkerThread.isMainThread) {
+        throw "Invalid Context: Node main thread";
     }
+    
+    let parentPort = WorkerThread.parentPort;
+    
+    postMessage = (data) => {parentPort.postMessage(data)};
+    
+    parentPort.on('message', (data) => {
+                    let id = data.id;
+                
+                    // resolve the promise with this id
+                    outbox[id](data.value);
+                
+                    // clear the entry
+                    delete outbox[id];
+                });
+                
+} else if (self) {
+    // otherwise, if in a browser, ensure that 'self' is present (provided by the WebWorker api)
+    
+    postMessage = (data) => {self.postMessage(data)};
+    
+    self.onmessage = function(ev) {
+                        let id = ev.data.id;
+                    
+                        // resolve the promise with this id
+                        outbox[id](ev.data.value);
+                    
+                        // clear the entry
+                        delete outbox[id];
+                    };
+                    
 } else {
+    // if not in node, and self is undefined, then this is an invalid state
     console.error('self undefined in flock-mpi.js. This should be running in a WebWorker context');
+    throw "Invalid Context: Not node, not configured browser";
 }
 
 // get the easyrtc id of the node with 'rank' in 'comm'
@@ -29,7 +61,7 @@ mpi.getId = function (comm, rank) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getId', args: [comm, rank]});
+        postMessage({id: id, op: 'getId', args: [comm, rank]});
     });
 }
 
@@ -43,7 +75,7 @@ mpi.getRank = function (comm) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getRank', args: [comm]});
+        postMessage({id: id, op: 'getRank', args: [comm]});
     });
 }
 
@@ -57,7 +89,7 @@ mpi.getSize = function (comm) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'getSize', args: [comm]});
+        postMessage({id: id, op: 'getSize', args: [comm]});
     });
 }
 
@@ -72,7 +104,7 @@ mpi.isend = async function (data, dest, comm, tag=null) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'isend', args: [data, dest, comm, tag]});
+        postMessage({id: id, op: 'isend', args: [data, dest, comm, tag]});
     });
 }
 
@@ -86,7 +118,7 @@ mpi.irecv = async function (source, comm, tag=null) {
         outbox[id] = resolve;
         
         // after the resolve function is registered to the id, request the result
-        self.postMessage({id: id, op: 'irecv', args: [source, comm, tag]});
+        postMessage({id: id, op: 'irecv', args: [source, comm, tag]});
     });
 }
 
@@ -178,13 +210,15 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
             nodes.shift();
         }
         
+        console.log('in iscatter, sent!');
         // return this node's result when all sends have been acked
         return Promise.all(reqs).then((val) => {return res}); 
         
     } else {
-        
+        console.log('in iscatter, receiving...');
         // receive from root
         let res = await mpi.irecv(root, comm);
+        console.log('in iscatter, recevied!');
         
         return res;
     }
@@ -195,8 +229,10 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
 
 // reduce values using a given binary operation
 mpi.ireduce = async function (sendArr, op, comm) {
+    
     // do local reduction
     let local = sendArr.reduce(op);
+    console.log(`local: ${local}`);
     
     // for trivial case that only 1 node is in the communicating group, return local sum
     if (await mpi.getSize(comm) === 1) {
@@ -232,6 +268,7 @@ mpi.ireduce = async function (sendArr, op, comm) {
     
     // recursive halving as we apply the given binary operation, 'op'
     for (let offset = size / 2; offset >= 1; offset /= 2) {
+        
         if (rank >= offset && rank < size) {
             let status = mpi.isend(local, rank - offset, comm);
         } else if (rank < offset){
@@ -246,3 +283,5 @@ mpi.ireduce = async function (sendArr, op, comm) {
         return local;
     }
 }
+
+module.exports = mpi;

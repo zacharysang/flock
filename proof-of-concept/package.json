@@ -4,8 +4,8 @@
   "description": "testing use of webrtc for implementation of MPI",
   "main": "index.js",
   "scripts": {
-    "start": "node app.js & lt --port 4002",
-    "test": "node tests/runner.js"
+    "dev": "node app.js & lt --port 4002",
+    "test": "node --experimental-worker tests/runner.js"
   },
   "author": "",
   "license": "ISC",
@@ -20,7 +20,6 @@
     "socket.io": "^2.2.0"
   },
   "devDependencies": {
-    "localtunnel": "^1.9.1",
-    "webworker-threads": "^0.7.17"
+    "localtunnel": "^1.9.1"
   }
 }

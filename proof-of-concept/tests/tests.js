@@ -1,7 +1,13 @@
 console.log('testing...');
 
+const WorkerThreads = require('worker_threads');
+
+let parentPort = WorkerThreads.parentPort;
+
+let postMessage = (data) => {parentPort.postMessage(data)};
+
 // import the worker lib
-self.importScripts('static/flock-mpi.js', 'static/lib/measurer.js');
+mpi = require('../static/flock-mpi.js');
 
 // send a random number
 function sendStuff() {
@@ -63,6 +69,7 @@ async function sumStuff() {
     console.log('summing stuff...');
     let startTime = (new Date()).getTime();
     let arr = [];
+    
     let rank = await mpi.getRank('default');
     
     console.log('got rank: ' + rank);
@@ -93,5 +100,5 @@ function sumStuffNormally() {
 
 // time sequential time
 sumStuff().then(() => {
-    self.postMessage({op: 'pass'});
+    postMessage({op: 'pass'});
 })
