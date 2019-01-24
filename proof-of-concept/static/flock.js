@@ -29,22 +29,22 @@ flock.initWorker = function() {
         // switch on the type of function and respond to worker
         switch (ev.data.op) {
             case 'getId':
-                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getId(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getId(...ev.data.args)});
                 break;
             case 'getRank':
-                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getRank(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getRank(...ev.data.args)});
                 break;
             case 'getSize':
-                worker.postMessage({id: ev.data.id, op: ev.data.op, value: flock.getSize(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getSize(...ev.data.args)});
                 break;
             case 'isend':
-                worker.postMessage({id: ev.data.id, op: ev.data.op, value: await flock.isend(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.isend(...ev.data.args)});
                 break;
             case 'irecv':
-                worker.postMessage({id: ev.data.id, op: ev.data.op, value: await flock.irecv(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.irecv(...ev.data.args)});
                 break;
             default:
-                console.error('worker requested invalid operation');
+                console.error(`worker requested invalid operation, ${JSON.stringify(ev.data)}`);
         }
     }
     
@@ -217,6 +217,7 @@ flock.getId = function(comm, rank) {
     
     let destId = flock.getId(comm, dest);
     
+    // TODO utilize the callback on this function
     easyrtc.sendData(flock.getId(comm, dest), MSG_TYPE_MSG, msg, ()=>{});
     
     let resolveOnAck;

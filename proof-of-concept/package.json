@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "node app.js & lt --port 4002",
-    "test": "node --experimental-worker tests/runner.js"
+    "test": "node --experimental-worker test/runner.js"
   },
   "author": "",
   "license": "ISC",
