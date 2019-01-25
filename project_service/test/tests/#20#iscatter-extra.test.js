@@ -4,7 +4,7 @@ let parentPort = WorkerThreads.parentPort;
 let postMessage = (data) => {parentPort.postMessage(data)};
 
 // import the worker lib
-let mpi = require('../../static/flock-mpi.js');
+let mpi = require('../../../master/flock_server/static/flock-mpi.js');
 
 async function iscatterTestExtra() {
     const LEN = 110;
