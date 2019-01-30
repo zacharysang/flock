@@ -1,4 +1,14 @@
-let mpi = {};
+/**
+ * This module is to be imported by either a browser WebWorker or a nodejs worker-thread
+ * 
+ * If imported by a WebWorker, it will simply be executed. For this reason `mpi` is in the global scope so that it is available after being imported.
+ * 
+ * On the other hand, if imported by a worker-thread, it will be imported using nodejs' module system (using module.exports)
+ * 
+ * @namespace
+ * 
+ */
+var mpi = {};
 
 // store resolve function for outstanding requests
 let outbox = {};
@@ -10,6 +20,7 @@ let numBarriers = 0;
 // get reference for function to send messages to the main thread
 let postMessage;
 
+// if 'self' is defined, this is running in the browser
 if (typeof(self) !== 'undefined') {
     
     postMessage = (data) => {self.postMessage(data)};
@@ -59,9 +70,20 @@ if (typeof(self) !== 'undefined') {
 }
 
 
-
-// get the easyrtc id of the node with 'rank' in 'comm'
-mpi.getId = function (comm, rank) {
+// TODO make this internal since its only used by flock.js (should not be visible to the user)
+/**
+ * Get the easyrtc id of the node with 'rank' in 'comm'
+ * 
+ * @private
+ * @async
+ * @function mpi.getId
+ *   
+ * @param {string} comm - Name of the communication group the given rank belongs corresponds to (a node has a different rank for every communication group it is a part of)
+ * @param {number} rank - Rank of this node within the given communication group
+ *   
+ * @returns {string} Value of easyrtc.id for this node
+ */
+mpi.getId = async function (comm, rank) {
     // generate a key for this function call
     let key = Math.random();
     
@@ -74,8 +96,19 @@ mpi.getId = function (comm, rank) {
     });
 }
 
-// get the rank of this node in 'comm'
-mpi.getRank = function (comm) {
+
+mpi.getRank = 
+/**
+ * Get the rank of this node in 'comm'
+ * 
+ * @async
+ * @function mpi.getRank
+ * 
+ * @param {string} comm - Name of the communication group to get this node's rank from
+ * 
+ * @returns {number} Rank for this node under the given communication group
+ */
+async function (comm) {
     // generate a key for this function call
     let key = Math.random();
     
@@ -88,8 +121,20 @@ mpi.getRank = function (comm) {
     });
 }
 
-// get the size of the given communicting group, 'comm'
-mpi.getSize = function (comm) {
+
+mpi.getSize = 
+/**
+ * Get the size of the given communicting group, 'comm'
+ * 
+ * @async
+ * @function mpi.getSize
+ * 
+ * @param {string} comm - Name of the communication group to get the size of
+ * 
+ * @returns {number} - Size of the given communication group
+ * 
+ */
+async function (comm) {
     // generate a key for this function call
     let key = Math.random();
     
@@ -123,7 +168,23 @@ let _isend = async function (data, dest, comm, tag=null, isInternal=true) {
     });
 }
 
-mpi.isend = async function(data, dest, comm, tag=null) {
+
+mpi.isend = 
+/**
+ * Send data to another node
+ * 
+ * @async
+ * @function mpi.isend
+ * 
+ * @param {stringifiable} data - Data to be sent to the remote node. Must be able to be serialized using JSON.stringify()
+ * @param {number} dest - Rank of the destination node
+ * @param {string} comm - Name of the communication group that the current node and destination node are a part of
+ * @param {string} tag - (optional) A string used to uniquely identify this message (avoids conflicts if other messages are sent between these nodes at the same time)
+ * 
+ * @returns {number} Status code of the acknowledgement for this message
+ * 
+ */
+async function(data, dest, comm, tag=null) {
     
     return _isend(data, dest, comm, tag, false);
     
@@ -148,14 +209,33 @@ let _irecv = async function (source, comm, tag=null, isInternal=true) {
     });
 }
 
-// send a request to the main thread to receive an mpi message
+/**
+ * Send a request to the main thread to receive an mpi message
+ * 
+ * @async
+ * @function mpi.irecv
+ * 
+ * @param {number} source - Rank of the node we are expecting data from
+ * @param {string} comm - Name of the communication group the data is being sent under
+ * @param {string} tag - (optional) A string used to uniquely identify this message (avoids conflicts if other messages are sent between these nodes at the same time)
+ * 
+ * @returns {serializable} The received value
+ * 
+ */
 mpi.irecv = async function(source, comm, tag=null) {
     
     return _irecv(source, comm, tag, false);
 }
 
-
-// synchronize node executions in a given communication group
+/**
+ * Synchronize node executions in a given communication group
+ * 
+ * @async
+ * @function mpi.ibarrier
+ * 
+ * @param {string} comm - Name of the communication group to synchronize
+ * 
+ */
 mpi.ibarrier = async function (comm) {
     
     let rank = await mpi.getRank(comm);
@@ -181,13 +261,19 @@ mpi.ibarrier = async function (comm) {
 
 }
 
- 
-// broadcast a value from a root node to all nodes in a group
+
 /**
-    @param data : the value to broadcast (only used if rank === 0)
-    @param root : the node with the data
-    @param comm : the communication group to broadcast across
-*/
+ * Broadcast a value from a root node to all nodes in a group
+ * 
+ * @async
+ * @function mpi.ibcast
+ * 
+ * @param {serializable} data - Value to broadcast (only used if rank === 0)
+ * @param {number} root - Rank of the node with the data
+ * @param {string} comm : Name of the communication group to broadcast across
+ * 
+ * @returns {serializable} The value broadcasted from root
+ */
 mpi.ibcast = async function (data, root, comm) {
     const TAG = 'internal_ibcast';
     
@@ -214,15 +300,20 @@ mpi.ibcast = async function (data, root, comm) {
     }
 }
  
- 
-// scatter an array from a root node to all nodes in a group
+
+// TODO this shouldn't have a tag param (can add it as an internal value. See ibarrier which also has an internal variant that includes a tag)
 /**
-    @param sendArr : the array to send across the communication group (only used if rank === root)
-    @param numEls : the number of elements to send to each node
-    @param root : the node to send from
-    @param comm : the communication group to send array over
-    
-    returns a slice of the given array to each node
+ * Scatter an array from a root node to all nodes in a group
+ * 
+ * @async
+ * @function mpi.iscatter
+ * 
+ * @param {array} sendArr - Array to send across the communication group (only used if rank === root)
+ * @param {number} root - Rank of the node to send from
+ * @param {string} comm - Name of the communication group to send array over
+ * 
+ * @returns {array} A slice of the given array to each node
+ * 
 */
 mpi.iscatter = async function (sendArr, root, comm, tag=null) {
     
@@ -276,7 +367,20 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
     
 }
 
-// reduce values using a given binary operation
+
+/**
+ * Reduce values using a given binary operation
+ * 
+ * @async
+ * @function mpi.ireduce
+ * 
+ * @param {array} sendArr - Array to reduce using op
+ * @param {function} op - A symmetric function that takes 2 arguments (associative and binary)
+ * @param {string} comm - Name of the communication group to operate under
+ * 
+ * @returns {serializable} - Result of the reduction is given to the node with rank === 0, other nodes will receive `undefined`
+ * 
+ */
 mpi.ireduce = async function (sendArr, op, comm) {
     
     const TAG = 'internal_ireduce';
