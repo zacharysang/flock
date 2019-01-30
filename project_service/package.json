@@ -8,15 +8,6 @@
     "test": "node --experimental-worker test/runner.js",
     "docs": "./node_modules/.bin/jsdoc ../master/flock_server/static/flock-mpi.js -d docs -c jsdocs-conf.json"
   },
-  "esdoc": {
-    "source": "../master/flock_server/static/flock-mpi.js",
-    "destination": "./docs",
-    "plugins": [
-      {
-        "name": "esdoc-standard-plugin"
-      }
-    ]
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
