@@ -13,3 +13,13 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 # pip install -r requirements.txt
 ```
+
+# Running
+## Development
+To run in a development environment, use the following commands. The environment
+variables only need set once per shell session.
+```
+$ export FLASK_APP=flock_server
+$ export FLASK_ENV=development
+$ flask run
+```
