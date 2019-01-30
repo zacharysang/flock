@@ -2,6 +2,10 @@ import os
 
 from flask import Flask
 
+from flask import (
+    render_template
+)
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -18,5 +22,11 @@ def create_app(test_config=None):
         os.makedirs(app.instance_path)
     except OSError:
         pass
+
+    # index page
+    @app.route('/')
+    def get_index():
+        return render_template('index.html')
+
 
     return app

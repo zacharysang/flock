@@ -23,3 +23,10 @@ $ export FLASK_APP=flock_server
 $ export FLASK_ENV=development
 $ flask run
 ```
+
+# Working on this app
+This app is written in Flask.
+ [Their documentation can be found here](http://flask.pocoo.org/docs/1.0/).
+
+[Working with templates.](http://flask.pocoo.org/docs/1.0/patterns/templateinheritance/#template-inheritance)
+
