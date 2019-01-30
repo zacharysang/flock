@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node app.js & lt --port 4002",
     "test": "node --experimental-worker test/runner.js",
-    "docs": "./node_modules/.bin/jsdoc ../master/flock_server/static/flock-mpi.js -d docs -c jsdocs-conf.json"
+    "docs": "./node_modules/.bin/jsdoc ../master/flock_server/static/flock-mpi.js -d docs -c jsdocs-conf.json",
+    "docs-md": "./node_modules/.bin/jsdoc2md ../master/flock_server/static/flock-mpi.js > docs.md"
   },
   "author": "",
   "license": "ISC",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "jsdoc": "^3.5.5",
+    "jsdoc-to-markdown": "^4.0.1",
     "localtunnel": "^1.9.1",
     "tui-jsdoc-template": "^1.2.2"
   }
