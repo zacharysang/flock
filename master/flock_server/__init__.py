@@ -28,5 +28,8 @@ def create_app(test_config=None):
     def get_index():
         return render_template('index.html')
 
+    # load blueprints
+    from . import work
+    app.register_blueprint(work.bp)
 
     return app
