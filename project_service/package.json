@@ -6,8 +6,13 @@
   "scripts": {
     "dev": "node app.js & lt --port 4002",
     "test": "node --experimental-worker test/runner.js",
+<<<<<<< HEAD
     "docs": "./node_modules/.bin/jsdoc ../master/flock_server/static/flock-mpi.js -d ../docs -c jsdocs-conf.json",
     "docs-md": "./node_modules/.bin/jsdoc2md ../master/flock_server/static/flock-mpi.js > ../docs.md"
+=======
+    "docs": "./node_modules/.bin/jsdoc ../master/flock_server/static/flock-mpi.js -d docs -c jsdocs-conf.json",
+    "docs-md": "./node_modules/.bin/jsdoc2md ../master/flock_server/static/flock-mpi.js > docs.md"
+>>>>>>> 7c99c776b43906ecc262d8852bfdb111863599a8
   },
   "author": "",
   "license": "ISC",
