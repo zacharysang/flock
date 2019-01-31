@@ -50,3 +50,8 @@ Devices with a browser of sufficient version will be able to subscribe as a work
 Overall, this will increase utilization of computing power, while fulfilling computational needs.
 We're approaching building a distributed computing platform from a perspective of openness. 
 Distributed computing has the potential to revolutionize parallel computing, but most distributed computing projects target high performance computers or are not easily accessible on lower performance devices.
+
+
+# Adding Docs
+
+To add docs to this project, you will use JSDocs 'tutorial' feature. This will take your tutorials file and insert them into the docs that are generated using `npm run docs` from within the `project_service` directory. For more details view the instructions [here](http://usejsdoc.org/about-tutorials.html).

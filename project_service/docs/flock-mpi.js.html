@@ -1,4 +1,52 @@
-/**
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Source: flock-mpi.js | Source: flock-mpi.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-jsdoc.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/tui-doc.css">
+
+    
+</head>
+<body>
+<nav class="lnb" id="lnb">
+    <div class="logo" style="">
+        
+            <img src="img/toast-ui.png" width="100%" height="100%">
+        
+    </div>
+    <div class="title">
+        <h1><a href="index.html" class="link">Source: flock-mpi.js</a></h1>
+        
+    </div>
+    <div class="search-container" id="search-container">
+        <input type="text" placeholder="Search">
+        <ul></ul>
+    </div>
+    
+    <div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li></ul></div></li></ul></div>
+</nav>
+<div id="resizer"></div>
+
+<div class="main" id="main">
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * This module is to be imported by either a browser WebWorker or a nodejs worker-thread
  * 
  * If imported by a WebWorker, it will simply be executed. For this reason `mpi` is in the global scope so that it is available after being imported.
@@ -152,7 +200,7 @@ async function (comm) {
 // internal variant exists so that other api functions can use internal tags
 let _isend = async function (data, dest, comm, tag=null, isInternal=true) {
     
-    if (!isInternal && tag && tag.indexOf('internal_') === 0) {
+    if (!isInternal &amp;&amp; tag &amp;&amp; tag.indexOf('internal_') === 0) {
         throw 'Cannot use "_internal" tag prefix for non-internal invocation of isend';
     }
     
@@ -193,7 +241,7 @@ async function(data, dest, comm, tag=null) {
 
 let _irecv = async function (source, comm, tag=null, isInternal=true) {
     
-    if (!isInternal && tag && tag.indexOf(INTERNAL_PREFIX) === 0) {
+    if (!isInternal &amp;&amp; tag &amp;&amp; tag.indexOf(INTERNAL_PREFIX) === 0) {
         throw 'Cannot use "internal_" tag prefix for non-internal invocation of irecv';
     }
     
@@ -424,10 +472,10 @@ mpi.ireduce = async function (sendArr, op, comm) {
     // recursive halving as we apply the given binary operation, 'op'
     for (let offset = size / 2; offset >= 1; offset /= 2) {
         
-        if (rank >= offset && rank < size) {
+        if (rank >= offset &amp;&amp; rank &lt; size) {
             let remoteRank = rank - offset;
             let status = _isend(local, rank - offset, comm, TAG);
-        } else if (rank < offset){
+        } else if (rank &lt; offset){
             let remoteRank = rank + offset;
             let remote = await _irecv(remoteRank, comm, TAG);
             
@@ -441,3 +489,33 @@ mpi.ireduce = async function (sendArr, op, comm) {
         return local;
     }
 }
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<footer>
+    <img class="logo" src="img/toast-ui.png" style="">
+    <div class="footer-text">NHN Entertainment. Frontend Development Lab</div>
+</footer>
+<script>prettyPrint();</script>
+<script src="scripts/jquery.min.js"></script>
+<script src="scripts/tui-doc.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+    <script>
+        var id = '_sub'.replace(/"/g, '_');
+        var selectedApi = document.getElementById(id); // do not use jquery selector
+        var $selectedApi = $(selectedApi);
+
+        $selectedApi.removeClass('hidden');
+        $selectedApi.parent().find('.glyphicon').removeClass('glyphicon-plus').addClass('glyphicon-minus');
+        showLnbApi();
+    </script>
+
+</body>
+</html>
