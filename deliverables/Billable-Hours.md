@@ -32,6 +32,12 @@
 | 12/10/18 | Preparation for meeting with advisor | 3 | 3 | 3 | 3 |
 | 12/10/18 | Discussion on MPI/library design, revising repository README | 0 | 0 | 2 | 2 |
 | | | | | | |
-| SUM | SUM | 52 | 52 | 48 | 41 |
+| 01/10/19 | Researching cloud container hosting | 1 | 0 | 0 | 0 |
+| 01/15/19 | Proof of concept CLI Container Deploy | 1 | 0 | 0 | 0 |
+| 01/22/19 | Proof of concept CLI container deploy | 1 | 0 | 0 | 0 |
+| 01/24/19 | Code review, proof of concept CLI container deploy | 2 | 0 | 0 | 0 |
+| 01/30/19 | Development of Flask server | 3 | 0 | 0 | 0 |
+| 01/31/19 | Continued Flask development | 2 | 0 | 0 | 0 |
+| SUM | SUM | 62 | 52 | 48 | 41 |
 
 

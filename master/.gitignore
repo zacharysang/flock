@@ -1,5 +1,5 @@
 # Version control ignores for flask
-env/
+venv/
 
 *.pyc
 __pycache__/

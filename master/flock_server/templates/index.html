@@ -1,14 +1,27 @@
-<html>
-    <head>
-        <script type="text/javascript" src="/socket.io/socket.io.js"></script>
-        <script type="text/javascript" src="/easyrtc/easyrtc.js"></script>
-        <script type="text/javascript" src="/flock.js"></script>
-    </head>
-    <body>
-        Test Application
-        <script type="text/javascript">
-            flock.join();
-        </script>
-        <input type="button" onclick="flock.initWorker()" value="Start"/>
-    </body>
-</html>
+{% extends "layout.html" %}
+{% block title %}Index{% endblock %}
+{% block content %}
+  <h1> Welcome! </h1>
+  <div id="welcome">
+    <p>
+      Welcome to Flock. From this homepage you can volunteer your computing resources
+      or sign up to host a project.
+    </p>
+    <p>
+      Volunteering your computing resources is easy with flock! Just click the "Volunteer"
+      button below to get started!
+    </p>
+    <p>
+      Have a project you want to host on flock? Click "Sign Up" or "Login" to get started!
+    </p>
+  </div>
+  
+  <div id="volunteer-button">
+    <a href="/work">Volunteer your computing resources!</a>
+  </div>
+  <p/>
+  <div id="host-button">
+    <a href="/login">Sign up or log in!</a>
+  </div>
+  <p/>
+{% endblock %}
