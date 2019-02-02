@@ -2,8 +2,7 @@
     "plugins": [],
     "recurseDepth": 10,
     "source": {
-        "includePattern": ".+\\.js(doc|x)?$",
-        "excludePattern": "(^|\\/|\\\\)_"
+        "include": "../master/flock_server/static/flock-mpi.js"
     },
     "sourceType": "script",
     "tags": {
@@ -12,9 +11,14 @@
     },
     "templates": {
         "cleverLinks": false,
-        "monospaceLinks": false
+        "monospaceLinks": false,
+        "tabNames": {
+            "tutorials": "Tutorials"
+        }
     },
     "opts": {
-        "template": "node_modules/tui-jsdoc-template"
+        "destination": "../docs",
+        "template": "node_modules/tui-jsdoc-template",
+        "tutorials": "../docs/tutorials"
     }
 }
