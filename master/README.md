@@ -13,6 +13,8 @@ $ python3 -m venv venv
 $ source venv/bin/activate
 # pip install -r requirements.txt
 ```
+See the below section on running in a development environment for creating
+a database.
 
 # Running
 ## Development
@@ -22,6 +24,11 @@ variables only need set once per shell session.
 $ export FLASK_APP=flock_server
 $ export FLASK_ENV=development
 $ flask run
+```
+If it's your first time running the site, or you want to rest all data in the
+database, run the following command with `FLASK_APP` and `FLASK_ENV` defined.
+```
+$ flask init-db
 ```
 
 # Working on this app
