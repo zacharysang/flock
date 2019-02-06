@@ -34,7 +34,7 @@ def create_app(test_config=None):
 
     # index page
     @app.route('/')
-    def get_index():
+    def index():
         return render_template('index.html')
 
 

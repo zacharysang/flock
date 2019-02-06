@@ -1,10 +1,10 @@
 -- Delete tables if they exist
-DROP TABLE IF EXISTS user;
+DROP TABLE IF EXISTS users;
 
 -- Create User table
-CREATE TABLE user (
+CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL
 );
 
