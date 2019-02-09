@@ -90,3 +90,23 @@ def register():
 
         flash(error)
     return render_template('auth/register.html')
+
+@bp.route('/logout', methods=('GET',))
+def logout():
+    """ Handles GET request to '/logout' route.
+    """
+    session.clear()
+    return redirect(url_for('index'))
+
+
+def auth_required(view):
+    """ Decorator for requiring authentication on other views
+    """
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            return redirect(url_for('auth.login'))
+        
+        return view(**kwargs)
+    
+    return wrapped_view 
