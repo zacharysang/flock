@@ -10,12 +10,23 @@ from flock_server.db import get_db
 
 bp = Blueprint('auth', __name__)
 
+@bp.before_app_request
+def load_logged_in_user():
+    """Loads the logged in user if the user id is set on the session."""
+    user_id = session.get('user_id')
+
+    if user_id is None:
+        g.user = None
+    else:
+        cursor = get_db().cursor()
+        g.user = cursor.execute(
+            'SELECT * FROM users WHERE id = ?', (user_id,)
+        ).fetchone()
+
 
 @bp.route('/login', methods=('GET', 'POST'))
 def login():
-    """
-    Handles GET and POST requests on the '/login' route
-    """
+    """Handles GET and POST requests on the '/login' route."""
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -52,9 +63,7 @@ def login():
 
 @bp.route('/register', methods=('GET', 'POST'))
 def register():
-    """
-    Handles GET and POST requests on the '/register' route
-    """
+    """Handles GET and POST requests on the '/register' route."""
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
