@@ -34,29 +34,40 @@ var express = require("express");           // web framework external module
 var serveStatic = require('serve-static');  // serve static files
 var socketIo = require("socket.io");        // web socket external module
 
+var easyrtc = require("easyrtc"); // EasyRTC internal module
+
+
+const APP_NAME = "flock-app";
+
+const MSG_TYPE_SIZE_CHECK = "size_check";
+
 // initialize dotenv variables
 dotenv.config();
-
-// This sample is using the easyrtc from parent folder.
-// To use this server_example folder only without parent folder:
-// 1. you need to replace this "require("../");" by "require("easyrtc");"
-// 2. install easyrtc (npm i easyrtc --save) in server_example/package.json
-
-var easyrtc = require("easyrtc"); // EasyRTC internal module
 
 // Set process name
 process.title = "node-easyrtc";
 
-// Setup and configure Express http server. Expect a subfolder called "static" to be the web root.
+// TODO allow this to be specified by the developer
+let minSize = 3;
+
+// Counter for size of cluster
+let size = 0;
+
 var app = express();
 
-app.use(express.static("static"));
+// this static server is for dev purposes only. In production, static assets will be served from the master
+app.use(express.static("test/flock-tests"));
+app.use("/static", express.static("../master/flock_server/static"));
 
+
+/*
 // configure https options
 //let options = {
 //    key: fs.readFileSync(process.env["KEY_PATH"]),
 //    cert: fs.readFileSync(process.env["CERT_PATH"])
 //};
+*/
+
 
 // Start Express http server on port 8080
 var webServer = http.createServer(app);
@@ -66,40 +77,82 @@ var socketServer = socketIo.listen(webServer, {"log level":1});
 
 easyrtc.setOption("logLevel", "debug");
 
-// Overriding the default easyrtcAuth listener, only so we can directly access its callback
-easyrtc.events.on("easyrtcAuth", function(socket, easyrtcid, msg, socketCallback, callback) {
-    easyrtc.events.defaultListeners.easyrtcAuth(socket, easyrtcid, msg, socketCallback, function(err, connectionObj){
-        if (err || !msg.msgData || !msg.msgData.credential || !connectionObj) {
-            callback(err, connectionObj);
-            return;
-        }
-
-        connectionObj.setField("credential", msg.msgData.credential, {"isShared":false});
-
-        console.log("["+easyrtcid+"] Credential saved!", connectionObj.getFieldValueSync("credential"));
-
-        callback(err, connectionObj);
-    });
-});
-
-// To test, lets print the credential to the console for every room join!
-easyrtc.events.on("roomJoin", function(connectionObj, roomName, roomParameter, callback) {
-    console.log("["+connectionObj.getEasyrtcid()+"] Credential retrieved!", connectionObj.getFieldValueSync("credential"));
-    easyrtc.events.defaultListeners.roomJoin(connectionObj, roomName, roomParameter, callback);
-});
-
 // Start EasyRTC server
-var rtc = easyrtc.listen(app, socketServer, null, function(err, rtcRef) {
-    console.log("Initiated");
-
-    rtcRef.events.on("roomCreate", function(appObj, creatorConnectionObj, roomName, roomOptions, callback) {
-        console.log("roomCreate fired! Trying to create: " + roomName);
-
-        appObj.events.defaultListeners.roomCreate(appObj, creatorConnectionObj, roomName, roomOptions, callback);
+var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
+    console.log("Initiated easyrtc server");
+    
+    pub.createApp(APP_NAME, null, () => {console.log(`Created application: ${APP_NAME}`)});
+    
+    //// overriding code goes here ////
+    easyrtc.events.on('getIceConfig', (connectionObj, next) => {
+    
+        // update size, signal when size reached, then run the default behavior
+        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {
+            // after connected, update cluster size
+            size++;
+            
+            console.log(`updated cluster size counter to: ${size}`);
+            
+            if (size >= minSize) {
+                
+                // send go-ahead to all connected nodes
+                pub.app(APP_NAME, (err, appObj) => {
+                    
+                    if (appObj) {
+                        
+                        appObj.getConnectionEasyrtcids((err, ids) => {
+                            
+                            ids.forEach((id) => {
+                                appObj.connection(id, (err, connection) => {
+                                   pub.events.emit('emitEasyrtcMsg', 
+                                                    connection,
+                                                    MSG_TYPE_SIZE_CHECK,
+                                                    {msgData: true}, (msg) => {},
+                                                    (err) => {
+                                                        if (err) {
+                                                            console.error(`Sending size check had errors: ${JSON.stringify(err)}`);
+                                                        }
+                                                    }) 
+                                });
+                            });
+                        });
+                    } else {
+                        console.error(`Error getting easyrtc appObj: ${JSON.stringify(err)}`);
+                    }
+                });
+            }
+            
+            // continue the lifecycle
+            next(null, connectionObj.getApp().getOption("appIceServers"));
+            
+        });
+        
     });
+    
+    // update the size and resume default behavior
+    easyrtc.events.on('disconnect', (connectionObj, next) => {
+        size--;
+        
+        console.log(`Updated cluster size counter to: ${size}`);
+        
+        // run the default behavior
+        easyrtc.events.defaultListeners.disconnect(connectionObj, next);
+    });
+    
+    // handle requests from clients (querying cluster state)
+    easyrtc.events.on('easyrtcMsg', (connectionObj, msg, socketCallback, next) => {
+        
+        if (msg.msgType === MSG_TYPE_SIZE_CHECK) {
+            socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: size >= minSize});
+        }
+        
+        // continue the chain
+        easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, next);
+    });
+    
+
 });
+
 
 // Listen on port 8080
-webServer.listen(4002, function () {
-    console.log('listening on http://localhost:4002');
-});
+webServer.listen(4002, function () { console.log('listening on http://localhost:4002'); });

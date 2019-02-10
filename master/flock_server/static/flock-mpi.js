@@ -281,6 +281,7 @@ mpi.ibcast = async function (data, root, comm) {
         // get list of other nodes to send
         let nodes = [...Array(await mpi.getSize(comm)).keys()].filter((val) => val !== root);
         
+        // TODO make this align with mpi.ibarrier (use map to vectorize sends)
         // send to other nodes
         let reqs = [];
         nodes.forEach((rank) => {

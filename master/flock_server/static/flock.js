@@ -1,15 +1,18 @@
-let APP_PATH = '/tests.js';
-
 // let a room represent a communication group
 // define MPI_COMM_WORLD as the default room
 let MPI_COMM_WORLD = "default";
 
 let MSG_TYPE_MSG = "message";
 let MSG_TYPE_ACK = "ack";
+let MSG_TYPE_SIZE_CHECK = "size_check";
 
 let EV_RCV_MSG = "receivedMessage";
 let EV_RCV_ACK = "receivedAck";
 
+// this must be synced with the same value in app.js
+let APP_NAME = "flock-app";
+
+// exported object
 let flock = {};
 
 // stores incoming messages by tag
@@ -18,9 +21,17 @@ let inbox = {};
 // connection status
 flock.isConnected = false;
 
-flock.initWorker = function() {
+/**
+ * Used to start an application on a volunteer's browser
+ * 
+ * @function flock.initWorker
+ * 
+ * @param {string} appPath - Absolute path of the flock app to run
+ * 
+ */
+flock.initWorker = function(appPath) {
     /* Code for talking to the WebWorker */
-    let worker = new Worker(APP_PATH);
+    let worker = new Worker(appPath);
     
     worker.onmessage = async function(ev) {
         
@@ -72,7 +83,7 @@ flock.acceptMessage = function(source, msgType, content) {
             inbox[content.tag] = [];
         }
         
-        console.log(`got message with ${(new Date()).getTime() - content.sendTime} ms of latency`);
+        console.log(`Got message with ${Date.now() - content.sendTime}ms of latency`);
         
         inbox[content.tag].push(content.data);
     
@@ -105,23 +116,17 @@ flock.consumeFromInbox = function(tag=null) {
     return inbox[tag].shift();
 }
 
-flock.joinSuccess = function(rtcId) {
-    console.log("successfully joined application with rtcId: " + rtcId);
-    window.rtcId = rtcId;
-    
-    // establish connection to other peers in the cluster
-    let peerCalls = flock.connectToPeers();
-    
-    // once all peers are called, update the isConnected att
-    peerCalls.then(() => {flock.isConnected = true; return;});
-}
-
-flock.joinFailure = function(errorCode, message) {
-    easyrtc.showError(errorCode, message);
-}
-
-// initialize client connections with the cluster
-flock.join = function() {
+/**
+ * 
+ * Initialize client connections with the rest of the cluster
+ * 
+ * @function
+ * @async
+ * 
+ * @returns {promise} joinState - Resolves if joined cluster successfully (rejects otherwise)
+ * 
+ */
+flock.join = async function() {
     
     easyrtc.enableDataChannels(true);
     
@@ -134,9 +139,36 @@ flock.join = function() {
     // register callback when message is received
     easyrtc.setPeerListener(flock.acceptMessage);
     
+    
+    // set up promise to return for join state
+    let joinSuccess;
+    let joinFailure;
+    
+    let joinStatus = new Promise((resolve, reject) => {
+        joinSuccess = function(rtcId) {
+            console.log(`Successfully joined application, ${APP_NAME} with rtcId: ${rtcId}`);
+            window.rtcId = rtcId;
+            
+            // establish connection to other peers in the cluster
+            let peerCalls = flock.connectToPeers();
+            
+            // once all peers are called, update the isConnected att
+            peerCalls.then(() => {flock.isConnected = true; resolve(); return;});
+        }
+        
+        joinFailure = function(errorCode, message) {
+            reject(message);
+            easyrtc.showError(errorCode, message);
+        }
+        
+    });
+    
+    // connect if not already connected
     if (!easyrtc.webSocket) {
-        easyrtc.connect("testapp", flock.joinSuccess, flock.joinFailure);
+        easyrtc.connect(APP_NAME, joinSuccess, joinFailure);
     }
+    
+    return joinStatus;
     
 }
 
@@ -168,11 +200,75 @@ flock.callPeer = function(peerId) {
                     easyrtc.showError(errorCode, errorText);
                 }
         );
-    } catch(callerror) {
-        console.log("saw call error ", callerror);
+    } catch(err) {
+        console.error(`Saw error during call: ${JSON.stringify(err)}`);
     }
     
     return res;
+}
+
+/**
+ * 
+ * Wait until the cluster reaches a given size
+ * 
+ * @async
+ * @function
+ * 
+ * @param {number} size - the required cluster size to wait for
+ * 
+ * @returns {Promise} A promise that resolves once the cluster has reached the desired size
+ * 
+ */
+flock.awaitClusterSize = async function(size) {
+    
+    let ret;
+    
+    // check the current size of the cluster
+    let sizeReq = new Promise((resolve, reject) => {
+        easyrtc.sendServerMessage("size_check", null, (msgType, msgData) => {
+            if (msgType === MSG_TYPE_SIZE_CHECK) {
+               resolve(msgData);
+            }
+        }, (errCode, errMsg) => {
+            reject(`Failed to retrieve cluster size from server. Message: ${errCode} - ${errMsg}`);
+        });
+    });
+    
+    
+    if (await sizeReq === true) {
+        ret = Promise.resolve();
+    } else {
+        console.log(`Waiting for cluster to reach minimum size`);
+    
+        ret =  new Promise((resolve, reject) => {
+            
+            easyrtc.setServerListener((msgType, msgData, targeting) => {
+                
+                // check if this message is an update on cluster size
+                if (msgType == MSG_TYPE_SIZE_CHECK && msgData === true) {
+                    resolve();
+                }
+            });
+            
+            
+        })
+        .then(() => {
+            // remove the listener
+            easyrtc.setServerListener(undefined);
+        });
+        
+    }
+    
+    return ret.then(() => {
+        
+                console.log(`Reached minimum cluster size. Settling...`);
+        
+                // set up a settling period
+                return new Promise((resolve, reject) => {
+                    setTimeout(resolve, 10000);
+                });
+            });
+    
 }
 
 // get the current node's rank in the given communication group
@@ -217,7 +313,7 @@ flock.getId = function(comm, rank) {
     
     let destId = flock.getId(comm, dest);
     
-    // TODO utilize the callback on this function
+    // TODO utilize the callback on this function for acknowledgement (instead of event listener)
     easyrtc.sendData(flock.getId(comm, dest), MSG_TYPE_MSG, msg, ()=>{});
     
     let resolveOnAck;
@@ -287,3 +383,8 @@ flock.getId = function(comm, rank) {
     return res.then(flock.ackMsgFunc(comm, source, tag));
     
  }
+ 
+ 
+ flock.join()
+        .then(flock.awaitClusterSize)
+        .then(() => flock.initWorker(window.APP_PATH))
