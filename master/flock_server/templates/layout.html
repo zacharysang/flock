@@ -17,14 +17,16 @@
         <li><a href="{{ url_for('auth.login') }}">Log In</a>
       {% endif %}
     </ul>
-  <nav>
+  </nav>
   <body>
     <!-- Flash messages that we have -->
     {% for message in get_flashed_messages() %}
       <div class="flash">{{ message }}</div>
     {% endfor %}
+
     <!-- Content will go here -->
     <div id="content">{% block content %}{% endblock %}</div>
+
     <div id="footer">
       {% block footer %}
       &copy; Copyright 2019. <a href="https://github.com/zacharysang/flock">Github</a>
