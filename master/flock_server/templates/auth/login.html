@@ -1,30 +1,21 @@
 <!doctype html>
 {% extends "layout.html" %}
-{% block title %}Login/Register{% endblock %}
+{% block title %}Login{% endblock %}
 {% block content %}
-  <h1> Login/Register </h1>
-  Welcome to Flock. Sign up or log in on this page.
+  <h1> Login </h1>
+  Welcome to Flock. Log in on this page.
   <div id="login">
     <!-- Form for exiting users to log in -->
     <h2>Existing Users Log In Here</h2>
     <form id="login-form" action="login" method="post">
-      <input class="generic-entry" type="text" name="email" placeholder="Email">
+      <label for="email">Email</label>
+      <input class="generic-entry" type="text" name="email" placeholder="Email"
+        required>
+      <label for="password">Password</label>
       <input class="generic-entry" type="password" name="password"
-          placeholder="Password">
+          placeholder="Password" required>
       <input class="submit" type="submit"  name="login-submit" value="Log In">
     </form>
+    Need an acount? <a href='/register'>Click here to register.</a>
   </div>
-  <div id="register">
-    <!-- Form for new users to create an account -->
-    <h2>New Users Create Account Here</h2>
-    <form id="register-form" action="register" method="post">
-      <input class="generic-entry" type="text" name="email" placeholder="Email">
-      <input class="generic-entry" type="password" name="password"
-          placeholder="Password">
-      <input class="generic-entry" type="password" name="confirm-password"
-          placeholder="Confirm Password">
-      <input class="submit" type="submit" name="register" value="Register">
-    </form>
-  </div>
-  <p/>
 {% endblock %}

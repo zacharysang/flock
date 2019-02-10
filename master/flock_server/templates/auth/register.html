@@ -1,0 +1,24 @@
+<!doctype html>
+{% extends "layout.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+  <h1> Register </h1>
+  Welcome to Flock. Sign up on this page.
+  <div id="register">
+    <!-- Form for new users to create an account -->
+    <h2>New Users Create Account Here</h2>
+    <form id="register-form" action="register" method="post">
+      <label for="email">Email</label>
+      <input class="generic-entry" type="text" name="email" placeholder="Email"
+        required>
+      <label for="password">Password</label>
+      <input class="generic-entry" type="password" name="password"
+          placeholder="Password" required>
+      <label for="confirm-password">Confirm Password</label>
+      <input class="generic-entry" type="password" name="confirm-password"
+          placeholder="Confirm Password" required>
+      <input class="submit" type="submit" name="register" value="Register">
+    </form>
+    Already have an account? <a href="/login">Click here to login.</a>
+  </div>  
+{% endblock %}
