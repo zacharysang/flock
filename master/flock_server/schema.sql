@@ -17,6 +17,7 @@ CREATE TABLE projects (
   source_url TEXT NOT NULL,
   deployment_url TEXT NOT NULL,
   approval_status INTEGER NOT NULL DEFAULT 0,
+  description TEXT,
   owner_id INTEGER NOT NULL,
   FOREIGN KEY (owner_id) REFERENCES users (id)
 );
