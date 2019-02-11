@@ -119,3 +119,19 @@ def auth_required(view):
         return view(**kwargs)
     
     return wrapped_view 
+
+def super_user_permissions_required(view):
+    """ Decorator for requiring super users permissions on other views
+    """
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None:
+            return redirect(url_for('auth.login'))
+
+        if g.user['super_user'] is False:
+            flash('Must be a super user to access this page')
+            return redirect(url_for('index'))
+
+        return view(**kwargs)
+        
+    return wrapped_view
