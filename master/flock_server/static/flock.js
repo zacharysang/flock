@@ -1,19 +1,28 @@
 // let a room represent a communication group
 // define MPI_COMM_WORLD as the default room
-let MPI_COMM_WORLD = "default";
+const MPI_COMM_WORLD = "default";
 
-let MSG_TYPE_MSG = "message";
-let MSG_TYPE_ACK = "ack";
-let MSG_TYPE_SIZE_CHECK = "size_check";
+const MSG_TYPE_MSG = "message";
+const MSG_TYPE_ACK = "ack";
+const MSG_TYPE_SIZE_CHECK = "size_check";
+const MSG_TYPE_GET_RANK = "get_rank";
+const MSG_TYPE_GET_ID = "get_easyrtcid";
 
-let EV_RCV_MSG = "receivedMessage";
-let EV_RCV_ACK = "receivedAck";
+const EV_RCV_MSG = "receivedMessage";
+const EV_RCV_ACK = "receivedAck";
 
-// this must be synced with the same value in app.js
+// this must be synced with the same value in app.js (populated by template?)
 let APP_NAME = "flock-app";
 
 // exported object
 let flock = {};
+
+// cache for the rank of this node
+flock.rank = {};
+
+// cache for rank <-> easyrtc mappings of other nodes
+flock.easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
+
 
 // stores incoming messages by tag
 let inbox = {};
@@ -40,13 +49,13 @@ flock.initWorker = function(appPath) {
         // switch on the type of function and respond to worker
         switch (ev.data.op) {
             case 'getId':
-                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getId(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.getId(...ev.data.args)});
                 break;
             case 'getRank':
-                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getRank(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.getRank(...ev.data.args)});
                 break;
             case 'getSize':
-                worker.postMessage({key: ev.data.key, op: ev.data.op, value: flock.getSize(...ev.data.args)});
+                worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.getSize(...ev.data.args)});
                 break;
             case 'isend':
                 worker.postMessage({key: ev.data.key, op: ev.data.op, value: await flock.isend(...ev.data.args)});
@@ -102,8 +111,9 @@ flock.acceptMessage = function(source, msgType, content) {
 }
 
 flock.ackMsgFunc = function(comm, source, tag) {
-    let sourceId = flock.getId(comm, source);
-    return function(val) {
+    return async function(val) {
+        
+        let sourceId = await flock.getId(comm, source);
         
         easyrtc.sendData(sourceId, MSG_TYPE_ACK, {tag: tag, data: {status: 200, msg: "Received"}}, ()=>{});
         
@@ -225,12 +235,13 @@ flock.awaitClusterSize = async function(size) {
     
     // check the current size of the cluster
     let sizeReq = new Promise((resolve, reject) => {
-        easyrtc.sendServerMessage("size_check", null, (msgType, msgData) => {
+        easyrtc.sendServerMessage(MSG_TYPE_SIZE_CHECK, null,
+        (msgType, msgData) => {
             if (msgType === MSG_TYPE_SIZE_CHECK) {
                resolve(msgData);
             }
         }, (errCode, errMsg) => {
-            reject(`Failed to retrieve cluster size from server. Message: ${errCode} - ${errMsg}`);
+            reject(new Error(`Failed to retrieve cluster size from server : ${errCode} - ${errMsg}`));
         });
     });
     
@@ -260,8 +271,8 @@ flock.awaitClusterSize = async function(size) {
     }
     
     return ret.then(() => {
-        
-                console.log(`Reached minimum cluster size. Settling...`);
+   
+                console.log(`Reached minimum cluster size. Settling peer connections...`);
         
                 // set up a settling period
                 return new Promise((resolve, reject) => {
@@ -272,10 +283,30 @@ flock.awaitClusterSize = async function(size) {
 }
 
 // get the current node's rank in the given communication group
-flock.getRank = function(comm) {
-    let occupants = easyrtc.getRoomOccupantsAsArray(comm) || [];
+flock.getRank = async function(comm) {
     
-    return occupants.sort().indexOf(window.rtcId);;
+    // check for cached rank value
+    if (flock.rank[comm]) {
+        return Promise.resolve(flock.rank[comm]);
+    } else {
+        
+        return new Promise((resolve, reject) => {
+            easyrtc.sendServerMessage(MSG_TYPE_GET_RANK, {comm: comm, id: easyrtc.myEasyrtcid},
+            (msgType, msgData) => {
+                if (MSG_TYPE_GET_RANK === msgType) {
+                    
+                    // rank is received from server as a string to prevent cast of 0 to boolean 'false'
+                    let rank = parseInt(msgData);
+                    
+                    flock.rank[comm] = rank;
+                    
+                    resolve(rank);
+                }
+            }, (errCode, errMessage) => {
+                reject(new Error(`Failed to get rank : ${errCode} - ${errMessage}`));
+            });
+        });
+    }
 }
 
 // get the size of the given communication group
@@ -287,14 +318,27 @@ flock.getSize = function(comm) {
 }
 
 // get rtcId from rank
-flock.getId = function(comm, rank) {
+// TODO change name to idFromRank
+flock.getId = async function(comm, rank) {
     
-    // temporary while only using global communication group
-    // will need to change id setup so that terminated nodes are replaced
-    // and continued nodes done change rank
-    let occupants = easyrtc.getRoomOccupantsAsArray(comm) || [];
+    if (flock.easyrtcIdByRank[comm][rank]) {
+        return Promise.resolve(flock.easyrtcIdByRank[comm][rank]);
+    } else {
+        return new Promise((resolve, reject) => {
+            easyrtc.sendServerMessage(MSG_TYPE_GET_ID, {comm, rank},
+            (msgType, msgData) => {
+                if (MSG_TYPE_GET_ID === msgType) {
+                    
+                    flock.easyrtcIdByRank[comm][rank] = msgData;
+                    
+                    resolve(msgData);
+                } 
+            }, (errCode, errMessage) => {
+                reject(new Error(`Failed to get easyrtcid : ${errCode} - ${errMessage}`));
+            });
+        });
+    }
     
-    return (occupants.sort())[rank];
 }
 
 // non-blocking send from to another node
@@ -305,16 +349,16 @@ flock.getId = function(comm, rank) {
     @param tag : tag of number type
     @param comm : the communication group to send array over
  */
- flock.isend = function(data, dest, comm, tag=null) {
+ flock.isend = async function(data, dest, comm, tag=null) {
     
     // TODO check that destination rank is valid
     let now = (new Date()).getTime();
     let msg = {tag: tag, data: data, sendTime: now};
     
-    let destId = flock.getId(comm, dest);
+    let destId = await flock.getId(comm, dest);
     
     // TODO utilize the callback on this function for acknowledgement (instead of event listener)
-    easyrtc.sendData(flock.getId(comm, dest), MSG_TYPE_MSG, msg, ()=>{});
+    easyrtc.sendData(destId, MSG_TYPE_MSG, msg, ()=>{});
     
     let resolveOnAck;
     
@@ -343,12 +387,12 @@ flock.getId = function(comm, rank) {
     @param tag : a tag of number type
     @param comm : the communication group to receive over
  */
- flock.irecv = function(source, comm, tag=null) {
+flock.irecv = async function(source, comm, tag=null) {
      
     // TODO check that source rank is valid
     
     // convert source rank to id
-    let sourceId = flock.getId(comm, source);
+    let sourceId = await flock.getId(comm, source);
     
     let res;
     

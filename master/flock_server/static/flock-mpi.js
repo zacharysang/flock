@@ -248,12 +248,14 @@ mpi.ibarrier = async function (comm) {
     
     let res;
     if (rank === 0) {
+        
         let others = nodes.filter((node) => node !== 0);
         let reqs = others.map((node) => _isend(TAG, node, comm, TAG));
         
         res = Promise.all(reqs);
         
     } else {
+        
         res = _irecv(0, comm, TAG);
     }
     
