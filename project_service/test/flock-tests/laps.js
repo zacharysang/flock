@@ -38,12 +38,12 @@ async function main() {
         a = next;
         
         console.log(`going into barrier with new 'a' value: ${a}`);
+
         
         // sync nodes
         await mpi.ibarrier('default');
         
         console.log(`got out of barrier with new 'a' value: ${a}`);
-        
     }
 }
 

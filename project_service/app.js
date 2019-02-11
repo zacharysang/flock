@@ -46,6 +46,7 @@ const MSG_TYPE_GET_RANK = "get_rank";
 const MSG_TYPE_SIZE_CHECK = "size_check";
 const MSG_TYPE_GET_ID = "get_easyrtcid";
 
+
 // initialize dotenv variables
 dotenv.config();
 
@@ -92,13 +93,12 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     pub.createApp(APP_NAME, null, () => {console.log(`Created application: ${APP_NAME}`)});
     
     //// overriding code goes here ////
-    
+  
     // getIceConfig occurs when a node is connected and requests access to the p2p network
     easyrtc.events.on('getIceConfig', (connectionObj, next) => {
     
         // update size, signal when size reached, then run the default behavior
-        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {
-            
+        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {      
             // assign an rank to this connection in the WORLD communication group
             let id = connectionObj.getEasyrtcid();
             easyrtcIdByRank[MPI_COMM_WORLD][size] = id;
@@ -180,9 +180,7 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
         // continue the chain
         easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, next);
     });
-    
 });
-
 
 // Listen on port 8080
 webServer.listen(4002, function () { console.log('listening on http://localhost:4002'); });

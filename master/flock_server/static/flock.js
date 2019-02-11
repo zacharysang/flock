@@ -271,7 +271,7 @@ flock.awaitClusterSize = async function(size) {
     }
     
     return ret.then(() => {
-        
+   
                 console.log(`Reached minimum cluster size. Settling peer connections...`);
         
                 // set up a settling period
