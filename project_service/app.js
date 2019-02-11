@@ -39,7 +39,12 @@ var easyrtc = require("easyrtc"); // EasyRTC internal module
 
 const APP_NAME = "flock-app";
 
+const MPI_COMM_WORLD = "default";
+
+// these must match the message type constants in flock.js
+const MSG_TYPE_GET_RANK = "get_rank";
 const MSG_TYPE_SIZE_CHECK = "size_check";
+const MSG_TYPE_GET_ID = "get_easyrtcid";
 
 // initialize dotenv variables
 dotenv.config();
@@ -52,6 +57,9 @@ let minSize = 3;
 
 // Counter for size of cluster
 let size = 0;
+
+// map id to ranks
+let easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
 
 var app = express();
 
@@ -84,14 +92,21 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     pub.createApp(APP_NAME, null, () => {console.log(`Created application: ${APP_NAME}`)});
     
     //// overriding code goes here ////
+    
+    // getIceConfig occurs when a node is connected and requests access to the p2p network
     easyrtc.events.on('getIceConfig', (connectionObj, next) => {
     
         // update size, signal when size reached, then run the default behavior
         easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {
+            
+            // assign an rank to this connection in the WORLD communication group
+            let id = connectionObj.getEasyrtcid();
+            easyrtcIdByRank[MPI_COMM_WORLD][size] = id;
+            
             // after connected, update cluster size
             size++;
             
-            console.log(`updated cluster size counter to: ${size}`);
+            console.log(`Updated cluster size counter to: ${size}`);
             
             if (size >= minSize) {
                 
@@ -129,7 +144,8 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
         
     });
     
-    // update the size and resume default behavior
+    // Disconnect occurs when the socket connection is closed
+    // On disconnect, update the size and resume default behavior
     easyrtc.events.on('disconnect', (connectionObj, next) => {
         size--;
         
@@ -146,11 +162,25 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
             socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: size >= minSize});
         }
         
+        if (msg.msgType === MSG_TYPE_GET_RANK) {
+            let commMap = easyrtcIdByRank[msg.msgData.comm];
+            
+            // Object.keys converts key to string, parse it back to a number
+            let rank = Object.keys(commMap).find((key) => commMap[key] === msg.msgData.id);
+            
+            socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: rank})
+        }
+        
+        if (msg.msgType === MSG_TYPE_GET_ID) {
+            let id = easyrtcIdByRank[msg.msgData.comm][msg.msgData.rank];
+            
+            socketCallback({msgType: MSG_TYPE_GET_ID, msgData: id});
+        }
+        
         // continue the chain
         easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, next);
     });
     
-
 });
 
 
