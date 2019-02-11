@@ -1,0 +1,14 @@
+<!doctype html>
+{% extends "layout.html" %}
+{% block title %}Moderator Queue{% endblock %}
+{% block content %}
+  <h1>Moderator Queue</h1>
+  <div id="queue">
+  {% for project in projects %}
+    <div id="queue-item">
+      <p> {{ project.name }}</p> 
+    </div> 
+  {% endfor %}  
+  </div>
+{% endblock %}
+
