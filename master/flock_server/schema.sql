@@ -1,5 +1,6 @@
 -- Delete tables if they exist
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS projects;
 
 -- Create User table
 CREATE TABLE users (
@@ -9,4 +10,14 @@ CREATE TABLE users (
   super_user BOOLEAN DEFAULT false
 );
 
+-- Create project table
+CREATE TABLE projects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  source_url TEXT NOT NULL,
+  deployment_url TEXT NOT NULL,
+  approval_status INTEGER NOT NULL DEFAULT 0,
+  owner_id INTEGER NOT NULL,
+  FOREIGN KEY (owner_id) REFERENCES users (id)
+);
 
