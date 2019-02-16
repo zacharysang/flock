@@ -1,4 +1,5 @@
 import functools
+from enum import Enum
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
@@ -9,12 +10,24 @@ from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__)
 
+class ApprovalStatus(Enum):
+    WAITING=0
+    APPROVED=1
+
 @bp.route('/queue')
 def queue():
     """Shows currently queued projects.
     """
 
-    return render_template('host/queue.html')
+    # setup the database
+    db = get_db()
+    cursor = db.cursor()
+    
+    projects = cursor.execute(
+        'SELECT * FROM projects where approval_status=(?);',
+        (ApprovalStatus.WAITING.value,)).fetchall()
+
+    return render_template('host/queue.html', projects=projects)
 
 
 @bp.route('/submit', methods=('GET', 'POST'))

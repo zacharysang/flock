@@ -6,7 +6,9 @@
   <div id="queue">
   {% for project in projects %}
     <div id="queue-item">
-      <p> {{ project.name }}</p> 
+      <span>{{ project['name'] }}</span>
+      <span><a href={{ project['source_url'] }}>Source Link</a></span>
+      <span>{{ project['description'] }}</span> 
     </div> 
   {% endfor %}  
   </div>
