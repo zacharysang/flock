@@ -8,7 +8,7 @@ from flask import (
 from flock_server.db import get_db
 from flock_server.auth import auth_required, super_user_permissions_required
 
-bp = Blueprint('host', __name__)
+bp = Blueprint('host', __name__, url_prefix='/host')
 
 class ApprovalStatus(Enum):
     WAITING=0
@@ -18,7 +18,6 @@ class ApprovalStatus(Enum):
 def queue():
     """Shows currently queued projects.
     """
-
     # setup the database
     db = get_db()
     cursor = db.cursor()
@@ -28,6 +27,18 @@ def queue():
         (ApprovalStatus.WAITING.value,)).fetchall()
 
     return render_template('host/queue.html', projects=projects)
+
+@bp.route('/<int:id>/approve')
+def approve(id):
+    """Approves the id of the projct
+    """ 
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        'UPDATE projects SET approval_status=(?) WHERE id=(?)',
+        (ApprovalStatus.APPROVED.value, id,))
+    db.commit()
+    return redirect(url_for('host.queue'))
 
 
 @bp.route('/submit', methods=('GET', 'POST'))
