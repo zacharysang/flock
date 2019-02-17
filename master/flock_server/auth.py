@@ -128,7 +128,7 @@ def super_user_permissions_required(view):
         if g.user is None:
             return redirect(url_for('auth.login'))
 
-        if g.user['super_user'] is False:
+        if g.user['super_user'] == 'false':
             flash('Must be a super user to access this page')
             return redirect(url_for('index'))
 

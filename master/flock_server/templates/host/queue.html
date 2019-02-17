@@ -9,6 +9,8 @@
       <span>{{ project['name'] }}</span>
       <span><a href={{ project['source_url'] }}>Source Link</a></span>
       <span>{{ project['description'] }}</span> 
+      <span><a href={{ url_for('host.approve', id=project['id']) }}>Approve</a>
+          </span
     </div> 
   {% endfor %}  
   </div>

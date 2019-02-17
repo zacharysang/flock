@@ -15,6 +15,8 @@ class ApprovalStatus(Enum):
     APPROVED=1
 
 @bp.route('/queue')
+@auth_required
+@super_user_permissions_required
 def queue():
     """Shows currently queued projects.
     """
@@ -29,6 +31,8 @@ def queue():
     return render_template('host/queue.html', projects=projects)
 
 @bp.route('/<int:id>/approve')
+@auth_required
+@super_user_permissions_required
 def approve(id):
     """Approves the id of the projct
     """ 
