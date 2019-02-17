@@ -82,3 +82,32 @@ def submit_project():
         flash(error)
 
     return render_template('host/submit.html')
+
+@bp.route('/<int:id>')
+@auth_required
+def detail(id):
+    """Shows details of project for given id.
+    """
+    # setup the database
+    db = get_db()
+    cursor = db.cursor()
+
+    # Get the project 
+    project = cursor.execute(
+        'SELECT * FROM projects WHERE id=(?)',
+        (id,)
+    ).fetchone()
+
+    # Check that this user can view the project
+    if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
+        # The current user doesn't own this project, don't show it to them
+        flash('You don\'t have permissions to view this project')
+        return url_for('index')
+
+    # Set the status variable to string representation
+    project_status = ApprovalStatus.WAITING.name
+    if project['approval_status'] == ApprovalStatus.APPROVED.value:
+        project_status = ApprovalStatus.APPROVED.name
+
+    return render_template('host/detail.html', project=project,
+                           project_status=project_status)

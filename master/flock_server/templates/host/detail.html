@@ -1,0 +1,15 @@
+<!doctype html>
+{% extends "layout.html" %}
+{% block title %}{{ project['name'] }}{% endblock %}
+{% block content %}
+  <h1>Project Details</h1>
+  <div id="project-detail">
+    <h2>Name: {{ project['name'] }}</h2>
+    <h3>Source URL: <a href={{ project['source_url']}}>
+        {{ project['source_url'] }}</a></h3>
+    <h3>Description:</h3>
+    <p> {{ project['description'] }}</p>
+    <h4>Status: {{ project_status }}</h4>
+  </div>
+{% endblock %}
+
