@@ -49,4 +49,8 @@ def create_app(test_config=None):
     from . import work
     app.register_blueprint(work.bp)
 
+    # hosting module
+    from . import host
+    app.register_blueprint(host.bp)
+
     return app

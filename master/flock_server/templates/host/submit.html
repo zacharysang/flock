@@ -1,0 +1,22 @@
+<!doctype html>
+{% extends "layout.html" %}
+{% block title %}Submit a Project{% endblock %}
+{% block content %}
+  <h1>Submit a Project</h1>
+  <div id="submit-project">
+    <!-- form for users to submit projects -->
+    <form id="submit-projet-form" action="submit" method="post">
+      <label for="name">Project Name</label>
+      <input class="generic-entry" type="text" name="name"
+          placeholder="My Project" required>
+      <label for="source-url">Source Code URL</label>
+      <input class="generic-entry" type="text" name="source-url"
+          placeholder="https://github.com/me/project" required>
+      <label for="description">Description</label>
+      <input class="generic-entry" type="text" name="description"
+          placeholder="This project is for...">
+
+      <input class="submit" type="submit" name="project-submit" value="Submit">
+    </form>
+  </div>
+{% endblock %}
