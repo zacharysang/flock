@@ -31,6 +31,23 @@ database, run the following command with `FLASK_APP` and `FLASK_ENV` defined.
 $ flask init-db
 ```
 
+# Generate a module for distribution
+To register the module locally, run:
+```
+$ pip install -e .
+```
+
+# Testing
+To run tests, with the environment variables from above set, the virtual env
+activated, and the package registered locally run:
+```
+$ pytest
+```
+To run a coverage report, run:
+```
+$ coverage run -m pytest
+```
+
 # Working on this app
 This app is written in Flask.
  [Their documentation can be found here](http://flask.pocoo.org/docs/1.0/).
