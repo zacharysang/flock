@@ -51,3 +51,12 @@ class AuthActions(object):
 @pytest.fixture
 def auth(client):
     return AuthActions(client)
+
+def test_index(client, auth):
+    response = client.get('/')
+    assert b'Log In' in response.data
+    assert b'Register' in response.data
+
+    auth.login()
+    response = client.get('/')
+    assert b'Log Out' in response.data
