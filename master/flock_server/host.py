@@ -102,7 +102,7 @@ def detail(id):
     if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
         # The current user doesn't own this project, don't show it to them
         flash('You don\'t have permissions to view this project')
-        return url_for('index')
+        return redirect(url_for('index'))
 
     # Set the status variable to string representation
     project_status = ApprovalStatus.WAITING.name
