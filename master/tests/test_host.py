@@ -93,3 +93,9 @@ def test_approve(client, auth, app):
 def test_queue(client, auth):
     auth.login_super()
     assert client.get('/host/queue').status_code == 200
+
+def test_detail(client, auth):
+    auth.login()
+    response = client.get('/host/1')
+    assert response.status_code == 200
+    assert b'WAITING' in response.data 
