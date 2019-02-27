@@ -45,6 +45,9 @@ class AuthActions(object):
             data={'email': email, 'password': password}
         )
 
+    def login_super(self):
+        return self.login('test-super@email.com', 'test')
+
     def logout(self):
         return self._client.get('/logout')
 
