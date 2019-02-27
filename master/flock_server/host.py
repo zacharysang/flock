@@ -2,7 +2,8 @@ import functools
 from enum import Enum
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for,
+    abort
 )
 
 from flock_server.db import get_db
@@ -98,11 +99,14 @@ def detail(id):
         (id,)
     ).fetchone()
 
+    if project is None:
+        abort(404, "Project does not exist")
+
     # Check that this user can view the project
     if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
         # The current user doesn't own this project, don't show it to them
         flash('You don\'t have permissions to view this project')
-        return url_for('index')
+        return redirect(url_for('index'))
 
     # Set the status variable to string representation
     project_status = ApprovalStatus.WAITING.name

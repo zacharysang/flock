@@ -1,0 +1,4 @@
+include flock_server/schema.sql
+graft flock_server/static
+graft flock_server/templates
+global-exclude *.pyc
