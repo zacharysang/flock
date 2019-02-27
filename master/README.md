@@ -47,6 +47,10 @@ To run a coverage report, run:
 ```
 $ coverage run -m pytest
 ```
+To generate the coverage report, run:
+```
+$ coverage html
+```
 
 # Working on this app
 This app is written in Flask.
