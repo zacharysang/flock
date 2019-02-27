@@ -27,10 +27,12 @@ POSSIBILITY OF SUCH DAMAGE.
 // Load required modules
 let dotenv = require('dotenv');
 let fs = require('fs');
+let uid = require('uid-safe').sync
 
 var http    = require("http");              // http server core module
 let https    = require("https");
 var express = require("express");           // web framework external module
+var session = require("express-session");
 var serveStatic = require('serve-static');  // serve static files
 var socketIo = require("socket.io");        // web socket external module
 
@@ -64,6 +66,17 @@ let easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
 
 var app = express();
 
+// TODO for production, use a real session store (default is a naive in-memory store) (see the 'store' option)
+// Note: easyrtc requires 'httpOnly = false' so that cookies are visible to easyrtc via JS
+// this is a security risk, because it means the session id can be accessed during an XSS attack
+app.use(session({
+    name: 'easyrtcsid',
+    resave: false,
+    saveUninitialized: true,
+    secret: process.env["SESSION_SECRET"],
+    cookie: {httpOnly: false}
+}));
+
 // this static server is for dev purposes only. In production, static assets will be served from the master
 app.use(express.static("test/flock-tests"));
 app.use("/static", express.static("../master/flock_server/static"));
@@ -86,6 +99,11 @@ var socketServer = socketIo.listen(webServer, {"log level":1});
 
 easyrtc.setOption("logLevel", "debug");
 
+// session options
+easyrtc.setOption("sessionEnable", true);
+easyrtc.setOption("sessionCookieEnable", true);
+easyrtc.setOption("easyrtcsidRegExp", /^[a-z0-9_.%-]{1,100}$/i); // support cookies signed by express-session
+
 // Start EasyRTC server
 var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     console.log("Initiated easyrtc server");
@@ -93,12 +111,11 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     pub.createApp(APP_NAME, null, () => {console.log(`Created application: ${APP_NAME}`)});
     
     //// overriding code goes here ////
-  
+    
     // getIceConfig occurs when a node is connected and requests access to the p2p network
     easyrtc.events.on('getIceConfig', (connectionObj, next) => {
-    
         // update size, signal when size reached, then run the default behavior
-        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {      
+        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {
             // assign an rank to this connection in the WORLD communication group
             let id = connectionObj.getEasyrtcid();
             easyrtcIdByRank[MPI_COMM_WORLD][size] = id;
@@ -136,7 +153,7 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
                     }
                 });
             }
-            
+
             // continue the lifecycle
             next(null, connectionObj.getApp().getOption("appIceServers"));
             
@@ -157,7 +174,7 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     
     // handle requests from clients (querying cluster state)
     easyrtc.events.on('easyrtcMsg', (connectionObj, msg, socketCallback, next) => {
-        
+
         if (msg.msgType === MSG_TYPE_SIZE_CHECK) {
             socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: size >= minSize});
         }
