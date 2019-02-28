@@ -1,0 +1,11 @@
+# This is an example configuration file. For deployment, this should be created
+# or copied to the instance folder of the deployment
+# In development, that should be `instance/config.py`
+# (same level as flock_server)
+# in production, that is in the virtual environment
+# `venv/var/flock_server-instance/config.py
+SECRET_KEY = # Secret Key value
+FLOCK_VPC_ID = # Flock VPC ID
+FLOCK_SECURITY_GROUP_ID = # Flock Security Group ID
+FLOCK_SUBNET_1_ID = # flock subnet 1 id
+FLOCK_SUBNET_2_ID = # flock subnet 2 id

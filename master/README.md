@@ -94,6 +94,10 @@ database, run the following command with `FLASK_APP` and `FLASK_ENV` defined.
 ```
 $ flask init-db
 ```
+After the project has been run once, you can setup configuration variables.
+Using the generated `instance/` folder, which is likely in the folder next to
+`flock_server/`, copy `config.py.example` as `config.py`. Fill in values using
+the generated AWS values.
 
 # Generate a module for distribution
 To register the module locally, run:
