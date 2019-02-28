@@ -62,6 +62,7 @@ This outputs three important pieces of information that need recorded for later.
 $ aws ec2 create-security-group --group-name "flock-sg" --description "Flock Security Group" --vpc-id <VPC ID>
 ```
 This will output a security group ID, save it.
+
 5. Authorize the security group
 ```
 $ aws ec2 authorize-security-group-ingress --group-id <Security Group ID> --protocol tcp --port 80 --cidr 0.0.0.0/0
@@ -75,7 +76,8 @@ $ ecs-cli down --force --cluster-config ecs-flock
 ``` 
 Occasionally the cluster shutdown process is slow or fails. If this is the case,
 it could be a resource deadlock. I've resolved it using the UI and typically
-deleting the VPC or security group stopping the block.
+deleting the VPC or security group stopping the delete. The cloud formation
+console has useful information to figure out the problem.
 
 
 # Running
