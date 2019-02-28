@@ -3,6 +3,9 @@ This directory is home to the master service of flock.
 Setup and usage instructions are forthcoming...
 
 # Setup
+## Python
+The actual webserver is written in python. For everything but project
+deployment, it can be sufficient to only do this portion.
 First setup a virtual environment using `python3` (which might just be `python`
 on your system). Then install the necessary requirements
 
@@ -15,6 +18,26 @@ $ source venv/bin/activate
 ```
 See the below section on running in a development environment for creating
 a database.
+
+## AWS Setup
+Because this project interfaces with AWS cli's, it's necessary to install a
+few AWS tools. First install the [AWS CLI]()
+and the [ECS CLI](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_installation.html).
+
+This project requires a dedicated IAM user for a secret key and ID.
+That user needs to have the Policy `AmazonECSTaskExecutionRolePolicy`.
+If I can reduce the needed permissions, I'll document that here.
+
+You'll also need a second AWS IAM user with more thorough permissions for the
+initial configuration steps. I user my full power personal account to do this.
+These steps will be runnable from any machine, so it is possible to run them
+from a development machine and avoid having these credentials ever touch the
+production environment. Initial configuration steps also require the
+[AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html).
+
+### Configuring Fargate Cluster
+Containers deployed from the flock_server application will be deployed to
+a fargate cluster you define by following these steps. 
 
 # Running
 ## Development
