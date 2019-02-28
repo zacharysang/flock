@@ -39,6 +39,45 @@ production environment. Initial configuration steps also require the
 Containers deployed from the flock_server application will be deployed to
 a fargate cluster you define by following these steps. 
 
+1. Configure a user for your management. This is the high privilege user.
+```
+$ export AWS_ACCESS_KEY_ID=<your key id>
+$ export AWS_SECRET_ACCESS_KEY=<your key>
+$ ecs-cli configure profile --profile-name <profile_name> --access-key $AWS_ACCESS_KEY_ID --secrete-key $AWS_SECRET_ACCESS_KEY
+```
+2. Setup a cluster config
+```
+$ ecs-cli configure --region us-east-1 --cluster ecs-flock --default-launch-type FARGATE --config-name ecs-flock
+```
+3. Bring the cluster up
+```
+$ ecs-cli up --ecs-profile <profile_name> --cluster ecs-flock
+``` 
+This outputs three important pieces of information that need recorded for later.
+* VPC ID
+* Subnet1 ID
+* Subnet2 ID
+4. Using the VPC ID, create a security group
+```
+$ aws ec2 create-security-group --group-name "flock-sg" --description "Flock Security Group" --vpc-id <VPC ID>
+```
+This will output a security group ID, save it.
+5. Authorize the security group
+```
+$ aws ec2 authorize-security-group-ingress --group-id <Security Group ID> --protocol tcp --port 80 --cidr 0.0.0.0/0
+```
+The cluster should now be operational.
+
+#### Shutting down
+If needed, shut down the cluster using the following command.
+```
+$ ecs-cli down --force --cluster-config ecs-flock
+``` 
+Occasionally the cluster shutdown process is slow or fails. If this is the case,
+it could be a resource deadlock. I've resolved it using the UI and typically
+deleting the VPC or security group stopping the block.
+
+
 # Running
 ## Development
 To run in a development environment, use the following commands. The environment
