@@ -43,7 +43,7 @@
             </li>
         </ol>
     
-    <div class="lnb-examples hidden"><h3>Tutorials</h3><ul><li><a href="tutorial-Hosting.html">Hosting</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Hosting_sub"></div></li><li><a href="tutorial-Volunteering.html">Volunteering</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Volunteering_sub"></div></li></ul></div><div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li></ul></div></li></ul></div>
+    <div class="lnb-examples hidden"><h3>Tutorials</h3><ul><li><a href="tutorial-Hosting.html">Hosting</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Hosting_sub"></div></li><li><a href="tutorial-Volunteering.html">Volunteering</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Volunteering_sub"></div></li></ul></div><div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li><li><a href="mpi.html#.storeGet">storeGet</a></li><li><a href="mpi.html#.storeSet">storeSet</a></li><li><a href="mpi.html#.updateStatus">updateStatus</a></li></ul></div></li></ul></div>
 </nav>
 <div id="resizer"></div>
 
@@ -126,6 +126,53 @@ if (typeof(self) !== 'undefined') {
     throw "Invalid Context: Not node, nor configured browser";
 }
 
+/**
+ * Store data locally in a client's sessionStore. This should be used to store state required to restore state if a volunteer node disconnects and reconnects
+ * 
+ * @function mpi.storeSet
+ * 
+ * @param {string} name - Name/key used to lookup this data later on
+ * @param {string} value - Value to be stored in the volunteer's local sessionStore
+ * 
+ */
+mpi.storeSet = function (name, value) {
+    let key = Math.random();
+    
+    postMessage({key: key, op: 'storeSet', name: name, value: value});
+};
+
+/**
+ * Retrieve a locally stored value. Should be used to restore state on a node that is reconnecting
+ * 
+ * @async
+ * @function mpi.storeGet
+ * 
+ * @param {string} name - Key used to retrieve the stored value from sessionStore
+ * 
+ * @ returns {string} value - The locally stored value (or null if not present)
+ */
+mpi.storeGet = async function (name) {
+    let key = Math.random();
+    
+    return new Promise((resolve, reject) => {
+        outbox[key] = resolve;
+        
+        postMessage({key: key, op: 'storeGet', name: name});
+    });
+};
+
+/**
+ * Updates status information that is stored on the volunteer's UI. Can be used to keep the user in the know about what they haev contributed.
+ * 
+ * @function mpi.updateStatus
+ * 
+ * @param {object} status - An object with status keys and corresponding values
+ * 
+ */
+mpi.updateStatus = function(status) {
+    let key = Math.random();
+    postMessage({key: key, op: 'updateStatus', status: status});
+}
 
 // TODO make this internal since its only used by flock.js (should not be visible to the user)
 /**
@@ -305,15 +352,18 @@ mpi.ibarrier = async function (comm) {
     
     let res;
     if (rank === 0) {
+        
         let others = nodes.filter((node) => node !== 0);
         let reqs = others.map((node) => _isend(TAG, node, comm, TAG));
         
         res = Promise.all(reqs);
         
     } else {
+        
         res = _irecv(0, comm, TAG);
     }
     
+    // hide output of barrier promises
     return res.then( () => {} );
 
 }
@@ -338,6 +388,7 @@ mpi.ibcast = async function (data, root, comm) {
         // get list of other nodes to send
         let nodes = [...Array(await mpi.getSize(comm)).keys()].filter((val) => val !== root);
         
+        // TODO make this align with mpi.ibarrier (use map to vectorize sends)
         // send to other nodes
         let reqs = [];
         nodes.forEach((rank) => {
