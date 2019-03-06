@@ -27,10 +27,12 @@ POSSIBILITY OF SUCH DAMAGE.
 // Load required modules
 let dotenv = require('dotenv');
 let fs = require('fs');
+let uid = require('uid-safe').sync
 
 var http    = require("http");              // http server core module
 let https    = require("https");
 var express = require("express");           // web framework external module
+var session = require("express-session");
 var serveStatic = require('serve-static');  // serve static files
 var socketIo = require("socket.io");        // web socket external module
 
@@ -42,10 +44,12 @@ const APP_NAME = "flock-app";
 const MPI_COMM_WORLD = "default";
 
 // these must match the message type constants in flock.js
-const MSG_TYPE_GET_RANK = "get_rank";
+const MSG_TYPE_MSG = "message";
+const MSG_TYPE_ACK = "ack";
 const MSG_TYPE_SIZE_CHECK = "size_check";
+const MSG_TYPE_GET_RANK = "get_rank";
 const MSG_TYPE_GET_ID = "get_easyrtcid";
-
+const MSG_TYPE_PUB_STORE = "publish_store";
 
 // initialize dotenv variables
 dotenv.config();
@@ -53,16 +57,26 @@ dotenv.config();
 // Set process name
 process.title = "node-easyrtc";
 
-// TODO allow this to be specified by the developer
-let minSize = 3;
+let minSize = parseInt(process.env['MIN_SIZE']);
 
 // Counter for size of cluster
 let size = 0;
 
 // map id to ranks
-let easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
+let idsByRank = {[MPI_COMM_WORLD]: {}};
 
 var app = express();
+
+// TODO for production, use a real session store (default is a naive in-memory store) (see the 'store' option)
+// Note: easyrtc requires 'httpOnly = false' so that cookies are visible to easyrtc via JS
+// this is a security risk, because it means the session id can be accessed during an XSS attack
+app.use(session({
+    name: 'easyrtcsid',
+    resave: false,
+    saveUninitialized: true,
+    secret: process.env["SESSION_SECRET"],
+    cookie: {httpOnly: false}
+}));
 
 // this static server is for dev purposes only. In production, static assets will be served from the master
 app.use(express.static("test/flock-tests"));
@@ -86,6 +100,11 @@ var socketServer = socketIo.listen(webServer, {"log level":1});
 
 easyrtc.setOption("logLevel", "debug");
 
+// session options
+easyrtc.setOption("sessionEnable", true);
+easyrtc.setOption("sessionCookieEnable", true);
+easyrtc.setOption("easyrtcsidRegExp", /^[a-z0-9_.%-]{1,100}$/i); // support cookies signed by express-session
+
 // Start EasyRTC server
 var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     console.log("Initiated easyrtc server");
@@ -93,23 +112,35 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
     pub.createApp(APP_NAME, null, () => {console.log(`Created application: ${APP_NAME}`)});
     
     //// overriding code goes here ////
-  
-    // getIceConfig occurs when a node is connected and requests access to the p2p network
-    easyrtc.events.on('getIceConfig', (connectionObj, next) => {
     
-        // update size, signal when size reached, then run the default behavior
-        easyrtc.events.defaultListeners["getIceConfig"](connectionObj, () => {      
+    easyrtc.events.on('easyrtcAuth', (socket, easyrtcid, msg, socketCallback, callback) => {
+        easyrtc.events.defaultListeners['easyrtcAuth'](socket, easyrtcid, msg, socketCallback, (err, connectionObj) => {
             // assign an rank to this connection in the WORLD communication group
-            let id = connectionObj.getEasyrtcid();
-            easyrtcIdByRank[MPI_COMM_WORLD][size] = id;
+            let session = connectionObj.getSession();
+            let sid = session.getEasyrtcsid();
+            
+            let commMap = idsByRank[MPI_COMM_WORLD];
+            
+            // check if the session id is already in the map
+            let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sid);
+            if (rank) {
+                // if sid corresponds to a rank in the map already, update the easyrtcid
+                Object.assign(commMap[rank], {id: easyrtcid});
+            } else {
+                // TODO create a variable that accurately tracks number of nodes connected to a comm group
+                // if rank for sid not in map, make a new entry for this new sid
+                commMap[Object.keys(commMap).length] = {id: easyrtcid, sid: sid};
+            }
             
             // after connected, update cluster size
             size++;
             
             console.log(`Updated cluster size counter to: ${size}`);
             
+            // publish go-ahead signal if we have reached the minSize
             if (size >= minSize) {
                 
+                // when size is met, send go-ahead to all nodes
                 // send go-ahead to all connected nodes
                 pub.app(APP_NAME, (err, appObj) => {
                     
@@ -135,44 +166,36 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
                         console.error(`Error getting easyrtc appObj: ${JSON.stringify(err)}`);
                     }
                 });
+                
+                
             }
             
-            // continue the lifecycle
-            next(null, connectionObj.getApp().getOption("appIceServers"));
-            
+            callback(err, connectionObj);
         });
-        
-    });
-    
-    // Disconnect occurs when the socket connection is closed
-    // On disconnect, update the size and resume default behavior
-    easyrtc.events.on('disconnect', (connectionObj, next) => {
-        size--;
-        
-        console.log(`Updated cluster size counter to: ${size}`);
-        
-        // run the default behavior
-        easyrtc.events.defaultListeners.disconnect(connectionObj, next);
     });
     
     // handle requests from clients (querying cluster state)
     easyrtc.events.on('easyrtcMsg', (connectionObj, msg, socketCallback, next) => {
-        
+
         if (msg.msgType === MSG_TYPE_SIZE_CHECK) {
             socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: size >= minSize});
         }
         
         if (msg.msgType === MSG_TYPE_GET_RANK) {
-            let commMap = easyrtcIdByRank[msg.msgData.comm];
             
-            // Object.keys converts key to string, parse it back to a number
-            let rank = Object.keys(commMap).find((key) => commMap[key] === msg.msgData.id);
+            // get the rank -> ids mapping specific to the given communication group
+            let commMap = idsByRank[msg.msgData.comm];
+            
+            let session = connectionObj.getSession();
+            let sessionId = session.getEasyrtcsid();
+            
+            let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sessionId);
             
             socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: rank})
         }
         
         if (msg.msgType === MSG_TYPE_GET_ID) {
-            let id = easyrtcIdByRank[msg.msgData.comm][msg.msgData.rank];
+            let id = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
             
             socketCallback({msgType: MSG_TYPE_GET_ID, msgData: id});
         }
@@ -180,6 +203,27 @@ var rtc = easyrtc.listen(app, socketServer, null, function(err, pub) {
         // continue the chain
         easyrtc.events.defaultListeners.easyrtcMsg(connectionObj, msg, socketCallback, next);
     });
+
+    // Disconnect occurs when the socket connection is closed
+    // On disconnect, update the size and resume default behavior
+    easyrtc.events.on('disconnect', (connectionObj, next) => {
+        let id = connectionObj.getEasyrtcid();
+        
+        size--;
+        
+        // update idsByRank map
+        let commMap = idsByRank[MPI_COMM_WORLD];
+        
+        // find if the disconnect id corresponds to a rank and if so, nullify
+        let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
+        if (rank) {
+            commMap[rank].id = null;   
+        }
+        
+        // run the default behavior
+        easyrtc.events.defaultListeners.disconnect(connectionObj, next);
+    });
+    
 });
 
 // Listen on port 8080

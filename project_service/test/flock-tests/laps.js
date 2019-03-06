@@ -1,3 +1,5 @@
+/* global mpi */
+
 // import flock-mpi
 importScripts('/static/flock-mpi.js');
 
@@ -12,7 +14,8 @@ async function main() {
     
     console.log(`got size: ${size}`);
     
-    let a = 0;
+    let a = parseInt(await mpi.storeGet('a')) || 0;
+    console.log(`got a: ${a}`);
     while (true) {
         
         console.log('looping..');
@@ -20,8 +23,6 @@ async function main() {
         let next = (a + 1) % size;
     
         console.log(`rank: ${rank}, a: ${a}, next: ${next}, size: ${size}`);
-        
-        let start = Date.now();
         
         // send from a to a+1
         if (rank == a) {
@@ -36,6 +37,9 @@ async function main() {
         }
         
         a = next;
+        mpi.storeSet('a', a);
+        
+        mpi.updateStatus({a, size});
         
         console.log(`going into barrier with new 'a' value: ${a}`);
 

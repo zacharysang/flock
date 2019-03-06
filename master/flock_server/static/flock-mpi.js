@@ -69,6 +69,53 @@ if (typeof(self) !== 'undefined') {
     throw "Invalid Context: Not node, nor configured browser";
 }
 
+/**
+ * Store data locally in a client's sessionStore. This should be used to store state required to restore state if a volunteer node disconnects and reconnects
+ * 
+ * @function mpi.storeSet
+ * 
+ * @param {string} name - Name/key used to lookup this data later on
+ * @param {string} value - Value to be stored in the volunteer's local sessionStore
+ * 
+ */
+mpi.storeSet = function (name, value) {
+    let key = Math.random();
+    
+    postMessage({key: key, op: 'storeSet', name: name, value: value});
+};
+
+/**
+ * Retrieve a locally stored value. Should be used to restore state on a node that is reconnecting
+ * 
+ * @async
+ * @function mpi.storeGet
+ * 
+ * @param {string} name - Key used to retrieve the stored value from sessionStore
+ * 
+ * @ returns {string} value - The locally stored value (or null if not present)
+ */
+mpi.storeGet = async function (name) {
+    let key = Math.random();
+    
+    return new Promise((resolve, reject) => {
+        outbox[key] = resolve;
+        
+        postMessage({key: key, op: 'storeGet', name: name});
+    });
+};
+
+/**
+ * Updates status information that is stored on the volunteer's UI. Can be used to keep the user in the know about what they haev contributed.
+ * 
+ * @function mpi.updateStatus
+ * 
+ * @param {object} status - An object with status keys and corresponding values
+ * 
+ */
+mpi.updateStatus = function(status) {
+    let key = Math.random();
+    postMessage({key: key, op: 'updateStatus', status: status});
+}
 
 // TODO make this internal since its only used by flock.js (should not be visible to the user)
 /**
@@ -259,6 +306,7 @@ mpi.ibarrier = async function (comm) {
         res = _irecv(0, comm, TAG);
     }
     
+    // hide output of barrier promises
     return res.then( () => {} );
 
 }
