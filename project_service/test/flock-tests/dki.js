@@ -1,6 +1,5 @@
 // import flock-mpi
 importScripts('/static/flock-mpi.js');
-importScripts('scrape.js')
 
 importScripts("collections/set");
 importScritps("fs");
@@ -67,7 +66,7 @@ class Scrape {
         return word
     }
 
-    findKeywords(html) {
+    /*findKeywords(html) {
         var ps = [];
         var endps = [];
 
@@ -93,6 +92,15 @@ class Scrape {
             curr_p = ps[idx];
             
         }
+    }*/
+
+    scrape() {
+        var r = makeRequest(this.url);
+        if (r == null) {
+            return [null, null];
+        }
+        links = findLinks(r);
+        return [null, links]
     }
 }
 
