@@ -18,6 +18,8 @@ CREATE TABLE projects (
   deployment_url TEXT,
   approval_status INTEGER NOT NULL DEFAULT 0,
   description TEXT,
+  hash_id TEXT,
+  deployment_url TEXT,
   owner_id INTEGER NOT NULL,
   FOREIGN KEY (owner_id) REFERENCES users (id)
 );
