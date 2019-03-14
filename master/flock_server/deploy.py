@@ -7,7 +7,11 @@ import os
 
 from flask import current_app
 
+from flock_server.db import get_db
+
 deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
+docker_compose_filename = 'docker_compose.yml'
+ecs_params_filename = 'ecs_params.yml'
 
 def generate_id(user_id, project_name):
     """Generates a unique hash id per project name + user_id.
@@ -16,10 +20,21 @@ def generate_id(user_id, project_name):
     string = str(user_id) + str(project_name)
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-def deploy_project():
+def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
     """
+    # get the project from that database
+    db = get_db()
+    project = cursor.execute(
+        'SELECT * FROM projects where id=(?);',
+        (id,)).fetchone()
+    # generate hash
+    hash_id = generate_id(project['owner_id'], project['name'])
     
+    # first need to build config files
+    build_config_files(hash_id)
+    
+   
 
 def build_config_files(hash_id):
     """Builds the config files needed for deploying to AWS.
@@ -64,8 +79,23 @@ def build_config_files(hash_id):
         print('Error: {path} cannot be made because it is a file.'
               .format(path=path))
         raise Exception
-
-
-
-
+    #
+    # generate the files and write them to the directory
+    #
+    # generate the docker compose file
+    docker_compose = docker_compose.format(hash_id=hash_id,
+                                           image_name='temp',
+                                           group='flock',
+                                           region='aws-east',)
+    docker_compose_path = os.path.join(path, docker_compose_filename)
+    with open(docker_compose_path, 'w') as file:
+        file.write(docker_compose)
+                                           
+    # generate ecs params
+    ecs_params = ecs_params.format(subnet_id_1=current_app.config['FLOCK_SUBNET_1_ID'],
+                                   subnet_id_2=current_app.config['FLOCK_SUBNET_2_ID'],
+                                   security_group_id=current_app.config['FLOCK_SECURITY_GROUP_ID'])
+    ecs_params_path = os.path.join(path, ecs_params_filename)
+    with open(ecs_params_path, 'w') as file:
+        file.write(ecs_params)
 
