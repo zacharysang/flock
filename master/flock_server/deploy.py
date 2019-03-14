@@ -20,6 +20,16 @@ def generate_id(user_id, project_name):
     string = str(user_id) + str(project_name)
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
+def get_config_file_paths(hash_id):
+    """Returns a tuple of config file paths (docker compose yml, ecs params yml)
+    """
+    folder_path = os.path.join(deploy_folder_path, hash_id)
+    docker_compose_path = os.path.join(folder_path, docker_compose_filename)
+    ecs_params_path = os.path.join(folder_path, ecs_params_filename)
+
+    return (docker_compose_path, ecs_params_path)
+
+
 def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
     """
@@ -33,6 +43,9 @@ def deploy_project(project_id):
     
     # first need to build config files
     build_config_files(hash_id)
+
+    deployment_url = start_container(hash_id, docker_compose_path,
+                                     ecs_params_path)
     
    
 
@@ -79,15 +92,18 @@ def build_config_files(hash_id):
         print('Error: {path} cannot be made because it is a file.'
               .format(path=path))
         raise Exception
+    
     #
     # generate the files and write them to the directory
     #
+    # get the paths for the files
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
+
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
                                            image_name='temp',
                                            group='flock',
                                            region='aws-east',)
-    docker_compose_path = os.path.join(path, docker_compose_filename)
     with open(docker_compose_path, 'w') as file:
         file.write(docker_compose)
                                            
@@ -95,7 +111,11 @@ def build_config_files(hash_id):
     ecs_params = ecs_params.format(subnet_id_1=current_app.config['FLOCK_SUBNET_1_ID'],
                                    subnet_id_2=current_app.config['FLOCK_SUBNET_2_ID'],
                                    security_group_id=current_app.config['FLOCK_SECURITY_GROUP_ID'])
-    ecs_params_path = os.path.join(path, ecs_params_filename)
     with open(ecs_params_path, 'w') as file:
         file.write(ecs_params)
+    
 
+def start_container(hash_id):
+    # build the start command
+    start_command = ('')
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
