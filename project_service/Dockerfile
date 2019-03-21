@@ -9,24 +9,11 @@ RUN apt-get upgrade -y
 RUN apt-get autoremove -y
 
 # install nodejs
+# https://github.com/nodesource/distributions/blob/master/README.md#deb
 RUN apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get install -y nodejs
 #RUN apt-get install -y npm
-
-# copy our rtc server into the project
-RUN mkdir /opt/rtc-server/
-COPY app.js /opt/rtc-server/
-COPY package.json /opt/rtc-server/
-COPY package-lock.json /opt/rtc-server/
-
-# install dependencies for node server
-WORKDIR /opt/rtc-server/
-RUN npm install --production | tee /var/log/rtc-server-npm-install.log
-
-
-# TODO: figure out environment variables for node server
-
 
 # Configure headless chrome
 RUN apt-get install -yq libgconf-2-4
@@ -39,3 +26,17 @@ RUN apt update && apt install -y wget --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
 #    && apt-get purge --auto-remove -y curl \
     && rm -rf /src/*.deb
+
+# copy our rtc server into the project
+RUN mkdir /opt/rtc-server/
+COPY app.js /opt/rtc-server/
+COPY package.json /opt/rtc-server/
+COPY package-lock.json /opt/rtc-server/
+
+# install dependencies for node server
+WORKDIR /opt/rtc-server/
+RUN npm install --production | tee /var/log/rtc-server-npm-install.log
+
+# TODO: figure out runtime variables for a startup script
+# TODO: Need a real command in package.json probably
+CMD ["npm", "dev"]
