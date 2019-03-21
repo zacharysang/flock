@@ -17,7 +17,7 @@ $ docker build -t <image-name>:<tag> .
 
 #### Running the Container
 Running the container is relatively easy! It requires some environment
-variables, [documented below](#Configuration Variables).
+variables, [documented below](#Configuration-Variables).
 Run it with the following commands:
 ```shell
 $ docker run -e <env variable list> <image-name>:<tag>
