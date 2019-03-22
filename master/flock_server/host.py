@@ -56,6 +56,7 @@ def submit_project():
         name = request.form['name']
         source_url = request.form['source-url']
         description = request.form['description']
+        min_workers = request.form['min-workers']
 
         # setup the database
         db = get_db()
@@ -68,13 +69,15 @@ def submit_project():
         elif not source_url:
             error = 'Source URL is required.'
         # description is not required
+        elif not min_workers:
+            error = 'Minimum number of workers is required.'
 
         if error is None:
             # good to go forward with input
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                'owner_id) VALUES (?, ?, ?, ?)'),
-                (name, source_url, description, g.user['id'])
+                'min_workers, owner_id) VALUES (?, ?, ?, ?, ?)'),
+                (name, source_url, description, min_workers, g.user['id'])
             )
             db.commit()
             return redirect(url_for('index'))
