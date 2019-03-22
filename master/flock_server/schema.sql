@@ -19,7 +19,8 @@ CREATE TABLE projects (
   approval_status INTEGER NOT NULL DEFAULT 0,
   description TEXT,
   hash_id TEXT,
-  deployment_url TEXT,
+  min_workers INTEGER,
+  session_secret TEXT,
   owner_id INTEGER NOT NULL,
   FOREIGN KEY (owner_id) REFERENCES users (id)
 );
