@@ -45,8 +45,11 @@ def deploy_project(project_id):
     # first need to build config files
     build_config_files(hash_id)
 
-    deployment_url = start_container(hash_id, docker_compose_path,
-                                     ecs_params_path)
+    start_container(hash_id, docker_compose_path, ecs_params_path)
+
+    # get url
+
+    # update database entry
     
    
 
@@ -164,8 +167,10 @@ def get_status(hash_id):
     # TODO - I'm not sure if project-name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
     status_cmd = ('ecs-cli compose --project-name {hash_id} service ps '
-                 '--cluster-config {cluster}')
-    status_cmd = status_cmd.format(hash_id=hash_id, cluster='temp')
+                 '--cluster-config {cluster} '
+                 '--ecs-profile {ecs_profile}')
+    status_cmd = status_cmd.format(hash_id=hash_id, cluster='temp',
+                                   ecs_profile='temp')
 
     # Run the status command and capture the output
     
