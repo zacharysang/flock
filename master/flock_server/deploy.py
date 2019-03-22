@@ -4,6 +4,7 @@ This file handles the automagic deployment of projects onto AWS
 """
 import hashlib
 import os
+import re
 
 from flask import current_app
 
@@ -116,6 +117,43 @@ def build_config_files(hash_id):
     
 
 def start_container(hash_id):
-    # build the start command
-    start_command = ('')
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
+
+    # build the start command
+    # TODO - i'm not sure if project name means something different
+    # TODO - see if I can just use 'cluster' instead of cluster-config
+    start_cmd = ('ecs-cli compose --project-name {hash_id} service up '
+                 '--cluster-config {cluster} '
+                 '--ecs-params {ecs_params} '
+                 '--file {docker_compose}')
+    start_cmd = start_cmd.format(hash_id=hash_id, cluster='temp',
+                                 ecs_params=ecs_params_path,
+                                 docker_compose=docker_compose_path)
+
+    # Run the start command
+
+def stop_container(hash_id):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
+
+    # build the stop command
+    # TODO - i'm not sure if project name means something different
+    # TODO - see if I can just use 'cluster' instead of cluster-config
+    stop_cmd= ('ecs-cli compose --project-name {hash_id} service down '
+                 '--cluster-config {cluster} '
+                 '--ecs-params {ecs_params} '
+                 '--file {docker_compose}')
+    stop_cmd = stop_cmd.format(hash_id=hash_id, cluster='temp',
+                               ecs_params=ecs_params_path,
+                               docker_compose=docker_compose_path)
+
+def get_status(hash_id):
+    # build the status command
+    # TODO - I'm not sure if project-name means something different
+    # TODO - see if I can just use 'cluster' instead of cluster-config
+    status_cmd = ('ecs-cli compose --project-name {hash_id} service ps '
+                 '--cluster-config {cluster}')
+    status_cmd = status_cmd.format(hash_id=hash_id, cluster='temp')
+
+    # Run the status command and capture the output
+    
+    # find the IP address and health of the project using regex
