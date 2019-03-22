@@ -29,7 +29,7 @@ That user needs to have the Policy `AmazonECSTaskExecutionRolePolicy`.
 If I can reduce the needed permissions, I'll document that here.
 
 You'll also need a second AWS IAM user with more thorough permissions for the
-initial configuration steps. I user my full power personal account to do this.
+initial configuration steps. I use my full power personal account to do this.
 These steps will be runnable from any machine, so it is possible to run them
 from a development machine and avoid having these credentials ever touch the
 production environment. Initial configuration steps also require the
@@ -37,7 +37,9 @@ production environment. Initial configuration steps also require the
 
 ### Configuring Fargate Cluster
 Containers deployed from the flock_server application will be deployed to
-a fargate cluster you define by following these steps. 
+a fargate cluster you define by following these steps. These steps need run
+with a higher-privilege account than what should be used for the automatic
+deployments. These steps don't need to be run from the deployment server.
 
 1. Configure a user for your management. This is the high privilege user.
 ```
@@ -47,7 +49,7 @@ $ ecs-cli configure profile --profile-name <profile_name> --access-key $AWS_ACCE
 ```
 2. Setup a cluster config
 ```
-$ ecs-cli configure --region us-east-1 --cluster ecs-flock --default-launch-type FARGATE --config-name ecs-flock
+$ ecs-cli configure --region us-east-1 --cluster flock-cluster --default-launch-type FARGATE --config-name flock-cluster-config
 ```
 3. Bring the cluster up
 ```
@@ -63,7 +65,8 @@ $ aws ec2 create-security-group --group-name "flock-sg" --description "Flock Sec
 ```
 This will output a security group ID, save it.
 
-5. Authorize the security group
+5. Authorize the security group. TODO: this will probably be different in
+actuality, because we use at least UDP on probably a different port.
 ```
 $ aws ec2 authorize-security-group-ingress --group-id <Security Group ID> --protocol tcp --port 80 --cidr 0.0.0.0/0
 ```
@@ -78,6 +81,23 @@ Occasionally the cluster shutdown process is slow or fails. If this is the case,
 it could be a resource deadlock. I've resolved it using the UI and typically
 deleting the VPC or security group stopping the delete. The cloud formation
 console has useful information to figure out the problem.
+
+### Setting up ecs-cli on the deployment server
+The deployment server should have a different user that has restricted
+permissions. We'll need to replicate some configuration settings on the server.
+These commands should be run as the user that will run the server.
+
+1. Install the ecs-cli
+2. Configure a profile for the reduced permissions account.
+```
+$ export AWS_ACCESS_KEY_ID=<your key id>
+$ export AWS_SECRET_ACCESS_KEY=<your key>
+$ ecs-cli configure profile --profile-name flock-user --access-key $AWS_ACCESS_KEY_ID --secrete-key $AWS_SECRET_ACCESS_KEY
+```
+3. Duplicate the cluster config command ran when the cluster was created.
+```
+$ ecs-cli configure --region us-east-1 --cluster flock-cluster --default-launch-type FARGATE --config-name flock-cluster-config
+```
 
 
 # Running
