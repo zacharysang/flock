@@ -58,6 +58,11 @@ def build_config_files(hash_id):
                       'services:\n'
                       '  {hash_id}:\n'
                       '    image: {image_name}\n'
+                      '    environment:\n' # configure environment variables
+                      '      - FLOCK_MIN_SIZE={flock_min_size}\n'
+                      '      - FLOCK_PORT={flock_port}\n'
+                      '      - FLOCK_SESSION_SECRET={flock_session_secret}\n'
+                      '      - FLOCK_URL={flock_url}\n'
                       '    ports:\n'
                       '      - "80:80"\n'
                       '    logging:\n'
@@ -103,6 +108,10 @@ def build_config_files(hash_id):
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
                                            image_name='temp',
+                                           flock_min_size='temp',
+                                           flock_port='1819',
+                                           flock_session_secret='temp',
+                                           flock_url='temp',
                                            group='flock',
                                            region='aws-east',)
     with open(docker_compose_path, 'w') as file:
