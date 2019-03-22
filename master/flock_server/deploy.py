@@ -125,10 +125,12 @@ def start_container(hash_id):
     start_cmd = ('ecs-cli compose --project-name {hash_id} service up '
                  '--cluster-config {cluster} '
                  '--ecs-params {ecs_params} '
-                 '--file {docker_compose}')
+                 '--file {docker_compose} '
+                 '--ecs-profile {ecs_profile} ')
     start_cmd = start_cmd.format(hash_id=hash_id, cluster='temp',
                                  ecs_params=ecs_params_path,
-                                 docker_compose=docker_compose_path)
+                                 docker_compose=docker_compose_path,
+                                 ecs_profile='temp')
 
     # Run the start command
 
@@ -141,10 +143,12 @@ def stop_container(hash_id):
     stop_cmd= ('ecs-cli compose --project-name {hash_id} service down '
                  '--cluster-config {cluster} '
                  '--ecs-params {ecs_params} '
-                 '--file {docker_compose}')
+                 '--file {docker_compose} '
+                 '--ecs-profile {ecs_profile}')
     stop_cmd = stop_cmd.format(hash_id=hash_id, cluster='temp',
                                ecs_params=ecs_params_path,
-                               docker_compose=docker_compose_path)
+                               docker_compose=docker_compose_path,
+                               ecs_profile='temp')
 
 def get_status(hash_id):
     # build the status command
