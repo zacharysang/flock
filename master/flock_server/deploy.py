@@ -110,13 +110,13 @@ def build_config_files(hash_id):
 
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
-                                           image_name='temp',
+                                           image_name=current_app.config['FLOCK_CONTAINER_NAME'],
                                            flock_min_size='temp',
-                                           flock_port='1819',
+                                           flock_port=current_app.config['FLOCK_PORT'],
                                            flock_session_secret='temp',
                                            flock_url='temp',
-                                           group='flock',
-                                           region='aws-east',)
+                                           group=current_app.config['FLOCK_LOG_GROUP'],
+                                           region=curent_app.config['FLOCK_REGION'],)
     with open(docker_compose_path, 'w') as file:
         file.write(docker_compose)
                                            
@@ -135,14 +135,15 @@ def start_container(hash_id):
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
     start_cmd = ('ecs-cli compose --project-name {hash_id} service up '
-                 '--cluster-config {cluster} '
+                 '--cluster-config {cluster_config} '
                  '--ecs-params {ecs_params} '
                  '--file {docker_compose} '
                  '--ecs-profile {ecs_profile} ')
-    start_cmd = start_cmd.format(hash_id=hash_id, cluster='temp',
+    start_cmd = start_cmd.format(hash_id=hash_id,
+                                 cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                  ecs_params=ecs_params_path,
                                  docker_compose=docker_compose_path,
-                                 ecs_profile='temp')
+                                 ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the start command
 
@@ -153,24 +154,26 @@ def stop_container(hash_id):
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
     stop_cmd= ('ecs-cli compose --project-name {hash_id} service down '
-                 '--cluster-config {cluster} '
+                 '--cluster-config {cluster_config} '
                  '--ecs-params {ecs_params} '
                  '--file {docker_compose} '
                  '--ecs-profile {ecs_profile}')
-    stop_cmd = stop_cmd.format(hash_id=hash_id, cluster='temp',
+    stop_cmd = stop_cmd.format(hash_id=hash_id,
+                               cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                ecs_params=ecs_params_path,
                                docker_compose=docker_compose_path,
-                               ecs_profile='temp')
+                               ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
 def get_status(hash_id):
     # build the status command
     # TODO - I'm not sure if project-name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
     status_cmd = ('ecs-cli compose --project-name {hash_id} service ps '
-                 '--cluster-config {cluster} '
+                 '--cluster-config {cluster_config} '
                  '--ecs-profile {ecs_profile}')
-    status_cmd = status_cmd.format(hash_id=hash_id, cluster='temp',
-                                   ecs_profile='temp')
+    status_cmd = status_cmd.format(hash_id=hash_id,
+                                   cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
+                                   ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the status command and capture the output
     
