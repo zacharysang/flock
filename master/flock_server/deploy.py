@@ -70,7 +70,7 @@ def build_config_files(hash_id, deploy_folder_path):
                       '      - FLOCK_SESSION_SECRET={flock_session_secret}\n'
                       '      - FLOCK_URL={flock_url}\n'
                       '    ports:\n'
-                      '      - "80:80"\n'
+                      '      - "{flock_port}:{flock_port}"\n'
                       '    logging:\n'
                       '      driver: awslogs\n'
                       '      options:\n'
