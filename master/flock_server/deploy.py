@@ -10,7 +10,6 @@ from flask import current_app
 
 from flock_server.db import get_db
 
-deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
 docker_compose_filename = 'docker_compose.yml'
 ecs_params_filename = 'ecs_params.yml'
 
@@ -21,7 +20,7 @@ def generate_id(user_id, project_name):
     string = str(user_id) + str(project_name)
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-def get_config_file_paths(hash_id):
+def get_config_file_paths(hash_id, deploy_folder_path):
     """Returns a tuple of config file paths (docker compose yml, ecs params yml)
     """
     folder_path = os.path.join(deploy_folder_path, hash_id)
@@ -34,18 +33,22 @@ def get_config_file_paths(hash_id):
 def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
     """
+    # Create the deploy folder path
+    deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
+
     # get the project from that database
     db = get_db()
+    cursor = db.cursor()
     project = cursor.execute(
         'SELECT * FROM projects where id=(?);',
-        (id,)).fetchone()
+        (project_id,)).fetchone()
     # generate hash
     hash_id = generate_id(project['owner_id'], project['name'])
     
     # first need to build config files
-    build_config_files(hash_id)
+    build_config_files(hash_id, deploy_folder_path)
 
-    start_container(hash_id, docker_compose_path, ecs_params_path)
+    start_container(hash_id, deploy_folder_path)
 
     # get url
 
@@ -53,7 +56,7 @@ def deploy_project(project_id):
     
    
 
-def build_config_files(hash_id):
+def build_config_files(hash_id, deploy_folder_path):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
@@ -106,7 +109,7 @@ def build_config_files(hash_id):
     # generate the files and write them to the directory
     #
     # get the paths for the files
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path)
 
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
@@ -116,7 +119,7 @@ def build_config_files(hash_id):
                                            flock_session_secret='temp',
                                            flock_url='temp',
                                            group=current_app.config['FLOCK_LOG_GROUP'],
-                                           region=curent_app.config['FLOCK_REGION'],)
+                                           region=current_app.config['FLOCK_REGION'],)
     with open(docker_compose_path, 'w') as file:
         file.write(docker_compose)
                                            
@@ -128,8 +131,8 @@ def build_config_files(hash_id):
         file.write(ecs_params)
     
 
-def start_container(hash_id):
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
+def start_container(hash_id, deploy_folder_path):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path) 
 
     # build the start command
     # TODO - i'm not sure if project name means something different
@@ -146,6 +149,7 @@ def start_container(hash_id):
                                  ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the start command
+    print(start_cmd)
 
 def stop_container(hash_id):
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)

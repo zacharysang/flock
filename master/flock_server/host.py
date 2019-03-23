@@ -7,6 +7,7 @@ from flask import (
 )
 
 from flock_server.db import get_db
+from flock_server.deploy import deploy_project
 from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
@@ -43,6 +44,10 @@ def approve(id):
         'UPDATE projects SET approval_status=(?) WHERE id=(?)',
         (ApprovalStatus.APPROVED.value, id,))
     db.commit()
+
+    # deploy the project
+    deploy_project(id)
+
     return redirect(url_for('host.queue'))
 
 
