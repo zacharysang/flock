@@ -21,7 +21,11 @@
   </div>
   <p/>
   <div id="host-button">
-    <a href="/login">Sign up or log in!</a>
+    {% if g.user %}
+      <a href="/host/submit">Submit a new project</a>
+    {% else %}
+      <a href="/login">Sign up or log in!</a>
+    {% endif %}
   </div>
   <p/>
 {% endblock %}
