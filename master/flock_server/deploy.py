@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import re
+import subprocess
 
 from flask import current_app
 
@@ -65,7 +66,7 @@ def build_config_files(hash_id, deploy_folder_path):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
-    docker_compose = ('version \'3\'\n'
+    docker_compose = ('version: \'3\'\n'
                       'services:\n'
                       '  {hash_id}:\n'
                       '    image: {image_name}\n'
@@ -88,8 +89,8 @@ def build_config_files(hash_id, deploy_folder_path):
                   '  task_execution_role: ecsTaskExecutionRole\n'
                   '  ecs_network_mode: awsvpc\n'
                   '  task_size:\n'
-                  '    mem_limit = 0.5GB\n'
-                  '    cpu_limit = 256\n'
+                  '    mem_limit: 0.5GB\n'
+                  '    cpu_limit: 256\n'
                   'run_params:\n'
                   '  network_configuration:\n'
                   '    awsvpc_configuration:\n'
@@ -142,10 +143,11 @@ def start_container(hash_id, deploy_folder_path):
     # build the start command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    start_cmd = ('ecs-cli compose --project-name {hash_id} service up '
-                 '--cluster-config {cluster_config} '
+    start_cmd = ('ecs-cli compose --project-name {hash_id} '
                  '--ecs-params {ecs_params} '
                  '--file {docker_compose} '
+                 'up '
+                 '--cluster-config {cluster_config} '
                  '--ecs-profile {ecs_profile} ')
     start_cmd = start_cmd.format(hash_id=hash_id,
                                  cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
@@ -156,18 +158,23 @@ def start_container(hash_id, deploy_folder_path):
     # Run the start command
     logging.info("start command: " + start_cmd)
     print(start_cmd)
+    proc = subprocess.run(start_cmd.split(' '),
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print(proc.stdout)
+    logging.info("start output: " + proc.stdout.decode('utf-8'))
 
-def stop_container(hash_id):
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
+def stop_container(hash_id, deploy_folder_path):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path)
 
     # build the stop command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    stop_cmd= ('ecs-cli compose --project-name {hash_id} service down '
-                 '--cluster-config {cluster_config} '
-                 '--ecs-params {ecs_params} '
-                 '--file {docker_compose} '
-                 '--ecs-profile {ecs_profile}')
+    stop_cmd= ('ecs-cli compose --project-name {hash_id} '
+               '--ecs-params {ecs_params} '
+               '--file {docker_compose} '
+               'down '
+               '--cluster-config {cluster_config} '
+               '--ecs-profile {ecs_profile}')
     stop_cmd = stop_cmd.format(hash_id=hash_id,
                                cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                ecs_params=ecs_params_path,
@@ -177,14 +184,21 @@ def stop_container(hash_id):
     # run the stop command
     logging.info("stop command: " + stop_cmd)
 
-def get_status(hash_id):
+def get_status(hash_id, deploy_folder_path):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path) 
+
     # build the status command
     # TODO - I'm not sure if project-name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    status_cmd = ('ecs-cli compose --project-name {hash_id} service ps '
-                 '--cluster-config {cluster_config} '
-                 '--ecs-profile {ecs_profile}')
+    status_cmd = ('ecs-cli compose --project-name {hash_id} '
+                  '--ecs-params {ecs_params} '
+                  '--file {docker_compose} '
+                  'ps '
+                  '--cluster-config {cluster_config} '
+                  '--ecs-profile {ecs_profile}')
     status_cmd = status_cmd.format(hash_id=hash_id,
+                                   ecs_params=ecs_params_path,
+                                   docker_compose = docker_compose_path,
                                    cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                    ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
