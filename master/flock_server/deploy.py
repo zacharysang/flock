@@ -204,5 +204,21 @@ def get_status(hash_id, deploy_folder_path):
 
     # Run the status command and capture the output
     logging.info("status command: " + status_cmd)
+    proc = subprocess.run(status_cmd.split(' '),
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    # decode output and log it
+    output = proc.stdout.decode('utf-8')
+    print(output)
+    logging.info("status output: " + output)
     
     # find the IP address and health of the project using regex
+    regex = '\s*(?P<status>\w*)\s*(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    regex = hash_id + regex
+    match = re.search(regex, output)
+
+    if match is None:
+        return None
+
+    # temporarily return a tuple of ip and status
+    return (match.group('ip'), match.group('status'))
