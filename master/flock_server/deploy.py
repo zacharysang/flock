@@ -3,6 +3,7 @@ Kurt Lewis
 This file handles the automagic deployment of projects onto AWS
 """
 import hashlib
+import logging
 import os
 import re
 
@@ -12,6 +13,8 @@ from flock_server.db import get_db
 
 docker_compose_filename = 'docker_compose.yml'
 ecs_params_filename = 'ecs_params.yml'
+
+logging.basicConfig(filename='server.log', level=logging.INFO)
 
 def generate_id(user_id, project_name):
     """Generates a unique hash id per project name + user_id.
@@ -33,6 +36,8 @@ def get_config_file_paths(hash_id, deploy_folder_path):
 def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
     """
+    logging.info('Begining deploy for project {}'.format(project_id))
+
     # Create the deploy folder path
     deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
 
@@ -149,6 +154,7 @@ def start_container(hash_id, deploy_folder_path):
                                  ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the start command
+    logging.info("start command: " + start_cmd)
     print(start_cmd)
 
 def stop_container(hash_id):
@@ -168,6 +174,9 @@ def stop_container(hash_id):
                                docker_compose=docker_compose_path,
                                ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
+    # run the stop command
+    logging.info("stop command: " + stop_cmd)
+
 def get_status(hash_id):
     # build the status command
     # TODO - I'm not sure if project-name means something different
@@ -180,5 +189,6 @@ def get_status(hash_id):
                                    ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the status command and capture the output
+    logging.info("status command: " + status_cmd)
     
     # find the IP address and health of the project using regex
