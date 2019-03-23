@@ -24,23 +24,26 @@ def generate_id(user_id, project_name):
     string = str(user_id) + str(project_name)
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
-def get_config_file_paths(hash_id, deploy_folder_path):
+def get_deploy_folder_path():
+    # Create the deploy folder path
+    deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
+
+    return deploy_folder_path
+
+def get_config_file_paths(hash_id):
     """Returns a tuple of config file paths (docker compose yml, ecs params yml)
     """
+    deploy_folder_path = get_deploy_folder_path()
     folder_path = os.path.join(deploy_folder_path, hash_id)
     docker_compose_path = os.path.join(folder_path, docker_compose_filename)
     ecs_params_path = os.path.join(folder_path, ecs_params_filename)
 
     return (docker_compose_path, ecs_params_path)
 
-
 def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
     """
     logging.info('Begining deploy for project {}'.format(project_id))
-
-    # Create the deploy folder path
-    deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
 
     # get the project from that database
     db = get_db()
@@ -52,17 +55,16 @@ def deploy_project(project_id):
     hash_id = generate_id(project['owner_id'], project['name'])
     
     # first need to build config files
-    build_config_files(hash_id, deploy_folder_path)
+    build_config_files(hash_idh)
 
-    start_container(hash_id, deploy_folder_path)
+    start_container(hash_id)
 
     # get url
 
     # update database entry
     
-   
 
-def build_config_files(hash_id, deploy_folder_path):
+def build_config_files(hash_id):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
@@ -102,6 +104,7 @@ def build_config_files(hash_id, deploy_folder_path):
                   '      assign_public_ip: ENABLED\n')
     # check to see if a folder for this project has been created in the instance
     # folder
+    deploy_folder_path = get_deploy_folder_path()
     path = os.path.join(deploy_folder_path, hash_id)
     if not os.path.exists(path):
         # it doesn't exist, so make the path
@@ -115,7 +118,7 @@ def build_config_files(hash_id, deploy_folder_path):
     # generate the files and write them to the directory
     #
     # get the paths for the files
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path)
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
 
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
@@ -137,8 +140,8 @@ def build_config_files(hash_id, deploy_folder_path):
         file.write(ecs_params)
     
 
-def start_container(hash_id, deploy_folder_path):
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path) 
+def start_container(hash_id):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
 
     # build the start command
     # TODO - i'm not sure if project name means something different
@@ -163,8 +166,8 @@ def start_container(hash_id, deploy_folder_path):
     print(proc.stdout)
     logging.info("start output: " + proc.stdout.decode('utf-8'))
 
-def stop_container(hash_id, deploy_folder_path):
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path)
+def stop_container(hash_id):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
 
     # build the stop command
     # TODO - i'm not sure if project name means something different
@@ -184,8 +187,8 @@ def stop_container(hash_id, deploy_folder_path):
     # run the stop command
     logging.info("stop command: " + stop_cmd)
 
-def get_status(hash_id, deploy_folder_path):
-    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id, deploy_folder_path) 
+def get_status(hash_id):
+    (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
 
     # build the status command
     # TODO - I'm not sure if project-name means something different
