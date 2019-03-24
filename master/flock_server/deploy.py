@@ -51,18 +51,26 @@ def deploy_project(project_id):
     project = cursor.execute(
         'SELECT * FROM projects where id=(?);',
         (project_id,)).fetchone()
-    # generate hash
-    hash_id = generate_id(project['owner_id'], project['name'])
+
+    # generate hash if it doesn't already exist
+    if project['hash_id'] is None or project['hash_id'] == '':
+        hash_id = generate_id(project['owner_id'], project['name'])
+        # write the hash id to the project
+        cursor.execute(
+            'UPDATE projects SET hash_id=(?) WHERE id=(?);',
+            (hash_id, project_id,))
+        db.commit()
+    else:
+        hash_id = project['hash_id']
     
     # first need to build config files
-    build_config_files(hash_idh)
+    build_config_files(hash_id)
 
     start_container(hash_id)
 
     # get url
+    update_status(project_id)
 
-    # update database entry
-    
 
 def build_config_files(hash_id):
     """Builds the config files needed for deploying to AWS.
@@ -187,7 +195,13 @@ def stop_container(hash_id):
     # run the stop command
     logging.info("stop command: " + stop_cmd)
 
-def get_status(hash_id):
+def update_status(project_id):
+    # get the hash id from the project id from the database
+    db = get_db()
+    project = db.execute('SELECT * FROM projects where id=(?);',
+                         (project_id,)).fetchone()
+    hash_id = project['hash_id']
+
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
 
     # build the status command
@@ -216,12 +230,19 @@ def get_status(hash_id):
     logging.info("status output: " + output)
     
     # find the IP address and health of the project using regex
-    regex = '\s*(?P<status>\w*)\s*(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+    # Start with hash id, then look for optional colon followed by number
+    # there will then be a status and eventually an IP
+    # if the status is a fail condition, this regex won't match
+    regex = ':?\d*\s*(?P<status>\w*)\s*(?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
     regex = hash_id + regex
     match = re.search(regex, output)
 
-    if match is None:
-        return None
+    if match is not None:
+        # TODO: add match.group('status') to database
+        db.execute('UPDATE projects SET deployment_url=(?) WHERE id=(?);',
+                   (match.group('ip'), project_id,))
+        db.commit()
+    else:
+        logging.error('Did not find ip or status')
 
-    # temporarily return a tuple of ip and status
-    return (match.group('ip'), match.group('status'))
+    
