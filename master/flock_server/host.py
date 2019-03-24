@@ -7,7 +7,7 @@ from flask import (
 )
 
 from flock_server.db import get_db
-from flock_server.deploy import deploy_project, update_status
+from flock_server.deploy import deploy_project, destroy_project, update_status
 from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
@@ -129,3 +129,28 @@ def detail(id):
     return render_template('host/detail.html', project=project,
                            project_approval_status=project_approval_status,
                            project_approved=project_approved)
+
+@bp.route('/<int:id>/delete')
+@auth_required
+def delete(id):
+    """Deletes a given project.
+    Deletes the deploy information and stops the given container.
+    """
+
+    # Get the project to verify owner identity
+    project = db.execute('SELECT * FROM projects where id=(?);',
+                         (id,)).fetchone()
+
+    # Check that this user can delete the project
+    if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
+        # The current user doesn't own this project, don't delete it 
+        flash('You don\'t have permissions to delete this project')
+        return redirect(url_for(host.detail, id=id))
+
+    destroy_project(id)
+
+    # delete the database entry
+    db.execute('DELETE FROM projects WHERE id=(?);', (id,))
+    db.commit()
+
+    return redirect(url_for(index))

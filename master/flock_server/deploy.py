@@ -71,6 +71,26 @@ def deploy_project(project_id):
     # get url
     update_status(project_id)
 
+def destroy_project(project_id):
+    """Destroys a given project by stopping container and deleting config files.
+    """
+    logging.info('Destroying deployment for project {}'.format(project_id))
+
+    # get the project from that database
+    project = db.execute(
+        'SELECT * FROM projects where id=(?);',
+        (project_id,)).fetchone()
+
+    # get hash id from project
+    hash_id = project['hash_id']
+
+    stop_container(hash_id)
+
+    deploy_folder_path = get_deploy_folder_path()
+
+    # delete the folder with config details
+    os.rmdir(deploy_folder_path)
+    
 
 def build_config_files(hash_id):
     """Builds the config files needed for deploying to AWS.
