@@ -252,5 +252,8 @@ def update_status(project_id):
         db.commit()
     else:
         logging.error('Did not find ip or status')
+        if re.search('STOPPED', output) is not None:
+            print('Container didn\'t start.')
+            logging.error('Container didn\'t start.')
 
     
