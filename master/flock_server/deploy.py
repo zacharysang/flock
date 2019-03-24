@@ -246,14 +246,20 @@ def update_status(project_id):
     match = re.search(regex, output)
 
     if match is not None:
-        # TODO: add match.group('status') to database
-        db.execute('UPDATE projects SET deployment_url=(?) WHERE id=(?);',
-                   (match.group('ip'), project_id,))
+        db.execute(('UPDATE projects SET deployment_url=(?), health_status=(?) '
+                   'WHERE id=(?);'),
+                   (match.group('ip'), match.group('status'), project_id,))
         db.commit()
     else:
         logging.error('Did not find ip or status')
         if re.search('STOPPED', output) is not None:
             print('Container didn\'t start.')
             logging.error('Container didn\'t start.')
+            status = 'STOPPED'
+            message = 'Container failed to start...'
+            db.execute(('UPDATE projects SET health_status=(?), '
+                        'health_message=(?) WHERE id=(?);'),
+                       (status, message, project_id,))
+            db.commit()
 
     

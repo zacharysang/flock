@@ -9,7 +9,16 @@
         {{ project['source_url'] }}</a></h3>
     <h3>Description:</h3>
     <p> {{ project['description'] }}</p>
-    <h4>Status: {{ project_status }}</h4>
+    <h4>Min Workers: {{ project['min_workers'] }}</h4>
+    <h4>Approval Status: {{ project_approval_status }}</h4>
+    {% if project_approved %}
+      <h3>Health Status: {{ project['health_status'] }}</h3>
+      {% if (project['health_message'] != None and project['health_message'] != '') %}
+        <h3>Health Message: {{ project['health_message'] }}</h3>
+      {% endif %}
+      <h3>Node-0 Deployment URL: {{ project['deployment_url'] }}</h3>
+
+    {% endif %}
   </div>
 {% endblock %}
 

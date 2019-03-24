@@ -7,7 +7,7 @@ from flask import (
 )
 
 from flock_server.db import get_db
-from flock_server.deploy import deploy_project
+from flock_server.deploy import deploy_project, update_status
 from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
@@ -97,6 +97,9 @@ def submit_project():
 def detail(id):
     """Shows details of project for given id.
     """
+    # update the status of the project
+    update_status(id) 
+
     # setup the database
     db = get_db()
     cursor = db.cursor()
@@ -117,9 +120,12 @@ def detail(id):
         return redirect(url_for('index'))
 
     # Set the status variable to string representation
-    project_status = ApprovalStatus.WAITING.name
+    project_approval_status = ApprovalStatus.WAITING.name
+    project_approved = False
     if project['approval_status'] == ApprovalStatus.APPROVED.value:
-        project_status = ApprovalStatus.APPROVED.name
+        project_approval_status = ApprovalStatus.APPROVED.name
+        project_approved = True
 
     return render_template('host/detail.html', project=project,
-                           project_status=project_status)
+                           project_approval_status=project_approval_status,
+                           project_approved=project_approved)
