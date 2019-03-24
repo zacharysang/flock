@@ -4,7 +4,9 @@ from flock_server.db import get_db
 
 @pytest.mark.parametrize('path', (
     '/host/submit',
-    '/host/1'
+    '/host/1',
+    '/host/1/approve',
+    '/host/1/delete',
 ))
 def test_login_required(client, path):
     response = client.get(path)
@@ -23,6 +25,7 @@ def test_super_login_required(client, auth, path):
 
 @pytest.mark.parametrize('path', (
     '/host/1',
+    '/host/1/delete',
 ))
 def test_owner_required(client, auth, path):
     auth.login(email='test-2@email.com', password='test')
@@ -50,7 +53,8 @@ def test_submit_validation(client, auth, name, source_url, min_workers,
 
 @pytest.mark.parametrize('path', (
     '/9',
-    '/9/approve'
+    '/9/approve',
+    '/9/delete'
 ))
 def test_404(client, auth, path):
     """Test that all project urls show a 404 when the project doesn't exist.
@@ -104,3 +108,12 @@ def test_detail(client, auth):
     response = client.get('/host/1')
     assert response.status_code == 200
     assert b'WAITING' in response.data 
+
+def test_delete(client, auth, app):
+    auth.login()
+    response = client.get('/host/1/delete')
+
+    with app.app_context():
+        db = get_db()
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
+        assert project is None

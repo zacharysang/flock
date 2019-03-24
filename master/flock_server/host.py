@@ -139,15 +139,19 @@ def delete(id):
     Deletes the deploy information and stops the given container.
     """
 
+    db = get_db()
     # Get the project to verify owner identity
     project = db.execute('SELECT * FROM projects where id=(?);',
                          (id,)).fetchone()
+
+    if project is None:
+        abort(404, "Project does not exist")
 
     # Check that this user can delete the project
     if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
         # The current user doesn't own this project, don't delete it 
         flash('You don\'t have permissions to delete this project')
-        return redirect(url_for(host.detail, id=id))
+        return redirect(url_for('host.detail', id=id))
 
     # destroy the project if deploy is enabled
     if current_app.config['DO_DEPLOY']:
@@ -157,4 +161,4 @@ def delete(id):
     db.execute('DELETE FROM projects WHERE id=(?);', (id,))
     db.commit()
 
-    return redirect(url_for(index))
+    return redirect(url_for('index'))
