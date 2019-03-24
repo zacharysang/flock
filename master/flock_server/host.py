@@ -3,7 +3,7 @@ from enum import Enum
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
-    abort
+    abort, current_app
 )
 
 from flock_server.db import get_db
@@ -45,8 +45,9 @@ def approve(id):
         (ApprovalStatus.APPROVED.value, id,))
     db.commit()
 
-    # deploy the project
-    deploy_project(id)
+    # deploy the project if enabled
+    if current_app.config['DO_DEPLOY']:
+        deploy_project(id)
 
     return redirect(url_for('host.queue'))
 
@@ -97,8 +98,9 @@ def submit_project():
 def detail(id):
     """Shows details of project for given id.
     """
-    # update the status of the project
-    update_status(id) 
+    # update the status of the project if deploy is enabled
+    if current_app.config['DO_DEPLOY']:
+        update_status(id) 
 
     # setup the database
     db = get_db()
@@ -147,7 +149,9 @@ def delete(id):
         flash('You don\'t have permissions to delete this project')
         return redirect(url_for(host.detail, id=id))
 
-    destroy_project(id)
+    # destroy the project if deploy is enabled
+    if current_app.config['DO_DEPLOY']:
+        destroy_project(id)
 
     # delete the database entry
     db.execute('DELETE FROM projects WHERE id=(?);', (id,))

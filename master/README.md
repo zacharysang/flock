@@ -1,7 +1,5 @@
 This directory is home to the master service of flock.
 
-Setup and usage instructions are forthcoming...
-
 # Setup
 ## Python
 The actual webserver is written in python. For everything but project
@@ -99,7 +97,6 @@ $ ecs-cli configure profile --profile-name flock-user --access-key $AWS_ACCESS_K
 $ ecs-cli configure --region us-east-1 --cluster flock-cluster --default-launch-type FARGATE --config-name flock-cluster-config
 ```
 
-
 # Running
 ## Development
 To run in a development environment, use the following commands. The environment
@@ -118,6 +115,9 @@ After the project has been run once, you can setup configuration variables.
 Using the generated `instance/` folder, which is likely in the folder next to
 `flock_server/`, copy `config.py.example` as `config.py`. Fill in values using
 the generated AWS values.
+
+To run the project without deployment to ECS, make the `DO_DEPLOY` config value
+`False`. 
 
 # Generate a module for distribution
 To register the module locally, run:

@@ -5,6 +5,7 @@
 # in production, that is in the virtual environment
 # `venv/var/flock_server-instance/config.py
 SECRET_KEY = # Secret Key value
+DO_DEPLOY = True # True or false value instructing the tool to run deploys
 FLOCK_VPC_ID = # Flock VPC ID
 FLOCK_SECURITY_GROUP_ID = # Flock Security Group ID
 FLOCK_SUBNET_1_ID = # flock subnet 1 id
