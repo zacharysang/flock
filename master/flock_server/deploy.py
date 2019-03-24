@@ -167,12 +167,12 @@ def start_container(hash_id):
                                  ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the start command
-    logging.info("start command: " + start_cmd)
+    logging.info('start command: ' + start_cmd)
     print(start_cmd)
     proc = subprocess.run(start_cmd.split(' '),
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     print(proc.stdout)
-    logging.info("start output: " + proc.stdout.decode('utf-8'))
+    logging.info('start output: ' + proc.stdout.decode('utf-8'))
 
 def stop_container(hash_id):
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
@@ -193,7 +193,15 @@ def stop_container(hash_id):
                                ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # run the stop command
-    logging.info("stop command: " + stop_cmd)
+    logging.info('stop command: ' + stop_cmd)
+    proc = subprocess.run(stop_cmd.split(' '),
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE)
+    logging.info('stop output: ' + proc.stdout.decode('utf-8'))
+
+    if proc.returncode != 0:
+        logging.error('Failed to stop container.')
+
 
 def update_status(project_id):
     # get the hash id from the project id from the database
@@ -220,14 +228,14 @@ def update_status(project_id):
                                    ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
 
     # Run the status command and capture the output
-    logging.info("status command: " + status_cmd)
+    logging.info('status command: ' + status_cmd)
     proc = subprocess.run(status_cmd.split(' '),
                           stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     # decode output and log it
     output = proc.stdout.decode('utf-8')
     print(output)
-    logging.info("status output: " + output)
+    logging.info('status output: ' + output)
     
     # find the IP address and health of the project using regex
     # Start with hash id, then look for optional colon followed by number
