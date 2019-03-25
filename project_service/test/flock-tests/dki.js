@@ -49,7 +49,7 @@ class Scrape {
                 }
             } 
         }
-        mpi.storeSet('ret_links', ret_links);
+        //mpi.storeSet('ret_links', ret_links);
         
         this.num_discovered_links += len(ret_links)
         mpi.updateStatus({num_discovered_links, size});
