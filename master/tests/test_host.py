@@ -4,7 +4,9 @@ from flock_server.db import get_db
 
 @pytest.mark.parametrize('path', (
     '/host/submit',
-    '/host/1'
+    '/host/1',
+    '/host/1/approve',
+    '/host/1/delete',
 ))
 def test_login_required(client, path):
     response = client.get(path)
@@ -23,6 +25,7 @@ def test_super_login_required(client, auth, path):
 
 @pytest.mark.parametrize('path', (
     '/host/1',
+    '/host/1/delete',
 ))
 def test_owner_required(client, auth, path):
     auth.login(email='test-2@email.com', password='test')
@@ -30,23 +33,28 @@ def test_owner_required(client, auth, path):
     response = client.get(path, follow_redirects=True)
     assert b'permissions' in response.data
 
-@pytest.mark.parametrize(('name', 'source_url', 'message'), (
-    ('', 'https://kurtjlewis.com', b'Name is required.'),
-    ('test proj', '', b'Source URL is required')
+@pytest.mark.parametrize(('name', 'source_url', 'min_workers', 'message'), (
+    ('', 'https://kurtjlewis.com', '1', b'Name is required.'),
+    ('test proj', '', '1', b'Source URL is required'),
+    ('test proj2', 'https://kurtjlewis.com', '',
+      b'Minimum number of workers is required.')
 ))
-def test_submit_validation(client, auth, name, source_url, message):
+def test_submit_validation(client, auth, name, source_url, min_workers, 
+                           message):
     auth.login()
 
     response = client.post(
         '/host/submit',
         data= { 'name' : name, 'source-url': source_url,
+                'min-workers': min_workers,
                 'description' : '' }
     )
     assert message in response.data
 
 @pytest.mark.parametrize('path', (
     '/9',
-    '/9/approve'
+    '/9/approve',
+    '/9/delete'
 ))
 def test_404(client, auth, path):
     """Test that all project urls show a 404 when the project doesn't exist.
@@ -66,6 +74,7 @@ def test_submit(client, auth, app):
         '/host/submit',
         data = { 'name': 'submit-test',
                  'source-url': 'https://zacharysang.com',
+                 'min-workers': '1',
                  'description': 'Creation description'
         }
     )
@@ -99,3 +108,12 @@ def test_detail(client, auth):
     response = client.get('/host/1')
     assert response.status_code == 200
     assert b'WAITING' in response.data 
+
+def test_delete(client, auth, app):
+    auth.login()
+    response = client.get('/host/1/delete')
+
+    with app.app_context():
+        db = get_db()
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
+        assert project is None

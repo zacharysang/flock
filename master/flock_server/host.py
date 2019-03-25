@@ -3,10 +3,11 @@ from enum import Enum
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
-    abort
+    abort, current_app
 )
 
 from flock_server.db import get_db
+from flock_server.deploy import deploy_project, destroy_project, update_status
 from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
@@ -43,6 +44,11 @@ def approve(id):
         'UPDATE projects SET approval_status=(?) WHERE id=(?)',
         (ApprovalStatus.APPROVED.value, id,))
     db.commit()
+
+    # deploy the project if enabled
+    if current_app.config['DO_DEPLOY']:
+        deploy_project(id)
+
     return redirect(url_for('host.queue'))
 
 
@@ -56,6 +62,7 @@ def submit_project():
         name = request.form['name']
         source_url = request.form['source-url']
         description = request.form['description']
+        min_workers = request.form['min-workers']
 
         # setup the database
         db = get_db()
@@ -68,13 +75,15 @@ def submit_project():
         elif not source_url:
             error = 'Source URL is required.'
         # description is not required
+        elif not min_workers:
+            error = 'Minimum number of workers is required.'
 
         if error is None:
             # good to go forward with input
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                'owner_id) VALUES (?, ?, ?, ?)'),
-                (name, source_url, description, g.user['id'])
+                'min_workers, owner_id) VALUES (?, ?, ?, ?, ?)'),
+                (name, source_url, description, min_workers, g.user['id'])
             )
             db.commit()
             return redirect(url_for('index'))
@@ -89,6 +98,10 @@ def submit_project():
 def detail(id):
     """Shows details of project for given id.
     """
+    # update the status of the project if deploy is enabled
+    if current_app.config['DO_DEPLOY']:
+        update_status(id) 
+
     # setup the database
     db = get_db()
     cursor = db.cursor()
@@ -109,9 +122,43 @@ def detail(id):
         return redirect(url_for('index'))
 
     # Set the status variable to string representation
-    project_status = ApprovalStatus.WAITING.name
+    project_approval_status = ApprovalStatus.WAITING.name
+    project_approved = False
     if project['approval_status'] == ApprovalStatus.APPROVED.value:
-        project_status = ApprovalStatus.APPROVED.name
+        project_approval_status = ApprovalStatus.APPROVED.name
+        project_approved = True
 
     return render_template('host/detail.html', project=project,
-                           project_status=project_status)
+                           project_approval_status=project_approval_status,
+                           project_approved=project_approved)
+
+@bp.route('/<int:id>/delete')
+@auth_required
+def delete(id):
+    """Deletes a given project.
+    Deletes the deploy information and stops the given container.
+    """
+
+    db = get_db()
+    # Get the project to verify owner identity
+    project = db.execute('SELECT * FROM projects where id=(?);',
+                         (id,)).fetchone()
+
+    if project is None:
+        abort(404, "Project does not exist")
+
+    # Check that this user can delete the project
+    if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
+        # The current user doesn't own this project, don't delete it 
+        flash('You don\'t have permissions to delete this project')
+        return redirect(url_for('host.detail', id=id))
+
+    # destroy the project if deploy is enabled
+    if current_app.config['DO_DEPLOY']:
+        destroy_project(id)
+
+    # delete the database entry
+    db.execute('DELETE FROM projects WHERE id=(?);', (id,))
+    db.commit()
+
+    return redirect(url_for('index'))

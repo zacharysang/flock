@@ -38,7 +38,6 @@ const session = require('express-session');   // used for session management
 const serveStatic = require('serve-static');  // serve static files
 const socketIo = require('socket.io');        // web socket external module
 const puppeteer = require('puppeteer');       // Note: This has other dependencies (namely the latest version of chrome). See here for instructions https://developers.google.com/web/updates/2017/04/headless-chrome
-const ngrok = require('ngrok');               // Note: This must be installed with npm's '--unsafe perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
 const easyrtc = require('easyrtc');           // EasyRTC internal module
 
 const APP_NAME = 'flock-app';
@@ -85,6 +84,9 @@ console.log(SESSION_SECRET);
     let url = process.env['FLOCK_URL'];
     
     if (process.env['FLOCK_DEV'] === 'true') {
+        
+        // Note: This must be installed with npm's '--unsafe perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
+        let ngrok = require('ngrok');
         
         easyrtc.setOption('logLevel', 'debug');
         

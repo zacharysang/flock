@@ -4,7 +4,7 @@
   "description": "testing use of webrtc for implementation of MPI",
   "main": "index.js",
   "scripts": {
-    "dev": "node app.js",
+    "start": "node app.js",
     "test": "node --experimental-worker test/runner.js",
     "docs": "./node_modules/.bin/jsdoc -c jsdocs-conf.json",
     "docs-md": "npx jsdoc-to-markdown ../master/flock_server/static/flock-mpi.js > ../docs.md"
@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "jsdoc": "^3.5.5",
-    "localtunnel": "^1.9.1",
     "ngrok": "^3.1.1",
     "tui-jsdoc-template": "^1.2.2"
   }

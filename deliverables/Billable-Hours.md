@@ -38,6 +38,13 @@
 | 01/24/19 | Code review, proof of concept CLI container deploy | 2 | 0 | 0 | 0 |
 | 01/30/19 | Development of Flask server | 3 | 0 | 0 | 0 |
 | 01/31/19 | Continued Flask development | 2 | 0 | 0 | 0 |
-| SUM | SUM | 62 | 52 | 48 | 41 |
+| 02/01/19 | Build tutorials for server | 2 | 0 | 0 | 0 |
+| 02/02/19 | Build server dev environment | 1 | 0 | 0 | 0 |
+| 02/10/19 | Build out server basic functionality (summation of work in PR #15) | 6 | 0 | 0 | 0 |
+| 02/18/19 | Flock server project endpoints and database writes (summation of work in PR #18) | 7 | 0 | 0 | 0 |
+| 02/27/19 | Implement master server unit testing (summation of work in PR #19) | 5 | 0 | 0 | 0 |
+| 03/20/19 | Dockerize project service (summation of work in PR #22) | 3 | 0 | 0 | 0 |
+| 03/24/19 | Build out automatic cloud deployment functionality (summation of work in PR #23) | 16 | 0 | 0 | 0 |
+| SUM | SUM | 102 | 52 | 48 | 41 |
 
 
