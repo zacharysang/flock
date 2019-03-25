@@ -4,6 +4,7 @@ importScripts('/static/flock-mpi.js');
 importScripts("collections/set");
 //importScritps("fs");
 
+console.log('init dki.js');
 class Scrape {
     constructor(url, collection) {
         this.url = url;
@@ -112,6 +113,8 @@ class Scrape {
 console.log('starting scraper...');
 
 async function main() {
+    console.log("in main");
+
     let rank = await mpi.getRank('default');
     console.log(`got rank: ${rank}`);
 
@@ -174,6 +177,8 @@ async function main() {
             // Clean up urls_collection ??? 
         }
     } else {
+        console.log('in worker node');
+
         var it = 0;
         while (stopTime < 0 || Date() < stopTime) {
             it++;
@@ -184,6 +189,7 @@ async function main() {
             if (source == '') {
                 await sleep(1);
             } else {
+                console.log('received link from root');
                 source = source.trim();
                 parts = source.split('/');
                 baseurl = parts.join('/');
@@ -192,6 +198,7 @@ async function main() {
                 keywords = retval[0];
                 links = retval[1];
             }
+            console.log('sending discovered links to root');
             mpi.isend(0, (keywords, links), 'default');
             await sleep(1);
         }
