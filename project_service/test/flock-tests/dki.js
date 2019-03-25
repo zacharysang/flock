@@ -1,7 +1,7 @@
 // import flock-mpi
 importScripts('/static/flock-mpi.js');
 
-importScripts("collections/set");
+//importScripts("collections/set.js");
 //importScritps("fs");
 
 console.log('init dki.js');
@@ -13,7 +13,7 @@ class Scrape {
 
         // readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
         //     if (!err) {
-        //         this.stopWords = Set();
+        //         this.stopWords = new Set();
         //         for (var idx = 0; idx < keywords.length; idx++) {
         //             this.stopWords.add(keywords[idx]);
         //         }
@@ -125,8 +125,8 @@ async function main() {
 
     var outstandingReqs = 0;
     var receiveMessages = [];
-    var explored = Set();
-    var uniqueKeywords = Set();
+    var explored = new Set();
+    var uniqueKeywords = new Set();
     var stopTime = -1;
 
     if (rank == 0) {
