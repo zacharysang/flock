@@ -135,12 +135,13 @@ async function main() {
             receiveMessages.push(mpi.irecv(idx + 1, 'default'));
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
+                outstandingReqs++;
             } else {
                 mpi.isend('', idx + 1, 'default');
             }
         }
         
-        console.log('root ')
+        console.log('root sening and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
                 req = receiveMessages[idx];
@@ -197,6 +198,7 @@ async function main() {
                 retval = s.scrape();
                 keywords = retval[0];
                 links = retval[1];
+                console.log(links);
             }
             console.log('sending discovered links to root');
             mpi.isend((keywords, links), 0, 'default');
