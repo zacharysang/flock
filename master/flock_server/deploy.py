@@ -6,6 +6,7 @@ import hashlib
 import logging
 import os
 import re
+import shutil
 import subprocess
 
 from flask import current_app
@@ -77,6 +78,7 @@ def destroy_project(project_id):
     logging.info('Destroying deployment for project {}'.format(project_id))
 
     # get the project from that database
+    db = get_db()
     project = db.execute(
         'SELECT * FROM projects where id=(?);',
         (project_id,)).fetchone()
@@ -89,7 +91,9 @@ def destroy_project(project_id):
     deploy_folder_path = get_deploy_folder_path()
 
     # delete the folder with config details
-    os.rmdir(deploy_folder_path)
+    path = os.path.join(deploy_folder_path, hash_id)
+    shutil.rmtree(path)
+
     
 
 def build_config_files(hash_id):
