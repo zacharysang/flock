@@ -8,6 +8,7 @@ class Scrape {
     constructor(url, collection) {
         this.url = url;
         this.collection = collection;
+        this.num_discovered_links = 0;
 
         readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
             if (!err) {
@@ -16,7 +17,7 @@ class Scrape {
                     this.stopWords.add(keywords[idx]);
                 }
             } else {
-                // pass
+                console.log('failed to open stop-words.txt')
             }
         });
     }
@@ -47,7 +48,10 @@ class Scrape {
                 }
             } 
         }
-
+        mpi.storeSet('ret_links', ret_links);
+        
+        this.num_discovered_links += len(ret_links)
+        mpi.updateStatus({num_discovered_links, size});
         return ret_links;
     }
 
