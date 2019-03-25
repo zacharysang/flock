@@ -2,7 +2,7 @@
 importScripts('/static/flock-mpi.js');
 
 importScripts("collections/set");
-importScritps("fs");
+//importScritps("fs");
 
 class Scrape {
     constructor(url, collection) {
@@ -10,16 +10,16 @@ class Scrape {
         this.collection = collection;
         this.num_discovered_links = 0;
 
-        readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
-            if (!err) {
-                this.stopWords = Set();
-                for (var idx = 0; idx < keywords.length; idx++) {
-                    this.stopWords.add(keywords[idx]);
-                }
-            } else {
-                console.log('failed to open stop-words.txt')
-            }
-        });
+        // readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
+        //     if (!err) {
+        //         this.stopWords = Set();
+        //         for (var idx = 0; idx < keywords.length; idx++) {
+        //             this.stopWords.add(keywords[idx]);
+        //         }
+        //     } else {
+        //         console.log('failed to open stop-words.txt')
+        //     }
+        // });
     }
 
     setUrl(url) {
@@ -124,9 +124,10 @@ async function main() {
     var receiveMessages = [];
     var explored = Set();
     var uniqueKeywords = Set();
+    var stopTime = -1;
 
     if (rank == 0) {
-
+        console.log('root sending and receiving links')
         for (var idx = 0; idx < size; idx++) {
             receiveMessages.push(mpi.irecv(idx + 1, 'default'));
             if (sources.length > 0) {
@@ -135,19 +136,17 @@ async function main() {
                 mpi.isend(idx + 1, '', 'default');
             }
         }
-
+        
+        console.log('root ')
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            for (var idx = 0; idx < receiveMessages.length; idx++)
+            for (var idx = 0; idx < receiveMessages.length; idx++) {
                 req = receiveMessages[idx];
-            res = (true, []);
-            try {
-                res = req.test();
-            } catch { }
+            }
 
             if (res[0]) {
                 outstandingReqs--;
-                keywords = res[1][0];
-                links = res[1][1];
+                //keywords = res[0];
+                links = res[1];
 
                 if (sources.length > 0) {
                     nextLink = sources.pop();
@@ -159,9 +158,9 @@ async function main() {
 
                 receiveMessages.push(mip.irecv(idx + 1, 'default'));
 
-                for (var jdx = 0; jdx < keywords.length; jdx++) {
-                    uniqueKeywords.add(keywords[jdx]);
-                }
+                // for (var jdx = 0; jdx < keywords.length; jdx++) {
+                //     uniqueKeywords.add(keywords[jdx]);
+                // }
 
                 for (var jdx = 0; jdx < links.length; jdx++) {
                     link = links[jdx];
@@ -180,6 +179,7 @@ async function main() {
             it++;
             source = await mpi.irecv(0, 'default');
             var links = [];
+            var keywords = '';
 
             if (source == '') {
                 await sleep(1);
@@ -188,7 +188,9 @@ async function main() {
                 parts = source.split('/');
                 baseurl = parts.join('/');
                 s.setUrl(source);
-                retval = s.scrape()
+                retval = s.scrape();
+                keywords = retval[0];
+                links = retval[1];
             }
             mpi.isend(0, (keywords, links), 'default');
             await sleep(1);
