@@ -37,6 +37,5 @@ COPY package-lock.json /opt/rtc-server/
 WORKDIR /opt/rtc-server/
 RUN npm install --production | tee /var/log/rtc-server-npm-install.log
 
-# TODO: figure out runtime variables for a startup script
-# TODO: Need a real command in package.json probably
-CMD ["node", "app.js"]
+ENV NODE_ENV=production
+CMD ["npm", "start"]
