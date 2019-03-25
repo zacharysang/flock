@@ -134,9 +134,9 @@ async function main() {
         for (var idx = 0; idx < size; idx++) {
             receiveMessages.push(mpi.irecv(idx + 1, 'default'));
             if (sources.length > 0) {
-                mpi.isend(idx + 1, sources.pop(), 'default');
+                mpi.isend(sources.pop(), idx + 1, 'default');
             } else {
-                mpi.isend(idx + 1, '', 'default');
+                mpi.isend('', idx + 1, 'default');
             }
         }
         
@@ -153,10 +153,10 @@ async function main() {
 
                 if (sources.length > 0) {
                     nextLink = sources.pop();
-                    mpi.isend(idx + 1, nextLink, 'default');
+                    mpi.isend(nextLink, idx + 1, 'default');
                     outstandingReqs++;
                 } else {
-                    mpi.isend(idx + 1, '', 'default');
+                    mpi.isend('', idx + 1, 'default');
                 }
 
                 receiveMessages.push(mip.irecv(idx + 1, 'default'));
@@ -199,7 +199,7 @@ async function main() {
                 links = retval[1];
             }
             console.log('sending discovered links to root');
-            mpi.isend(0, (keywords, links), 'default');
+            mpi.isend((keywords, links), 0, 'default');
             await sleep(1);
         }
     }

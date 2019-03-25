@@ -59,6 +59,7 @@ dotenv.config();
 const PORT = parseInt(process.env['FLOCK_PORT']);
 const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
+console.log(SESSION_SECRET);
 
 (async () => {
     
