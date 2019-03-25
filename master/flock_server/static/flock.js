@@ -17,6 +17,11 @@ const EV_RCV_MSG = "receivedMessage";
 const EV_RCV_ACK = "receivedAck";
 
 const ID_STATUS_EL = 'status';
+const ID_PROJECT_TITLE = 'projectTitle';
+const ID_PROJECT_DESC = 'projectDescription';
+const ID_TASK_DESC = 'taskDescription';
+const ID_PROGRESS = 'progress';
+const ID_DATA = 'data';
 
 const STORE_KEY_NAMES = 'store_names';
 
@@ -29,8 +34,9 @@ let flock = {};
 // cache for the rank of this node
 flock.rank = {};
 
+// TODO populate other project metadata values here (project title, description, task desc, etc.)
 // Stores the status data displayed to the user
-flock.status = {};
+flock.status = {progress: 0};
 
 flock.statusEl = document.getElementById(ID_STATUS_EL);
 
@@ -139,10 +145,162 @@ flock.storeGet = function(name) {
     return window.sessionStorage.getItem(name);
 }
 
+let renderStats = function(data) {
+    
+    // make a copy of data since we are modifying it here
+    data = Object.assign({}, data);
+    
+    flock.statusEl.innerHTML = `
+        <style type="text/css">
+            body {
+                background-color: #B6D1FF;
+            }
+        
+            #statsContainer {
+                display: flex;
+                flex-direction: vertical;
+                flex-wrap: wrap;
+                justify-content: left;
+            }
+        
+            #reserved .statLabel {
+                width: 150px;
+            }
+            
+            #reserved .statValue {
+                width: 300px;
+            }
+        
+            .stat {
+                display: flex;
+                
+                margin: 5px 10px;
+            }
+        
+            .stat .statLabel, .stat .statValue {
+                display: inline-block;
+                border-radius: 3px;
+                padding: 10px 20px;
+            }
+            
+            .statLabel {
+                background-color: #3682FF;
+                color: white;
+            }
+            
+            .statValue {
+                border: 1px solid #3682FF;
+                margin: 0 5px;
+                background-color: white;
+            }
+            
+            .progress {
+                color: white;
+            }
+        </style>
+        <div id="reserved">
+            <div class="stat">
+                <div class="statLabel">Project Title</div>
+                <div class="statValue" id="${ID_PROJECT_TITLE}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Project Description</div>
+                <div class="statValue" id="${ID_PROJECT_DESC}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Task Description</div>
+                <div class="statValue" id="${ID_TASK_DESC}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Progress</div>
+                <div class="statValue progress" id="${ID_PROGRESS}"></div>
+            </div>
+        </div>
+        <div id="data">
+        </div>
+    `;
+    
+    // insert reserved values (and remove them from data)
+    
+    let titleEl = document.getElementById(ID_PROJECT_TITLE);
+    titleEl.innerText = data[ID_PROJECT_TITLE];
+    delete data[ID_PROJECT_TITLE];
+    
+    let descEl = document.getElementById(ID_PROJECT_DESC);
+    descEl.innerText = data[ID_PROJECT_DESC];
+    delete data[ID_PROJECT_DESC];
+    
+    let taskEl = document.getElementById(ID_TASK_DESC);
+    taskEl.innerText = data[ID_TASK_DESC];
+    delete data[ID_TASK_DESC];
+    
+    let progressEl = document.getElementById(ID_PROGRESS);
+    if (!isNaN(parseInt(data[ID_PROGRESS]))) {
+        console.log(`progress: ${data[ID_PROGRESS]}`);
+        progressEl.innerText = data[ID_PROGRESS] + '%';
+        progressEl.setAttribute('style', `background-image: linear-gradient(90deg, green ${data[ID_PROGRESS]}%, white ${data[ID_PROGRESS]}%)`);
+    }
+    delete data[ID_PROGRESS];
+    
+    // sort the remaining values
+    let entries = Object.entries(data);
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    
+    let fragment = document.createDocumentFragment();
+    entries.forEach((entry) => {
+        let el = renderStat(entry[0], entry[1]);
+        fragment.appendChild(el);
+    });
+    
+    // replace the data element with new content
+    let dataEl = document.getElementById(ID_DATA);
+    dataEl.innerHTML = '';
+    dataEl.appendChild(fragment);
+    
+    // define behavior for updating a single stat
+    function renderStat(label, value) {
+        `
+            <div class="stat">
+                <div class="statLabel">Arbitrary data 4</div>
+                <div class="statValue"></div>
+            </div>
+        `
+        let statEl = document.createElement('div');
+        statEl.setAttribute('class', 'stat');
+        
+        let labelEl = document.createElement('div');
+        labelEl.setAttribute('class', 'statLabel');
+        labelEl.innerText = label;
+        
+        // TODO handle special value types here (eg: svg, img, etc.)
+        let valueEl = document.createElement('div');
+        valueEl.setAttribute('class', 'statValue');
+        valueEl.innerText = JSON.stringify(value);
+        
+        // append label and value to statEl
+        statEl.appendChild(labelEl);
+        statEl.appendChild(valueEl);
+        
+        return statEl;
+    }
+    
+}
 
 flock.updateStatus = function(data) {
+    
+    // modify the progress attribute to be merged in correctly to current status
+    if (data.progress) {
+        let inc = parseInt(data.progress);
+        if (!isNaN(inc)) {
+            data.progress = (flock.status.progress + inc) % 100;
+        }
+    }
+    
     Object.assign(flock.status, data);
-    flock.statusEl.innerText = JSON.stringify(flock.status);
+    
+    // render the stats object to the volunteer's view
+    renderStats(flock.status);
+    
 };
 
 /*

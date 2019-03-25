@@ -6,6 +6,14 @@ importScripts('/static/flock-mpi.js');
 console.log('starting laps...');
 
 async function main() {
+    
+    // initialize volunteer's page
+    mpi.updateStatus({
+        projectTitle: 'Laps',
+        projectDescription: 'An io-heavy application to test sending and receiving p2p messages using easyrtc and flock',
+        taskDescription: 'This node is participating in a loop of nodes sending and receiving messages from each other. Each message updates the value of "a"'
+    });
+    
     let rank = await mpi.getRank('default');
     
     console.log(`got rank: ${rank}`);
@@ -17,6 +25,8 @@ async function main() {
     let a = parseInt(await mpi.storeGet('a')) || 0;
     console.log(`got a: ${a}`);
     while (true) {
+        
+        mpi.updateStatus({progress: 5});
         
         console.log('looping..');
         
