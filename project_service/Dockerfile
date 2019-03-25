@@ -39,4 +39,4 @@ RUN npm install --production | tee /var/log/rtc-server-npm-install.log
 
 # TODO: figure out runtime variables for a startup script
 # TODO: Need a real command in package.json probably
-CMD ["npm", "dev"]
+CMD ["node", "app.js"]
