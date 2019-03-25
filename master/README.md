@@ -90,7 +90,7 @@ These commands should be run as the user that will run the server.
 ```
 $ export AWS_ACCESS_KEY_ID=<your key id>
 $ export AWS_SECRET_ACCESS_KEY=<your key>
-$ ecs-cli configure profile --profile-name flock-user --access-key $AWS_ACCESS_KEY_ID --secrete-key $AWS_SECRET_ACCESS_KEY
+$ ecs-cli configure profile --profile-name flock-user --access-key $AWS_ACCESS_KEY_ID --secret-key $AWS_SECRET_ACCESS_KEY
 ```
 3. Duplicate the cluster config command ran when the cluster was created.
 ```
