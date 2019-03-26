@@ -53,7 +53,7 @@ class Scrape {
         }
         //mpi.storeSet('ret_links', ret_links);
         
-        this.num_discovered_links += len(ret_links);
+        this.num_discovered_links += ret_links.length;
         mpi.updateStatus({num_discovered_links, size});
         return ret_links;
     }
@@ -214,7 +214,7 @@ async function main() {
                 links = retval[1];
                 console.log(links);
             }
-            console.log('sending discovered links to root ' + len(links).toString());
+            console.log('sending discovered links to root ' + links.length).toString());
             mpi.isend((keywords, links), 0, 'default');
             await sleep(1);
         }
