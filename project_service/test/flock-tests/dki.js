@@ -58,10 +58,15 @@ class Scrape {
         return ret_links;
     }
 
-    makeRequest(url) {
-        fetch(url).then(res => res.text())
-            .then(function (response) { return response })
-            .catch(error => console.log('Error:', error));
+    async makeRequest(url) {
+        try {
+            const res = await fetch(url);
+            const response = await res.text();
+            return response;
+        }
+        catch (error) {
+            return console.log('Error:', error);
+        }
     }
 
     keywordClean(word) {
