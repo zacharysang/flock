@@ -114,7 +114,7 @@ class Scrape {
             return [null, null];
         }   
         r.then(function(data) {
-            links = this.findLinks(r);
+            links = this.findLinks(data);
             return [null, links];
         });  
     }
