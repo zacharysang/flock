@@ -100,11 +100,11 @@ class Scrape {
     }*/
 
     scrape() {
-        var r = makeRequest(this.url);
+        var r = this.makeRequest(this.url);
         if (r == null) {
             return [null, null];
         }
-        links = findLinks(r);
+        links = this.findLinks(r);
         return [null, links]
     }
 }
