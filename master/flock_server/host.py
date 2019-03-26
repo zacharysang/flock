@@ -1,4 +1,5 @@
 import functools
+import os
 from enum import Enum
 
 from flask import (
@@ -7,7 +8,10 @@ from flask import (
 )
 
 from flock_server.db import get_db
-from flock_server.deploy import deploy_project, destroy_project, update_status
+from flock_server.deploy import (
+    deploy_project, generate_hash_id, update_status, destroy_project,
+    get_project_folder
+)
 from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
@@ -77,15 +81,34 @@ def submit_project():
         # description is not required
         elif not min_workers:
             error = 'Minimum number of workers is required.'
+        elif 'code-file' not in request.files:
+            error = 'Code file must be uploaded.'
+
+        print(request.files)
+        for f in request.files:
+            print(f)
 
         if error is None:
             # good to go forward with input
+            # generate hash_id from owner id and name
+            hash_id = generate_hash_id(g.user['id'], name)
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                'min_workers, owner_id) VALUES (?, ?, ?, ?, ?)'),
-                (name, source_url, description, min_workers, g.user['id'])
+                 'min_workers, hash_id, owner_id) VALUES (?, ?, ?, ?, ?, ?)'),
+                (name, source_url, description, min_workers, hash_id, 
+                 g.user['id'])
             )
             db.commit()
+
+            # save the code files to the deploy path with predescribed filenames
+            project_folder = get_project_folder(hash_id)
+            code_file = request.files['code-file']
+            code_file.save(os.path.join(project_folder, 'flock.js'))
+
+            if 'secrets-file' in request.files:
+                secrets_file = request.files['secrets-file']
+                secrets_file.save(os.path.join(project_folder, 'secrets.js'))
+
             return redirect(url_for('index'))
 
         # there was an error, fall through with flash

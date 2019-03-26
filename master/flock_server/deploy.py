@@ -18,14 +18,18 @@ ecs_params_filename = 'ecs_params.yml'
 
 logging.basicConfig(filename='server.log', level=logging.INFO)
 
-def generate_id(user_id, project_name):
+def generate_hash_id(user_id, project_name):
     """Generates a unique hash id per project name + user_id.
     Concatenates user id to project name and hashes that using sha1.
+    Safe to call not in a deployment environment
     """
     string = str(user_id) + str(project_name)
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 def get_deploy_folder_path():
+    """Returns the full path to the deploy folder.
+    Safe to call not in a deployment environment
+    """
     # Create the deploy folder path
     deploy_folder_path = os.path.join(current_app.instance_path, 'deploys')
 
@@ -33,13 +37,42 @@ def get_deploy_folder_path():
 
 def get_config_file_paths(hash_id):
     """Returns a tuple of config file paths (docker compose yml, ecs params yml)
+    Safe to call not in a deployment environment.
     """
-    deploy_folder_path = get_deploy_folder_path()
-    folder_path = os.path.join(deploy_folder_path, hash_id)
+    folder_path = get_project_folder(hash_id)
     docker_compose_path = os.path.join(folder_path, docker_compose_filename)
     ecs_params_path = os.path.join(folder_path, ecs_params_filename)
 
     return (docker_compose_path, ecs_params_path)
+
+def get_project_folder_from_id(project_id):
+    """Returns the folder for a given project. Creates it if it does not exist.
+    Safe to call not in a deployment environment.
+    """
+    # get the hash_id
+    db = get_db()
+    hash_id = db.execute('SELECT hash_id FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    return get_project_folder(hash_id)
+
+def get_project_folder(hash_id):
+    """Returns the folder for a given project. Creates it if it does not exist.
+    Safe to call not in a deployment environment.
+    """
+    # check to see if a folder for this project has been created in the instance
+    # folder
+    deploy_folder_path = get_deploy_folder_path()
+    path = os.path.join(deploy_folder_path, hash_id)
+    if not os.path.exists(path):
+        # it doesn't exist, so make the path
+        os.makedirs(path)
+    elif not os.path.isdir(path):
+        print('Error: {path} cannot be made because it is a file.'
+              .format(path=path))
+        raise Exception
+
+    return path
 
 def deploy_project(project_id):
     """Central driving function for deploying projects to AWS.
@@ -53,9 +86,9 @@ def deploy_project(project_id):
         'SELECT * FROM projects where id=(?);',
         (project_id,)).fetchone()
 
-    # generate hash if it doesn't already exist
+    # generate hash if it doesn't already exist, but it should
     if project['hash_id'] is None or project['hash_id'] == '':
-        hash_id = generate_id(project['owner_id'], project['name'])
+        hash_id = generate_hash_id(project['owner_id'], project['name'])
         # write the hash id to the project
         cursor.execute(
             'UPDATE projects SET hash_id=(?) WHERE id=(?);',
@@ -88,10 +121,8 @@ def destroy_project(project_id):
 
     stop_container(hash_id)
 
-    deploy_folder_path = get_deploy_folder_path()
-
     # delete the folder with config details
-    path = os.path.join(deploy_folder_path, hash_id)
+    path = get_project_folder(hash_id)
     shutil.rmtree(path)
 
     
@@ -134,17 +165,8 @@ def build_config_files(hash_id):
                   '      security_groups:\n'
                   '        - "{security_group_id}"\n'
                   '      assign_public_ip: ENABLED\n')
-    # check to see if a folder for this project has been created in the instance
-    # folder
-    deploy_folder_path = get_deploy_folder_path()
-    path = os.path.join(deploy_folder_path, hash_id)
-    if not os.path.exists(path):
-        # it doesn't exist, so make the path
-        os.makedirs(path)
-    elif not os.path.isdir(path):
-        print('Error: {path} cannot be made because it is a file.'
-              .format(path=path))
-        raise Exception
+
+
     
     #
     # generate the files and write them to the directory
