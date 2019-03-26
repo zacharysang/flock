@@ -105,14 +105,14 @@ class Scrape {
         try {
             var r = this.makeRequest(this.url);
         } catch {
-            console.log("Failed to make requet to " + this.url)
-            return [null, null]
+            console.log("Failed to make requet to " + this.url);
+            return [null, null];
         }
         if (r == null) {
             return [null, null];
         }
         links = this.findLinks(r);
-        return [null, links]
+        return [null, links];
     }
 }
 
