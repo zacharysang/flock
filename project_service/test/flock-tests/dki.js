@@ -55,7 +55,7 @@ class Scrape {
                 var regex = /https?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
                 var link = regex.exec(l);
                 if (link) {
-                    ret_links.push(link);
+                    ret_links.push(l);
                 }
             } 
         }
