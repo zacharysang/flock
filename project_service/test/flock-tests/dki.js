@@ -59,9 +59,9 @@ class Scrape {
     }
 
     makeRequest(url) {
-        fetch(url).then(res => res.json())
+        fetch(url).then(res => res.text())
             .then(function (response) { return response })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.log('Error:', error));
     }
 
     keywordClean(word) {
