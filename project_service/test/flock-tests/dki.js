@@ -1,4 +1,4 @@
-import { stringify } from "querystring";
+//import { stringify } from "querystring";
 
 // import flock-mpi
 importScripts('/static/flock-mpi.js');
@@ -53,7 +53,7 @@ class Scrape {
         }
         //mpi.storeSet('ret_links', ret_links);
         
-        this.num_discovered_links += len(ret_links)
+        this.num_discovered_links += len(ret_links);
         mpi.updateStatus({num_discovered_links, size});
         return ret_links;
     }
@@ -131,7 +131,7 @@ async function main() {
     let size = await mpi.getSize('default');
     console.log(`got size: ${size}`);
 
-    sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.newyorker.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/']
+    sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.newyorker.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
 
     var outstandingReqs = 0;
     var receiveMessages = [];
@@ -144,7 +144,7 @@ async function main() {
 
 
     if (rank == 0) {
-        console.log('root sending and receiving links')
+        console.log('root sending and receiving links');
         for (var idx = 0; idx < size; idx++) {
             receiveMessages.push(mpi.irecv(idx + 1, 'default'));
             if (sources.length > 0) {
