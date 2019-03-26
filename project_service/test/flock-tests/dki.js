@@ -109,7 +109,7 @@ class Scrape {
     scrape() {
         var r = null;
         try {
-            r = await this.makeRequest(this.url);
+            r = this.makeRequest(this.url);
         } catch {
             console.log("Failed to make requet to " + this.url);
             return [null, null];
