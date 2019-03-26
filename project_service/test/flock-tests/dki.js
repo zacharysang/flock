@@ -119,10 +119,8 @@ class Scrape {
             return [null, null];
         }   
         console.log('value of r after makeRequest: '+r);
-        r.then(function(data) {
-            links = this.findLinks(data);
-            return [null, links];
-        });  
+        links = this.findLinks(r);
+        return [null, links];
     }
 }
 
