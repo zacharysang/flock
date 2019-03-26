@@ -118,6 +118,7 @@ class Scrape {
             console.log('promise returning null');
             return [null, null];
         }   
+        console.log('value of r after makeRequest: '+r);
         r.then(function(data) {
             links = this.findLinks(data);
             return [null, links];
