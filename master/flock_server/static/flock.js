@@ -275,7 +275,30 @@ let renderStats = function(data) {
         // TODO handle special value types here (eg: svg, img, etc.)
         let valueEl = document.createElement('div');
         valueEl.setAttribute('class', 'statValue');
-        valueEl.innerText = JSON.stringify(value);
+        
+        if (value.type) {
+            switch (value.type) {
+                case 'img':
+                    let imgEl = document.createElement('img');
+                    imgEl.setAttribute('src', value.src);
+                    imgEl.setAttribute('width', value.width || 200);
+                    imgEl.setAttribute('height', value.height || 200);
+                    valueEl.appendChild(imgEl);
+                    break;
+                case 'svg':
+                    let svgEl = document.createElement('img');
+                    svgEl.setAttribute('src', value.src);
+                    svgEl.setAttribute('width', value.width || 400);
+                    svgEl.setAttribute('height', value.height || 400);
+                    valueEl.appendChild(svgEl);
+                    break;
+                default:
+                    console.warn(`Unexpected type: ${value.type}. Rendering as string`);
+                    value.innerText = JSON.stringify(value);
+            }
+        } else {
+            valueEl.innerText = JSON.stringify(value);
+        }
         
         // append label and value to statEl
         statEl.appendChild(labelEl);

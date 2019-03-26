@@ -118,6 +118,7 @@ mpi.storeGet = async function (name) {
  * By default, each key's value will be treated as a string and displayed as text on the volunteer's page. In the case that the given value is an object, the `type` attribute will be checked to match the following. If a match is found, the value will be presented according to the given type: <br/>
  *      * img : Displays the image given by the `src` attribute on the value object <br/>
  *      * svg : Displays an svg element given by the 'svg' attribute on the value object <br/>
+ * Additionally, 'width' and 'height' attributes can be used for the above data types to render them at a certain size on the volunteer's page. <br/>
  * 
  * @function mpi.updateStatus
  * 
