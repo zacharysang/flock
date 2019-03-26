@@ -109,7 +109,7 @@ class Scrape {
     scrape() {
         var r = null;
         try {
-            r = this.makeRequest(this.url);
+            r = await this.makeRequest(this.url);
         } catch {
             console.log("Failed to make requet to " + this.url);
             return [null, null];
@@ -220,6 +220,7 @@ async function main() {
                 baseurl = parts.join('/');
                 s.setUrl(source);
                 retval = s.scrape();
+                console.log('result of scrape: ' + retval)
                 keywords = retval[0];
                 links = retval[1];
                 console.log('links discovered: ' + links);
