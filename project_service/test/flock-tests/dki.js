@@ -102,12 +102,17 @@ class Scrape {
     }*/
 
     scrape() {
+        var r = null;
         try {
-            var r = this.makeRequest(this.url);
+            r = this.makeRequest(this.url);
         } catch {
             console.log("Failed to make requet to " + this.url);
             return [null, null];
-        }      
+        }   
+        if (r==null) {
+            console.log('promise returning null');
+            return [null, null];
+        }   
         r.then(function(data) {
             links = this.findLinks(r);
             return [null, links];
