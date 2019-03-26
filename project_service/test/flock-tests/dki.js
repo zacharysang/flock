@@ -6,9 +6,9 @@ importScripts('/static/flock-mpi.js');
 
 console.log('init dki.js');
 class Scrape {
-    constructor(url, collection) {
+    constructor(url) {
         this.url = url;
-        this.collection = collection;
+        //this.collection = collection;
         this.num_discovered_links = 0;
 
         // readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
@@ -128,6 +128,10 @@ async function main() {
     var explored = new Set();
     var uniqueKeywords = new Set();
     var stopTime = -1;
+
+
+    s = Scrape();
+
 
     if (rank == 0) {
         console.log('root sending and receiving links')
