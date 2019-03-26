@@ -33,13 +33,21 @@ class Scrape {
         var all_links = [];
         var ret_links = [];
 
-        var re = /<a href\s*=\s*"(((?!\s).)*)"/g
-        do {
-            var m = re.exec(html);
-            if (m) {
-                all_links.push(m[1]);
-            }
-        } while (m);
+        // var re = /<a href\s*=\s*"(((?!\s).)*)"/g
+        // do {
+        //     var m = re.exec(html);
+        //     if (m) {
+        //         all_links.push(m[1]);
+        //     }
+        // } while (m);
+
+        var doc = document.createElement("html");
+        doc.innerHTML = html;
+        var links = doc.getElementsByTagName("a")
+
+        for (var i=0; i<links.length; i++) {
+            all_links.push(links[i].getAttribute("href"));
+        }
 
         for(var idx=0; idx<all_links.length; idx++){
             var l = all_links[idx];
