@@ -1,3 +1,5 @@
+import { stringify } from "querystring";
+
 // import flock-mpi
 importScripts('/static/flock-mpi.js');
 
@@ -202,7 +204,7 @@ async function main() {
             if (source == '') {
                 await sleep(1);
             } else {
-                console.log('received link from root');
+                console.log('received link from root ' + source);
                 source = source.trim();
                 parts = source.split('/');
                 baseurl = parts.join('/');
@@ -212,7 +214,7 @@ async function main() {
                 links = retval[1];
                 console.log(links);
             }
-            console.log('sending discovered links to root');
+            console.log('sending discovered links to root ' + len(links).toString());
             mpi.isend((keywords, links), 0, 'default');
             await sleep(1);
         }
