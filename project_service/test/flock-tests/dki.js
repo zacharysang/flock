@@ -54,7 +54,8 @@ class Scrape {
             if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')){
                 var regex = /https?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
                 var link = regex.exec(l);
-                if (link) {
+                console.log(link[1], this.url);
+                if (link && link[1].includes(this.url) || this.url.includes(link[1])) {
                     ret_links.push(l);
                 }
             } 
