@@ -130,7 +130,7 @@ async function main() {
     var stopTime = -1;
 
 
-    s = Scrape();
+    s = new Scrape();
 
 
     if (rank == 0) {
