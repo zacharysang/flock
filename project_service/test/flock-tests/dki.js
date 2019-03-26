@@ -57,10 +57,7 @@ class Scrape {
     }
 
     makeRequest(url) {
-        fetch(url, {
-            method: "GET",
-            mode: "no-cors"
-        }).then(res => res.json())
+        fetch(url).then(res => res.json())
             .then(function (response) { return response })
             .catch(error => console.error('Error:', error));
     }
@@ -103,7 +100,12 @@ class Scrape {
     }*/
 
     scrape() {
-        var r = this.makeRequest(this.url);
+        try {
+            var r = this.makeRequest(this.url);
+        } catch {
+            console.log("Failed to make requet to " + this.url)
+            return [null, null]
+        }
         if (r == null) {
             return [null, null];
         }
