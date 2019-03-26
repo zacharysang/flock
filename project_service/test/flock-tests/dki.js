@@ -42,7 +42,7 @@ class Scrape {
         for(var idx=0; idx<all_links.length; idx++){
             var l = all_links[idx];
             if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')){
-                var regex = /http[s]?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
+                var regex = /https?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
                 link = regex.exec(l);
                 if (link) {
                     ret_links.push(link);
@@ -109,6 +109,9 @@ class Scrape {
     }
 }
 
+function sleep(s) {
+    return new Promise(resolve => setTimeout(resolve, s*1000));
+  }
 
 console.log('starting scraper...');
 
@@ -121,7 +124,7 @@ async function main() {
     let size = await mpi.getSize('default');
     console.log(`got size: ${size}`);
 
-    sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.newyorker.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'http://time.com/', 'https://www.cbsnews.com/']
+    sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.newyorker.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/']
 
     var outstandingReqs = 0;
     var receiveMessages = [];
