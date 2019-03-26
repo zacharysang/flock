@@ -441,6 +441,12 @@ flock.getId = async function(comm, rank) {
         
         let destId = await flock.getId(comm, dest);
         
+        if (destId.err) {
+            console.error(destId.err);
+            reject(destId.err);
+            return;
+        }
+        
         easyrtc.sendData(destId, MSG_TYPE_MSG, msg, ()=>{});
         
         let interval = setInterval(async () => {
