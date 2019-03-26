@@ -35,7 +35,7 @@ class Scrape {
 
         var re = /<a href\s*=\s*"(((?!\s).)*)"/g
         do {
-            m = re.exec(html);
+            var m = re.exec(html);
             if (m) {
                 all_links.push(m[1]);
             }
@@ -45,7 +45,7 @@ class Scrape {
             var l = all_links[idx];
             if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')){
                 var regex = /https?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
-                link = regex.exec(l);
+                var link = regex.exec(l);
                 if (link) {
                     ret_links.push(link);
                 }
@@ -118,7 +118,7 @@ class Scrape {
             console.log('promise returning null');
             return [null, null];
         }   
-        console.log('value of r after makeRequest: '+r);
+        //console.log('value of r after makeRequest: '+r);
         links = this.findLinks(r);
         return [null, links];
     }
