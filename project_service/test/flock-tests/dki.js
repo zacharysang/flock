@@ -58,6 +58,8 @@ class Scrape {
                 //console.log(link, this.url);
                 if (link && link.length >= 3 && (link[2].includes(this.url) || this.url.includes(link[2]))) {
                     ret_links.push(l);
+                } else if (l.startsWith('/') && l.length > 1) {
+                    ret_links.push(this.url+l)
                 }
             }
         }
