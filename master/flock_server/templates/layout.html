@@ -3,6 +3,7 @@
   <head>
     {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
     <title>{% block title %}{% endblock %} - Flock</title>
     {% endblock %}
   </head>
@@ -29,7 +30,7 @@
 
     <div id="footer">
       {% block footer %}
-      &copy; Copyright 2019. <a href="https://github.com/zacharysang/flock">Github</a>
+      &copy; Copyright 2019. <a href="https://github.com/zacharysang/flock">GitHub</a>
       {% endblock %}
     </div>
   </body>
