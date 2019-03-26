@@ -26,14 +26,9 @@ async function main() {
         
         // send from a to a+1
         if (rank == a) {
-            mpi.isend(a, next, 'default');
-            
-            console.log(`sent to next: ${next}`);
-            
+            console.log(`sent to next with status: ${await mpi.isend(a, next, 'default')}`);
         } else if (rank == next) {
-            mpi.irecv(a, 'default');
-            
-            console.log(`received from a: ${a}`);
+            console.log(`received from a: ${await mpi.irecv(a, 'default')}`);
         }
         
         a = next;
