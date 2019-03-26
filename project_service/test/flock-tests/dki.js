@@ -106,10 +106,10 @@ class Scrape {
         }
     }*/
 
-    scrape() {
+    async scrape() {
         var r = null;
         try {
-            r = this.makeRequest(this.url);
+            r = await this.makeRequest(this.url);
         } catch {
             console.log("Failed to make requet to " + this.url);
             return [null, null];
@@ -219,7 +219,7 @@ async function main() {
                 parts = source.split('/');
                 baseurl = parts.join('/');
                 s.setUrl(source);
-                retval = s.scrape();
+                retval = await s.scrape();
                 console.log('result of scrape: ' + retval)
                 keywords = retval[0];
                 links = retval[1];
