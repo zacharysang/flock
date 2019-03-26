@@ -28,11 +28,8 @@ h1, h2 {
     margin-bottom: 0.2rem;
     padding: 1rem;
     background-color: #fefefe;
-    /*border-style: solid;
-    border-width: 1px;
-    border-color: #000000;*/
     display: flex;
-    border-radius: 5px;
+    border-radius: 0.5rem;
 }
 
 .item-name {
@@ -51,7 +48,7 @@ h1, h2 {
     color: #cc0000;
     background: #F3F3F3;
     border: 1px #DADADA solid;
-    padding: 5px 10px;
+    padding: 0.5rem 1rem;
     border-radius: 2px;
     outline: none;
     text-decoration: none;
@@ -91,7 +88,7 @@ ul.navbar li {
 }
 
 ul.navbar li p {
-    padding: 14px 16px;
+    padding: 1rem 1.1rem;
     margin: 0;
 }
 
@@ -99,7 +96,7 @@ ul.navbar li a {
     display: block;
     color: white;
     text-align: center;
-    padding: 14px 16px;
+    padding: 1rem 1.1rem;
     text-decoration: none;
 }
 
