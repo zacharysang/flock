@@ -20,6 +20,8 @@ const ID_STATUS_EL = 'status';
 const ID_PROJECT_TITLE = 'projectTitle';
 const ID_PROJECT_DESC = 'projectDescription';
 const ID_TASK_DESC = 'taskDescription';
+const ID_WORLD_RANK = 'world_rank';
+const ID_STATE = 'state';
 const ID_PROGRESS = 'progress';
 const ID_DATA = 'data';
 
@@ -156,7 +158,7 @@ let renderStats = function(data) {
                 background-color: #B6D1FF;
             }
         
-            #statsContainer {
+            #status {
                 display: flex;
                 flex-direction: vertical;
                 flex-wrap: wrap;
@@ -212,6 +214,14 @@ let renderStats = function(data) {
                 <div class="statValue" id="${ID_TASK_DESC}"></div>
             </div>
             <div class="stat">
+                <div class="statLabel">World Rank</div>
+                <div class="statValue" id="${ID_WORLD_RANK}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">State</div>
+                <div class="statValue" id="${ID_STATE}"></div>
+            </div>
+            <div class="stat">
                 <div class="statLabel">Progress</div>
                 <div class="statValue progress" id="${ID_PROGRESS}"></div>
             </div>
@@ -233,6 +243,14 @@ let renderStats = function(data) {
     let taskEl = document.getElementById(ID_TASK_DESC);
     taskEl.innerText = data[ID_TASK_DESC];
     delete data[ID_TASK_DESC];
+    
+    let rankEl = document.getElementById(ID_WORLD_RANK);
+    rankEl.innerText = data[ID_WORLD_RANK];
+    delete data[ID_WORLD_RANK];
+    
+    let stateEl = document.getElementById(ID_STATE);
+    stateEl.innerText = data[ID_STATE];
+    delete data[ID_STATE];
     
     let progressEl = document.getElementById(ID_PROGRESS);
     if (!isNaN(parseInt(data[ID_PROGRESS]))) {
