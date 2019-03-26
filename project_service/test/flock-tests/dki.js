@@ -57,7 +57,10 @@ class Scrape {
     }
 
     makeRequest(url) {
-        fetch(url).then(res => res.json())
+        fetch(url, {
+            method: "GET",
+            mode: "no-cors"
+        }).then(res => res.json())
             .then(function (response) { return response })
             .catch(error => console.error('Error:', error));
     }
