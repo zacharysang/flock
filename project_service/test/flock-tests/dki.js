@@ -120,7 +120,7 @@ class Scrape {
             return [null, null];
         }   
         //console.log('value of r after makeRequest: '+r);
-        links = this.findLinks(r);
+        var links = this.findLinks(r);
         return [null, links];
     }
 }
