@@ -54,7 +54,8 @@ class Scrape {
         //mpi.storeSet('ret_links', ret_links);
         
         this.num_discovered_links += ret_links.length;
-        mpi.updateStatus({this.num_discovered_links, size});
+        var tmp = this.num_discovered_links;
+        mpi.updateStatus({tmp, size});
         return ret_links;
     }
 
