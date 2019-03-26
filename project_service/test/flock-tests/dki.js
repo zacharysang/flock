@@ -214,7 +214,7 @@ async function main() {
                 links = retval[1];
                 console.log(links);
             }
-            console.log('sending discovered links to root ' + links.length).toString());
+            console.log('sending discovered links to root ' + links.length.toString());
             mpi.isend((keywords, links), 0, 'default');
             await sleep(1);
         }
