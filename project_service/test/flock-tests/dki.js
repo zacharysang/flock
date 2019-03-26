@@ -49,23 +49,23 @@ class Scrape {
         //     all_links.push(links[i].getAttribute("href"));
         // }
 
-        for(var idx=0; idx<all_links.length; idx++){
+        for (var idx = 0; idx < all_links.length; idx++) {
             var l = all_links[idx];
-            if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')){
+            if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')) {
                 var regex = /https?:\/\/(www\.)?(.*(\.com|\.org))(\/)?\.*/gi;
                 var link = regex.exec(l);
                 //console.log(link, this.url);
-                if (link && link[2].includes(this.url) || this.url.includes(link[1])) {
+                if (link && link.length >= 3 && (link[2].includes(this.url) || this.url.includes(link[2]))) {
                     ret_links.push(l);
                 }
-            } 
+            }
         }
         //mpi.storeSet('ret_links', ret_links);
-        
+
         this.num_discovered_links += ret_links.length;
         var tmp = this.num_discovered_links;
-        mpi.updateStatus({'numlinks': tmp});
-        console.log('retlinks: '+ret_links)
+        mpi.updateStatus({ 'numlinks': tmp });
+        console.log('retlinks: ' + ret_links)
         return ret_links;
     }
 
@@ -124,11 +124,11 @@ class Scrape {
         } catch {
             console.log("Failed to make requet to " + this.url);
             return [null, null];
-        }   
-        if (r==null) {
+        }
+        if (r == null) {
             console.log('promise returning null');
             return [null, null];
-        }   
+        }
         //console.log('value of r after makeRequest: '+r);
         var links = this.findLinks(r);
         return [null, links];
@@ -136,8 +136,8 @@ class Scrape {
 }
 
 function sleep(s) {
-    return new Promise(resolve => setTimeout(resolve, s*1000));
-  }
+    return new Promise(resolve => setTimeout(resolve, s * 1000));
+}
 
 console.log('starting scraper...');
 
@@ -174,7 +174,7 @@ async function main() {
                 mpi.isend('', idx + 1, 'default');
             }
         }
-        
+
         console.log('root sening and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
