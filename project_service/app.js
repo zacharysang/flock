@@ -134,7 +134,6 @@ const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
                     // if sid corresponds to a rank in the map already, update the easyrtcid
                     Object.assign(commMap[rank], {id: easyrtcid});
                 } else {
-                    // TODO create a variable that accurately tracks number of nodes connected to a comm group
                     // if rank for sid not in map, make a new entry for this new sid
                     commMap[Object.keys(commMap).length] = {id: easyrtcid, sid: sid};
                 }
@@ -202,9 +201,14 @@ const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
             }
             
             if (msg.msgType === MSG_TYPE_GET_ID) {
-                let id = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
+                let result;
+                if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
+                    result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
+                } else {
+                    result = {err: 'Rank does not exist'};
+                }
                 
-                socketCallback({msgType: MSG_TYPE_GET_ID, msgData: id});
+                socketCallback({msgType: MSG_TYPE_GET_ID, msgData: result});
             }
             
             // continue the chain
