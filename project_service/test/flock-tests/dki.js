@@ -30,6 +30,7 @@ class Scrape {
     }
 
     findLinks(html) {
+	console.log(html);
         var all_links = [];
         var ret_links = [];
 
@@ -167,6 +168,7 @@ async function main() {
         console.log('root sending and receiving links');
         for (var idx = 0; idx < size; idx++) {
             receiveMessages.push(mpi.irecv(idx + 1, 'default'));
+            console.log('received from worker: '+receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
                 outstandingReqs++;
