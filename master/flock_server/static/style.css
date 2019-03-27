@@ -14,6 +14,19 @@ body {
     margin-top: 5rem;
 }
 
+#project-detail {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#right {
+    flex: 50%;
+}
+
+#left {
+    flex: 50%;
+}
+
 h1, h2 {
     font-weight: lighter;
 }
