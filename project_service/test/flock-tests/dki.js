@@ -68,7 +68,8 @@ class Scrape {
 
     async makeRequest(url) {
         try {
-            const res = await fetch(url);
+            var cors_api_url = 'https://cors-anywhere.herokuapp.com/';
+            const res = await fetch(cors_api_url+url);
             const response = await res.text();
             return response;
         }
