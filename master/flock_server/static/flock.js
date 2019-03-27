@@ -291,7 +291,9 @@ flock.callPeer = function(peerId) {
         easyrtc.call(peerId,
                 (caller, media) => {callAck()},
                 (errorCode, errorText) => {
-                    easyrtc.showError(errorCode, errorText);
+                    let errMsg = `Error during p2p call (${errorCode}): ${errorText}`;
+                    console.warn(errMsg);
+                    callAck(errMsg);
                 }
         );
     } catch(err) {
