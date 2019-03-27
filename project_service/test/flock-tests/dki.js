@@ -157,7 +157,7 @@ async function main() {
     let uniqueKeywords = new Set();
     let stopTime = -1;
     let total = 0;
-
+    let flag = false;
 
     let s = new Scrape();
 
@@ -189,7 +189,8 @@ async function main() {
                     links = res;
 
                     total += links.length;
-                    if (total >= 5000){
+                    if (total >= 5000 && !flag){
+                        flag=true;
                         var t = Date.now()-starttime;
                         mpi.updateStatus({'timeto5k': t});
                         console.log({'timeto5k': t});
