@@ -169,7 +169,7 @@ async function main() {
     if (rank == 0) {
         console.log('root sending and receiving links');
         for (var idx = 0; idx < size - 1; idx++) {
-            receiveMessages.push(mpi.irecv(idx + 1, 'default'));
+            receiveMessages.push((idx+1,mpi.irecv(idx + 1, 'default')));
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
@@ -182,7 +182,8 @@ async function main() {
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
-                var res = await receiveMessages[idx];
+                var res = await receiveMessages[idx][1];
+                rec_rank = res[0]
                 console.log('rank 0 recieved from child: '+res)
                 if (res[0]) {
                     outstandingReqs--;
@@ -193,13 +194,13 @@ async function main() {
                         console.log('sources: '+sources);
                         nextLink = sources.pop();
                         console.log('sending to child: '+nextLink);
-                        mpi.isend(nextLink, idx + 1, 'default');
+                        mpi.isend(nextLink, rec_rank, 'default');
                         outstandingReqs++;
                     } else {
-                        mpi.isend('', idx + 1, 'default');
+                        mpi.isend('', rec_rank, 'default');
                     }
 
-                    receiveMessages.push(mpi.irecv(idx + 1, 'default'));
+                    receiveMessages.push(mpi.irecv(rec_rank, 'default'));
 
                     // for (var jdx = 0; jdx < keywords.length; jdx++) {
                     //     uniqueKeywords.add(keywords[jdx]);
