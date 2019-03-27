@@ -155,6 +155,7 @@ async function main() {
     var explored = new Set();
     var uniqueKeywords = new Set();
     var stopTime = -1;
+    var total = 0;
 
 
     s = new Scrape();
@@ -203,16 +204,20 @@ async function main() {
 
                     for (var jdx = 0; jdx < links.length; jdx++) {
                         link = links[jdx];
+                        total++;
+                        if (total == 5000){
+                            mpi.updateStatus({'timeto5k': Date.now()-starttime});
+                        }
                         console.log('evaluating link: '+link);
                         console.log('length of explored: '+explored.size);
                         if (!explored.has(link)) {
                             sources.push(link);
                             explored.add(link);
                             mpi.updateStatus({'numExploredLinks':explored.length});
-                            if (explored.size >= 214){
-                                mpi.updateStatus({'timeto10k': Date.now()-starttime});
-                                return;
-                            }
+                            // if (explored.size >= 214){
+                            //     mpi.updateStatus({'timeto10k': Date.now()-starttime});
+                            //     return;
+                            // }
                         }
                         else {
                             console.log('repeated link');
