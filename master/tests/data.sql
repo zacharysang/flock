@@ -8,5 +8,5 @@ VALUES
 INSERT INTO projects (name, source_url, deployment_url, approval_status,
                       description, owner_id)
 VALUES
-  ('Test Project', 'https://kurtjlewis.com', '', 0, 'Test Description', 1),
-  ('Test Project2', 'https://zacharysang.com', '', 0, 'Test Description2', 1);
+  ('UnitTest Project', 'https://kurtjlewis.com', '', 0, 'Description', 1),
+  ('UnitTest Project2', 'https://zacharysang.com', '', 0, 'Description', 1);
