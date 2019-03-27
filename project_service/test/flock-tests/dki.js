@@ -30,7 +30,7 @@ class Scrape {
     }
 
     findLinks(html) {
-	console.log(html);
+        console.log(html);
         var all_links = [];
         var ret_links = [];
 
@@ -59,7 +59,7 @@ class Scrape {
                 if (link && link.length >= 3 && (link[2].includes(this.url) || this.url.includes(link[2]))) {
                     ret_links.push(l);
                 } else if (l.startsWith('/') && l.length > 1) {
-                    ret_links.push(this.url+l)
+                    ret_links.push(this.url + l)
                 }
             }
         }
@@ -168,9 +168,9 @@ async function main() {
 
     if (rank == 0) {
         console.log('root sending and receiving links');
-        for (var idx = 0; idx < size; idx++) {
-            receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
-            console.log('received from worker: '+receiveMessages);
+        for (var idx = 0; idx < size - 1; idx++) {
+            recieveMessages.push(mpi.irecv(idx + 1, 'default'));
+            console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
                 outstandingReqs++;
@@ -179,40 +179,39 @@ async function main() {
             }
         }
 
-        console.log('root sening and receiving more links');
+        console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
-                req = receiveMessages[idx];
-            }
+                var res = await receiveMessages[idx];
+            
+                if (res[0]) {
+                    outstandingReqs--;
+                    //keywords = res[0];
+                    links = res[1];
 
-            if (res[0]) {
-                outstandingReqs--;
-                //keywords = res[0];
-                links = res[1];
+                    if (sources.length > 0) {
+                        nextLink = sources.pop();
+                        mpi.isend(nextLink, idx + 1, 'default');
+                        outstandingReqs++;
+                    } else {
+                        mpi.isend('', idx + 1, 'default');
+                    }
 
-                if (sources.length > 0) {
-                    nextLink = sources.pop();
-                    mpi.isend(nextLink, idx + 1, 'default');
-                    outstandingReqs++;
-                } else {
-                    mpi.isend('', idx + 1, 'default');
-                }
+                    receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
 
-                receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
+                    // for (var jdx = 0; jdx < keywords.length; jdx++) {
+                    //     uniqueKeywords.add(keywords[jdx]);
+                    // }
 
-                // for (var jdx = 0; jdx < keywords.length; jdx++) {
-                //     uniqueKeywords.add(keywords[jdx]);
-                // }
-
-                for (var jdx = 0; jdx < links.length; jdx++) {
-                    link = links[jdx];
-                    if (!explored.has(link)) {
-                        sources.push(link);
-                        explored.add(link);
+                    for (var jdx = 0; jdx < links.length; jdx++) {
+                        link = links[jdx];
+                        if (!explored.has(link)) {
+                            sources.push(link);
+                            explored.add(link);
+                        }
                     }
                 }
             }
-
             // Clean up urls_collection ??? 
         }
     } else {
