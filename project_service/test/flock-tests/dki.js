@@ -187,7 +187,7 @@ async function main() {
                 if (res[0]) {
                     outstandingReqs--;
                     //keywords = res[0];
-                    links = res[1];
+                    links = res;
 
                     if (sources.length > 0) {
                         console.log('sources: '+sources);
