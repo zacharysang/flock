@@ -190,14 +190,16 @@ async function main() {
                     links = res[1];
 
                     if (sources.length > 0) {
+                        console.log('sources: '+sources);
                         nextLink = sources.pop();
+                        console.log('sending to child: '+nextLink);
                         mpi.isend(nextLink, idx + 1, 'default');
                         outstandingReqs++;
                     } else {
                         mpi.isend('', idx + 1, 'default');
                     }
 
-                    receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
+                    receiveMessages.push(mpi.irecv(idx + 1, 'default'));
 
                     // for (var jdx = 0; jdx < keywords.length; jdx++) {
                     //     uniqueKeywords.add(keywords[jdx]);
@@ -205,6 +207,7 @@ async function main() {
 
                     for (var jdx = 0; jdx < links.length; jdx++) {
                         link = links[jdx];
+                        console.log('checking out link: '+link)
                         if (!explored.has(link)) {
                             sources.push(link);
                             explored.add(link);
