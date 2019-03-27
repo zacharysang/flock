@@ -182,9 +182,9 @@ async function main() {
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
-                var req = await receiveMessages[idx];
-                var res = req[1]
-                rec_rank = req[0]
+                var res = await receiveMessages[idx][1];
+                //var res = req[1];
+                var rec_rank = receiveMessages[idx][0];
                 console.log('rank 0 recieved from child: '+receiveMessages[idx])
                 if (res) {
                     outstandingReqs--;
