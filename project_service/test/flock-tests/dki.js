@@ -140,7 +140,7 @@ function sleep(s) {
 console.log('starting scraper...');
 
 
-async function sendrecv(receiveMessages) {
+async function sendrecv() {
     for (var idx = 0; idx < receiveMessages.length; idx++) {
 
         //var res = req[1];
@@ -162,7 +162,7 @@ async function sendrecv(receiveMessages) {
     }
 }
 
-async function parseres(receiveMessages) {
+async function parseres() {
     let total = 0;
     let flag = false;
     let explored = new Set();
@@ -240,8 +240,8 @@ async function main() {
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            sendrecv(receiveMessages);
-            parseres(receiveMessages);
+            sendrecv();
+            parseres();
         }
     } else {
         console.log('in worker node');
@@ -254,7 +254,7 @@ async function main() {
             var keywords = '';
 
             if (source == '') {
-                await sleep(1);
+                //await sleep(1);
             } else {
                 console.log('received link from root ' + source);
                 source = source.trim();
@@ -270,7 +270,7 @@ async function main() {
             len = ((links) ? links.length : 0);
             console.log('sending discovered links to root ' + len.toString());
             mpi.isend((keywords, links), 0, 'default');
-            await sleep(1);
+            //await sleep(1);
         }
     }
 }
