@@ -206,7 +206,9 @@ async function main() {
                         link = links[jdx];
                         total++;
                         if (total == 5000){
-                            mpi.updateStatus({'timeto5k': Date.now()-starttime});
+                            var t = Date.now()-starttime;
+                            mpi.updateStatus({'timeto5k': t});
+                            console.log({'timeto5k': t});
                         }
                         console.log('evaluating link: '+link);
                         console.log('length of explored: '+explored.size);
