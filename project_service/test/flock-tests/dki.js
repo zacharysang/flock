@@ -203,7 +203,9 @@ async function parseres(receiveMessages) {
 }
 
 let sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
-    
+let outstandingReqs = 0;
+let receiveMessages = [];
+
 async function main() {
     console.log("in main");
 
@@ -215,9 +217,8 @@ async function main() {
 
     //politico, cnn
     //var sources = ['https://www.cnn.com/', 'https://www.politico.com/']
-    let outstandingReqs = 0;
-    let receiveMessages = [];
-    
+
+
     let stopTime = -1;
 
     let s = new Scrape();
