@@ -158,7 +158,6 @@ async function main() {
     let stopTime = -1;
     let total = 0;
 
-
     let s = new Scrape();
 
 
