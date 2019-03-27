@@ -24,7 +24,7 @@ class Scrape {
     }
 
     findLinks(html) {
-        console.log(html);
+        //console.log(html);
         var all_links = [];
         var ret_links = [];
 
@@ -62,7 +62,7 @@ class Scrape {
         this.num_discovered_links += ret_links.length;
         var tmp = this.num_discovered_links;
         mpi.updateStatus({ 'numParsedLinks': tmp });
-        console.log('retlinks: ' + ret_links)
+        //console.log('retlinks: ' + ret_links)
         return ret_links;
     }
 
@@ -186,7 +186,7 @@ async function main() {
                     links = res;
 
                     if (sources.length > 0) {
-                        console.log('sources: '+sources);
+                        //console.log('sources: '+sources);
                         nextLink = sources.pop();
                         console.log('sending to child: '+nextLink);
                         mpi.isend(nextLink, rec_rank, 'default');
@@ -213,6 +213,9 @@ async function main() {
                                 return;
                             }
                         }
+                        else {
+                            console.log('repeated link');
+                        }
                     }
                 }
             }
@@ -237,10 +240,10 @@ async function main() {
                 baseurl = parts.join('/');
                 s.setUrl(source);
                 retval = await s.scrape();
-                console.log('result of scrape: ' + retval)
+                //console.log('result of scrape: ' + retval)
                 keywords = retval[0];
                 links = retval[1];
-                console.log('links discovered: ' + links);
+                //console.log('links discovered: ' + links);
             }
             len = ((links) ? links.length : 0);
             console.log('sending discovered links to root ' + len.toString());
