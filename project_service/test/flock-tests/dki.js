@@ -209,7 +209,7 @@ async function main() {
                             sources.push(link);
                             explored.add(link);
                             mpi.updateStatus({'numExploredLinks':explored.length});
-                            if (explored.length >= 10,000){
+                            if (explored.size >= 10,000){
                                 mpi.updateStatus({'timeto10k': Date.now()-starttime});
                                 return;
                             }
