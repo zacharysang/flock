@@ -183,7 +183,7 @@ async function main() {
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
                 var res = await receiveMessages[idx][1];
-                rec_rank = res[0]
+                rec_rank = receiveMessages[idx][0]
                 console.log('rank 0 recieved from child: '+res)
                 if (res[0]) {
                     outstandingReqs--;
