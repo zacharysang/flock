@@ -169,7 +169,7 @@ async function main() {
     if (rank == 0) {
         console.log('root sending and receiving links');
         for (var idx = 0; idx < size; idx++) {
-            receiveMessages.push(mpi.irecv(idx + 1, 'default'));
+            receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
             console.log('received from worker: '+receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
@@ -198,7 +198,7 @@ async function main() {
                     mpi.isend('', idx + 1, 'default');
                 }
 
-                receiveMessages.push(mip.irecv(idx + 1, 'default'));
+                receiveMessages.push(await mpi.irecv(idx + 1, 'default'));
 
                 // for (var jdx = 0; jdx < keywords.length; jdx++) {
                 //     uniqueKeywords.add(keywords[jdx]);
