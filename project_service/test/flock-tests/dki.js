@@ -160,6 +160,7 @@ async function sendrecv() {
 
         receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
     }
+    console.log("ENDED SENDRECV");
 }
 
 async function parseres() {
