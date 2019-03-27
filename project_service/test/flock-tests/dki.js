@@ -163,13 +163,19 @@ async function sendrecv(receiveMessages) {
 }
 
 async function parseres(receiveMessages) {
+    let total = 0;
+    let flag = false;
+    let explored = new Set();
+    let uniqueKeywords = new Set();
+
     for (var idx = 0; idx < receiveMessages.length; idx++) {
         //parse received links
+        console.log('awaiting message from rank ' + receiveMessages[idx][0]);
         var res = await receiveMessages[idx][1];
         if (res) {
             outstandingReqs--;
             //keywords = res[0];
-            links = res;
+            let links = res;
 
             total += links.length;
             if (total >= 5000 && !flag) {
@@ -195,6 +201,9 @@ async function parseres(receiveMessages) {
         }
     }
 }
+
+let sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
+    
 async function main() {
     console.log("in main");
 
@@ -204,16 +213,12 @@ async function main() {
     let size = await mpi.getSize('default');
     console.log(`got size: ${size}`);
 
-    let sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
     //politico, cnn
     //var sources = ['https://www.cnn.com/', 'https://www.politico.com/']
     let outstandingReqs = 0;
     let receiveMessages = [];
-    let explored = new Set();
-    let uniqueKeywords = new Set();
+    
     let stopTime = -1;
-    let total = 0;
-    let flag = false;
 
     let s = new Scrape();
 
