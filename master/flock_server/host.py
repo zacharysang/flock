@@ -1,8 +1,8 @@
+from enum import Enum
 import functools
 import os
-from enum import Enum
-import string
 import random
+import string
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
@@ -90,10 +90,6 @@ def submit_project():
             error = 'Minimum number of workers is required.'
         elif 'code-file' not in request.files:
             error = 'Code file must be uploaded.'
-
-        print(request.files)
-        for f in request.files:
-            print(f)
 
         if error is None:
             # good to go forward with input
@@ -207,9 +203,10 @@ def delete(project_id):
 def serve_file(project_id, filename):
     """Serves the requested file from the project's deployment folder.
     Only serves CODE_FILENAME and SECRETS_FILENAME
+    Query arg: `key` - key used for serving the secrets file
     """
 
-    # get the hash id from the project id
+    # get the project from the project id
     db = get_db()
     project = db.execute('SELECT * FROM projects WHERE id=(?);',
                          (project_id,)).fetchone()
