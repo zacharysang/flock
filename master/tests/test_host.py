@@ -63,7 +63,8 @@ def test_submit_validation(client, auth, name, source_url, min_workers,
 @pytest.mark.parametrize('path', (
     '/9',
     '/9/approve',
-    '/9/delete'
+    '/9/delete',
+    '/9/file/flock.js'
 ))
 def test_404(client, auth, path):
     """Test that all project urls show a 404 when the project doesn't exist.
@@ -122,6 +123,7 @@ def test_detail(client, auth):
     assert b'WAITING' in response.data 
 
 def test_delete(client, auth, app):
+    print('What about this?')
     auth.login()
     response = client.get('/host/1/delete')
 
@@ -129,3 +131,53 @@ def test_delete(client, auth, app):
         db = get_db()
         project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
         assert project is None
+
+
+def test_serve_file(client, auth, app):
+    # need to submit some files first
+    auth.login()
+    project_name = 'serve-file-test'
+    code_file_content = b'CODE FILE'
+    secrets_file_content = b'SECRETS FILE'
+    client.post(
+        '/host/submit', buffered=True,
+        content_type='multipart/form-data',
+        data = { 'name': project_name, 
+                 'source-url': 'https://zacharysang.com',
+                 'min-workers': '1',
+                 'description': 'Creation description',
+                 'code-file': (BytesIO(code_file_content), 'flock.js'),
+                 'secrets-file': (BytesIO(secrets_file_content), 'secrets.js')
+        }
+    )
+    # project is created, logout because these urls don't require sessions
+    auth.logout()
+    
+    # get app context so we can get the project id
+    with app.app_context():
+        db = get_db()
+        project = db.execute('SELECT * FROM projects WHERE name=(?);',
+                             (project_name,)).fetchone()
+        # make sure the project exists
+        assert project is not None
+
+        # check a couple of different urls to make sure they return content
+
+        # check for flock.js
+        response = client.get('/host/{}/file/flock.js'.format(project['id']))
+        assert response.status_code == 200
+        assert code_file_content in response.data
+
+        # check for secret.js without key
+        response = client.get('/host/{}/file/secret.js'.format(project['id']))
+        assert response.status_code == 403
+
+        # check for secret.js with key
+        response = client.get('/host/{}/file/secret.js?key={}'
+                              .format(project['id'], project['secret_key']))
+        assert response.status_code == 200
+        assert secrets_file_content in response.data
+
+        # check for file that doesn't exist
+        response = client.get('/host/{}/file/not-real.js'.format(project['id']))
+        assert response.status_code == 404

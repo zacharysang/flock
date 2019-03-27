@@ -227,6 +227,12 @@ def serve_file(project_id, filename):
             # They don't have a valid key, abort with an error
             abort(403, 'Key required for accessing secret file.')
 
-    # serve the requested file
+    # get the project folder path
     project_folder_path = get_project_folder(project['hash_id'])
+
+    # check that the file exists
+    if not os.path.isfile(os.path.join(project_folder_path, filename)):
+        abort(404, 'File does not exist.')
+    
+    # serve the requested file
     return send_from_directory(project_folder_path, filename)
