@@ -169,7 +169,7 @@ async function main() {
     if (rank == 0) {
         console.log('root sending and receiving links');
         for (var idx = 0; idx < size - 1; idx++) {
-            receiveMessages.push((idx+1,mpi.irecv(idx + 1, 'default')));
+            receiveMessages.push([idx+1,mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
