@@ -69,7 +69,7 @@ class Scrape {
     async makeRequest(url) {
         try {
             var cors_api_url = 'https://cors-anywhere.herokuapp.com/';
-            const res = await fetch(cors_api_url+url);
+            const res = await fetch(cors_api_url + url);
             const response = await res.text();
             return response;
         }
@@ -139,6 +139,62 @@ function sleep(s) {
 
 console.log('starting scraper...');
 
+
+async function sendrecv(receiveMessages) {
+    for (var idx = 0; idx < receiveMessages.length; idx++) {
+
+        //var res = req[1];
+        var rec_rank = receiveMessages[idx][0];
+        console.log('rank 0 recieved from child: ' + receiveMessages[idx])
+
+
+        if (sources.length > 0) {
+            //console.log('sources: '+sources);
+            nextLink = sources.pop();
+            console.log('sending to child: ' + nextLink);
+            mpi.isend(nextLink, rec_rank, 'default');
+            outstandingReqs++;
+        } else {
+            mpi.isend('', rec_rank, 'default');
+        }
+
+        receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
+    }
+}
+
+async function parseres(receiveMessages) {
+    for (var idx = 0; idx < receiveMessages.length; idx++) {
+        //parse received links
+        var res = await receiveMessages[idx][1];
+        if (res) {
+            outstandingReqs--;
+            //keywords = res[0];
+            links = res;
+
+            total += links.length;
+            if (total >= 5000 && !flag) {
+                flag = true;
+                var t = Date.now() - starttime;
+                mpi.updateStatus({ 'timeto5k': t });
+                console.log({ 'timeto5k': t });
+            }
+            for (var jdx = 0; jdx < links.length; jdx++) {
+                link = links[jdx];
+
+                console.log('evaluating link: ' + link);
+                console.log('length of explored: ' + explored.size);
+                if (!explored.has(link)) {
+                    sources.push(link);
+                    explored.add(link);
+                    mpi.updateStatus({ 'numExploredLinks': explored.length });
+                }
+                else {
+                    console.log('repeated link');
+                }
+            }
+        }
+    }
+}
 async function main() {
     console.log("in main");
 
@@ -165,7 +221,7 @@ async function main() {
     if (rank == 0) {
         console.log('root sending and receiving links');
         for (var idx = 0; idx < size - 1; idx++) {
-            receiveMessages.push([idx+1,mpi.irecv(idx + 1, 'default')]);
+            receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
                 mpi.isend(sources.pop(), idx + 1, 'default');
@@ -178,61 +234,8 @@ async function main() {
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            for (var idx = 0; idx < receiveMessages.length; idx++) {
-                var res = await receiveMessages[idx][1];
-                //var res = req[1];
-                var rec_rank = receiveMessages[idx][0];
-                console.log('rank 0 recieved from child: '+receiveMessages[idx])
-                if (res) {
-                    outstandingReqs--;
-                    //keywords = res[0];
-                    links = res;
-
-                    total += links.length;
-                    if (total >= 5000 && !flag){
-                        flag=true;
-                        var t = Date.now()-starttime;
-                        mpi.updateStatus({'timeto5k': t});
-                        console.log({'timeto5k': t});
-                    }
-
-                    if (sources.length > 0) {
-                        //console.log('sources: '+sources);
-                        nextLink = sources.pop();
-                        console.log('sending to child: '+nextLink);
-                        mpi.isend(nextLink, rec_rank, 'default');
-                        outstandingReqs++;
-                    } else {
-                        mpi.isend('', rec_rank, 'default');
-                    }
-
-                    receiveMessages.push(mpi.irecv(rec_rank, 'default'));
-
-                    // for (var jdx = 0; jdx < keywords.length; jdx++) {
-                    //     uniqueKeywords.add(keywords[jdx]);
-                    // }
-
-                    for (var jdx = 0; jdx < links.length; jdx++) {
-                        link = links[jdx];
-                        
-                        console.log('evaluating link: '+link);
-                        console.log('length of explored: '+explored.size);
-                        if (!explored.has(link)) {
-                            sources.push(link);
-                            explored.add(link);
-                            mpi.updateStatus({'numExploredLinks':explored.length});
-                            // if (explored.size >= 214){
-                            //     mpi.updateStatus({'timeto10k': Date.now()-starttime});
-                            //     return;
-                            // }
-                        }
-                        else {
-                            console.log('repeated link');
-                        }
-                    }
-                }
-            }
-            // Clean up urls_collection ??? 
+            sendrecv(receiveMessages);
+            parseres(receiveMessages);
         }
     } else {
         console.log('in worker node');
