@@ -198,7 +198,7 @@ async function main() {
                         //console.log('sources: '+sources);
                         nextLink = sources.pop();
                         console.log('sending to child: '+nextLink);
-                        mpi.isend('https://crossorigin.me/'+nextLink, rec_rank, 'default');
+                        mpi.isend(nextLink, rec_rank, 'default');
                         outstandingReqs++;
                     } else {
                         mpi.isend('', rec_rank, 'default');
