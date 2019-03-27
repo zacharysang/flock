@@ -167,7 +167,7 @@ async function parseres() {
     let flag = false;
     let explored = new Set();
     let uniqueKeywords = new Set();
-
+    console.log('in parseres ' + receiveMessages.length);
     for (var idx = 0; idx < receiveMessages.length; idx++) {
         //parse received links
         console.log('awaiting message from rank ' + receiveMessages[idx][0]);
