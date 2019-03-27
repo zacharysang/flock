@@ -240,8 +240,7 @@ async function main() {
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            sendrecv();
-            parseres();
+            sendrecv().then(parseres);
         }
     } else {
         console.log('in worker node');
