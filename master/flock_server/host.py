@@ -1,6 +1,8 @@
 import functools
 import os
 from enum import Enum
+import string
+import random
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
@@ -16,9 +18,14 @@ from flock_server.auth import auth_required, super_user_permissions_required
 
 bp = Blueprint('host', __name__, url_prefix='/host')
 
+# Define enum for approval status'
 class ApprovalStatus(Enum):
     WAITING=0
     APPROVED=1
+
+# Constants for filenames of code and js file
+CODE_FILENAME = 'flock.js'
+SECRETS_FILENAME = 'secret.js'
 
 @bp.route('/queue')
 @auth_required
@@ -92,22 +99,31 @@ def submit_project():
             # good to go forward with input
             # generate hash_id from owner id and name
             hash_id = generate_hash_id(g.user['id'], name)
+            
+            # generate a secret key for the project
+            secret_key = ''.join(random.SystemRandom()
+                                 .choice(string.ascii_uppercase +
+                                         string.ascii_lowercase +
+                                         string.digits)
+                                 for _ in range(10))
+
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                 'min_workers, hash_id, owner_id) VALUES (?, ?, ?, ?, ?, ?)'),
-                (name, source_url, description, min_workers, hash_id, 
-                 g.user['id'])
+                 'min_workers, secret_key, hash_id, owner_id) VALUES '
+                 '(?, ?, ?, ?, ?, ?, ?)'),
+                (name, source_url, description, min_workers, secret_key,
+                 hash_id, g.user['id'])
             )
             db.commit()
 
             # save the code files to the deploy path with predescribed filenames
             project_folder = get_project_folder(hash_id)
             code_file = request.files['code-file']
-            code_file.save(os.path.join(project_folder, 'flock.js'))
+            code_file.save(os.path.join(project_folder, CODE_FILENAME))
 
             if 'secrets-file' in request.files:
                 secrets_file = request.files['secrets-file']
-                secrets_file.save(os.path.join(project_folder, 'secrets.js'))
+                secrets_file.save(os.path.join(project_folder, SECRETS_FILENAME))
 
             return redirect(url_for('index'))
 
