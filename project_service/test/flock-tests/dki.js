@@ -168,7 +168,7 @@ async function main() {
             receiveMessages.push([idx+1,mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
-                mpi.isend(sources.pop(), idx + 1, 'default');
+                mpi.isend(sources.shift(), idx + 1, 'default');
                 outstandingReqs++;
             } else {
                 mpi.isend('', idx + 1, 'default');
@@ -198,7 +198,7 @@ async function main() {
 
                     if (sources.length > 0) {
                         //console.log('sources: '+sources);
-                        nextLink = sources.pop();
+                        nextLink = sources.shift();
                         console.log('sending to child: '+nextLink);
                         mpi.isend(nextLink, rec_rank, 'default');
                         outstandingReqs++;
