@@ -1,3 +1,5 @@
+import { exists } from "fs";
+
 //import { stringify } from "querystring";
 
 // import flock-mpi
@@ -213,6 +215,10 @@ async function main() {
                         if (!explored.has(link)) {
                             sources.push(link);
                             explored.add(link);
+                            if (explored.length >= 10,000){
+                                mpi.updateStatus({'timeto10k': Date.now()-starttime});
+                                return;
+                            }
                         }
                     }
                 }
@@ -251,4 +257,5 @@ async function main() {
     }
 }
 
+var starttime = Date.now();
 main();
