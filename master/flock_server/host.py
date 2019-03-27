@@ -6,7 +6,7 @@ import random
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
-    abort, current_app
+    abort, current_app, send_from_directory
 )
 
 from flock_server.db import get_db
@@ -201,3 +201,32 @@ def delete(id):
     db.commit()
 
     return redirect(url_for('index'))
+
+@bp.route('/<int:project_id>/file/<string:filename>')
+def serve_file(project_id, filename):
+    """Serves the requested file from the project's deployment folder.
+    Only serves CODE_FILENAME and SECRETS_FILENAME
+    """
+
+    # get the hash id from the project id
+    db = get_db()
+    project = db.execute('SELECT * FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    if project is None:
+        abort(404, 'Project does not exist')
+
+    # make sure it's an allowable filename
+    if filename != CODE_FILENAME and filename != SECRETS_FILENAME:
+        abort(404, 'File not found.')
+
+    # if the filename is SECRETS_FILENAME, make sure they have the key
+    if filename == SECRETS_FILENAME:
+        if (request.args.get('key') is None 
+            or request.args.get('key') != project['secret_key']):
+            # They don't have a valid key, abort with an error
+            abort(403, 'Key required for accessing secret file.')
+
+    # serve the requested file
+    project_folder_path = get_project_folder(project['hash_id'])
+    return send_from_directory(project_folder_path, filename)
