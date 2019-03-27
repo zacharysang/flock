@@ -1,12 +1,4 @@
-import { exists } from "fs";
-
-//import { stringify } from "querystring";
-
-// import flock-mpi
 importScripts('/static/flock-mpi.js');
-
-//importScripts("collections/set.js");
-//importScritps("fs");
 
 console.log('init dki.js');
 class Scrape {
