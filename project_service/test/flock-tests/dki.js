@@ -167,12 +167,13 @@ async function main() {
             receiveMessages.push([idx+1,mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
-                mpi.isend('https://crossorigin.me/'+sources.pop(), idx + 1, 'default');
+                mpi.isend(sources.pop(), idx + 1, 'default');
                 outstandingReqs++;
             } else {
                 mpi.isend('', idx + 1, 'default');
             }
         }
+        starttime = Date.now();
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
@@ -263,5 +264,5 @@ async function main() {
     }
 }
 
-var starttime = Date.now();
+var starttime = 0;
 main();
