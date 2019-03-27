@@ -69,7 +69,7 @@ class Scrape {
 
         this.num_discovered_links += ret_links.length;
         var tmp = this.num_discovered_links;
-        mpi.updateStatus({ 'numlinks': tmp });
+        mpi.updateStatus({ 'numParsedLinks': tmp });
         console.log('retlinks: ' + ret_links)
         return ret_links;
     }
