@@ -186,8 +186,14 @@ let renderStats = function(data) {
             }
             
             .statLabel {
+            
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            
                 background-color: #3682FF;
                 color: white;
+                min-width: 100px;
             }
             
             .statValue {

@@ -23,14 +23,14 @@ async function main() {
                     })
                     .then((imgBlob) => {
                         let url = URL.createObjectURL(imgBlob);
-                        mpi.updateStatus({image: {type: 'img', src: url}});
+                        mpi.updateStatus({image: {type: 'img', src: url, width: 50, height: 50}});
                     });
     
     // display test svg                
     let testSvg = getSvgDiagram();
     let svgBlob = new Blob([testSvg], {type: 'image/svg+xml'});
     let svgUrl = URL.createObjectURL(svgBlob);
-    mpi.updateStatus({testSvg: {type: 'svg', src: svgUrl}});
+    mpi.updateStatus({testSvg: {type: 'svg', src: svgUrl, width: 100, height: 100}});
     
     let rank = await mpi.getRank('default');
     
@@ -67,7 +67,7 @@ async function main() {
         a = next;
         mpi.storeSet('a', a);
         
-        mpi.updateStatus({a, size});
+        mpi.updateStatus({['1-value']: a, ['1-size']: size});
         
         console.log(`going into barrier with new 'a' value: ${a}`);
 
