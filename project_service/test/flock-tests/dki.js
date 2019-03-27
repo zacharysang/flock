@@ -141,6 +141,7 @@ console.log('starting scraper...');
 
 
 async function sendrecv() {
+    let newMessages = []
     for (var idx = 0; idx < receiveMessages.length; idx++) {
 
         //var res = req[1];
@@ -158,7 +159,10 @@ async function sendrecv() {
             mpi.isend('', rec_rank, 'default');
         }
 
-        receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
+        newMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
+    }
+    for (let i = 0; i < newMessages.length; i++) {
+        receiveMessages.append(newMessages[i]);
     }
     console.log("ENDED SENDRECV");
 }
