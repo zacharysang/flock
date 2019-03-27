@@ -184,8 +184,8 @@ async function main() {
             for (var idx = 0; idx < receiveMessages.length; idx++) {
                 var res = await receiveMessages[idx][1];
                 rec_rank = receiveMessages[idx][0]
-                console.log('rank 0 recieved from child: '+res)
-                if (res[0]) {
+                console.log('rank 0 recieved from child: '+receiveMessages[idx])
+                if (res) {
                     outstandingReqs--;
                     //keywords = res[0];
                     links = res;
