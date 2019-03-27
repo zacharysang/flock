@@ -204,7 +204,7 @@ async function main() {
                     for (var jdx = 0; jdx < links.length; jdx++) {
                         link = links[jdx];
                         console.log('evaluating link: '+link);
-                        console.log('length of explored: '+explored.length);
+                        console.log('length of explored: '+explored.size);
                         if (!explored.has(link)) {
                             sources.push(link);
                             explored.add(link);
