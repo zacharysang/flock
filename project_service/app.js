@@ -250,7 +250,7 @@ console.log(SESSION_SECRET);
 async function initializeNode0(url) {
     // Launch headless chrome
     // TODO Create a dedicated user to run headless chrome so that sandbox args can be removed and security improved (see here: https://github.com/GoogleChromeLabs/lighthousebot/blob/master/builder/Dockerfile#L35-L40)
-    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox', '--dumpio true']});
+    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox', '--dumpio true','--remote-debugging-port=9222']});
     let page = await browser.newPage();
     await page.goto(url);
     console.log('browser node 0 launched');
