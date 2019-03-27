@@ -258,7 +258,7 @@ async function main() {
             var keywords = '';
 
             if (source == '') {
-                //await sleep(1);
+                await sleep(1);
             } else {
                 console.log('received link from root ' + source);
                 source = source.trim();
@@ -274,7 +274,7 @@ async function main() {
             len = ((links) ? links.length : 0);
             console.log('sending discovered links to root ' + len.toString());
             mpi.isend((keywords, links), 0, 'default');
-            //await sleep(1);
+            await sleep(1);
         }
     }
 }
