@@ -134,9 +134,6 @@ def submit_project():
 def detail(project_id):
     """Shows details of project for given project_id.
     """
-    # update the status of the project if deploy is enabled
-    if current_app.config['DO_DEPLOY']:
-        update_status(project_id) 
 
     # setup the database
     db = get_db()
@@ -163,6 +160,11 @@ def detail(project_id):
     if project['approval_status'] == ApprovalStatus.APPROVED.value:
         project_approval_status = ApprovalStatus.APPROVED.name
         project_approved = True
+
+        # update the status of the project if deploy is enabled
+        # only worth doing if the project is approved
+        if current_app.config['DO_DEPLOY']:
+            update_status(project_id) 
 
     return render_template('host/detail.html', project=project,
                            project_approval_status=project_approval_status,
