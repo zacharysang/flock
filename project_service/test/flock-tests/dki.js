@@ -221,10 +221,10 @@ async function main() {
                             sources.push(link);
                             explored.add(link);
                             mpi.updateStatus({'numExploredLinks':explored.length});
-                            if (explored.size >= 5000){
-                                mpi.updateStatus({'timeto5kUNIQUE': Date.now()-starttime});
-                                return;
-                            }
+                            // if (explored.size >= 5000){
+                            //     mpi.updateStatus({'timeto5kUNIQUE': Date.now()-starttime});
+                            //     return;
+                            // }
                         }
                         else {
                             console.log('repeated link');
