@@ -186,6 +186,13 @@ async function main() {
                     //keywords = res[0];
                     links = res;
 
+                    total += links.length;
+                    if (total >= 5000){
+                        var t = Date.now()-starttime;
+                        mpi.updateStatus({'timeto5k': t});
+                        console.log({'timeto5k': t});
+                    }
+
                     if (sources.length > 0) {
                         //console.log('sources: '+sources);
                         nextLink = sources.pop();
@@ -204,12 +211,7 @@ async function main() {
 
                     for (var jdx = 0; jdx < links.length; jdx++) {
                         link = links[jdx];
-                        total++;
-                        if (total == 5000){
-                            var t = Date.now()-starttime;
-                            mpi.updateStatus({'timeto5k': t});
-                            console.log({'timeto5k': t});
-                        }
+                        
                         console.log('evaluating link: '+link);
                         console.log('length of explored: '+explored.size);
                         if (!explored.has(link)) {
