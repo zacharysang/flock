@@ -215,6 +215,7 @@ async function main() {
                         if (!explored.has(link)) {
                             sources.push(link);
                             explored.add(link);
+                            mpi.updateStatus({'numExploredLinks':len(explored)});
                             if (explored.length >= 10,000){
                                 mpi.updateStatus({'timeto10k': Date.now()-starttime});
                                 return;
