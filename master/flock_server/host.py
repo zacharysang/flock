@@ -38,27 +38,27 @@ def queue():
     cursor = db.cursor()
     
     projects = cursor.execute(
-        'SELECT * FROM projects where approval_status=(?);',
+        'SELECT * FROM projects WHERE approval_status=(?);',
         (ApprovalStatus.WAITING.value,)).fetchall()
 
     return render_template('host/queue.html', projects=projects)
 
-@bp.route('/<int:id>/approve')
+@bp.route('/<int:project_id>/approve')
 @auth_required
 @super_user_permissions_required
-def approve(id):
-    """Approves the id of the projct
+def approve(project_id):
+    """Approves the project associated with a given project_id 
     """ 
     db = get_db()
     cursor = db.cursor()
     cursor.execute(
-        'UPDATE projects SET approval_status=(?) WHERE id=(?)',
-        (ApprovalStatus.APPROVED.value, id,))
+        'UPDATE projects SET approval_status=(?) WHERE id=(?);',
+        (ApprovalStatus.APPROVED.value, project_id,))
     db.commit()
 
     # deploy the project if enabled
     if current_app.config['DO_DEPLOY']:
-        deploy_project(id)
+        deploy_project(project_id)
 
     return redirect(url_for('host.queue'))
 
@@ -110,7 +110,7 @@ def submit_project():
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
                  'min_workers, secret_key, hash_id, owner_id) VALUES '
-                 '(?, ?, ?, ?, ?, ?, ?)'),
+                 '(?, ?, ?, ?, ?, ?, ?);'),
                 (name, source_url, description, min_workers, secret_key,
                  hash_id, g.user['id'])
             )
@@ -123,7 +123,8 @@ def submit_project():
 
             if 'secrets-file' in request.files:
                 secrets_file = request.files['secrets-file']
-                secrets_file.save(os.path.join(project_folder, SECRETS_FILENAME))
+                secrets_file.save(os.path.join(project_folder,
+                                               SECRETS_FILENAME))
 
             return redirect(url_for('index'))
 
@@ -132,14 +133,14 @@ def submit_project():
 
     return render_template('host/submit.html')
 
-@bp.route('/<int:id>')
+@bp.route('/<int:project_id>')
 @auth_required
-def detail(id):
-    """Shows details of project for given id.
+def detail(project_id):
+    """Shows details of project for given project_id.
     """
     # update the status of the project if deploy is enabled
     if current_app.config['DO_DEPLOY']:
-        update_status(id) 
+        update_status(project_id) 
 
     # setup the database
     db = get_db()
@@ -147,12 +148,12 @@ def detail(id):
 
     # Get the project 
     project = cursor.execute(
-        'SELECT * FROM projects WHERE id=(?)',
-        (id,)
+        'SELECT * FROM projects WHERE id=(?);',
+        (project_id,)
     ).fetchone()
 
     if project is None:
-        abort(404, "Project does not exist")
+        abort(404, 'Project does not exist')
 
     # Check that this user can view the project
     if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
@@ -171,9 +172,9 @@ def detail(id):
                            project_approval_status=project_approval_status,
                            project_approved=project_approved)
 
-@bp.route('/<int:id>/delete')
+@bp.route('/<int:project_id>/delete')
 @auth_required
-def delete(id):
+def delete(project_id):
     """Deletes a given project.
     Deletes the deploy information and stops the given container.
     """
@@ -181,23 +182,23 @@ def delete(id):
     db = get_db()
     # Get the project to verify owner identity
     project = db.execute('SELECT * FROM projects where id=(?);',
-                         (id,)).fetchone()
+                         (project_id,)).fetchone()
 
     if project is None:
-        abort(404, "Project does not exist")
+        abort(404, 'Project does not exist')
 
     # Check that this user can delete the project
     if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
         # The current user doesn't own this project, don't delete it 
         flash('You don\'t have permissions to delete this project')
-        return redirect(url_for('host.detail', id=id))
+        return redirect(url_for('host.detail', project_id=project_id))
 
     # destroy the project if deploy is enabled
     if current_app.config['DO_DEPLOY']:
-        destroy_project(id)
+        destroy_project(project_id)
 
     # delete the database entry
-    db.execute('DELETE FROM projects WHERE id=(?);', (id,))
+    db.execute('DELETE FROM projects WHERE id=(?);', (project_id,))
     db.commit()
 
     return redirect(url_for('index'))

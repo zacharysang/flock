@@ -94,7 +94,7 @@ def test_submit(client, auth, app):
 
     with app.app_context():
         db = get_db()
-        count = db.execute('SELECT COUNT(id) FROM projects').fetchone()[0]
+        count = db.execute('SELECT COUNT(id) FROM projects;').fetchone()[0]
         assert count == 3
     
 
@@ -108,7 +108,7 @@ def test_approve(client, auth, app):
 
     with app.app_context():
         db = get_db()
-        project = db.execute('SELECT * FROM projects WHERE id=1').fetchone()
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
         assert project['approval_status'] == 1
 
 
@@ -123,7 +123,6 @@ def test_detail(client, auth):
     assert b'WAITING' in response.data 
 
 def test_delete(client, auth, app):
-    print('What about this?')
     auth.login()
     response = client.get('/host/1/delete')
 
