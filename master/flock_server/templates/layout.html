@@ -3,18 +3,21 @@
   <head>
     {% block head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
     <title>{% block title %}{% endblock %} - Flock</title>
     {% endblock %}
   </head>
   <nav>
-    <h1>Flock</h1>
-    <ul>
+    <ul class="navbar">
+      <li><a href="/">Flock</a></li>
+      <li><a href="/">Home</a></li>
+      <li><a href="/">Project Listing</a></li>
       {% if g.user %}
-        <li><span>{{ g.user['email'] }}</span>
-        <li><a href="{{ url_for('auth.logout') }}">Log Out</a>
+        <li class="log"><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
+        <li class="log"><p>Logged in as {{ g.user['email'] }}</p></li>
       {% else %}
-        <li><a href="{{ url_for('auth.register') }}">Register</a>
-        <li><a href="{{ url_for('auth.login') }}">Log In</a>
+        <li class="log"><a href="{{ url_for('auth.register') }}">Register</a></li>
+        <li class="log"><a href="{{ url_for('auth.login') }}">Log In</a></li>
       {% endif %}
     </ul>
   </nav>
@@ -29,7 +32,7 @@
 
     <div id="footer">
       {% block footer %}
-      &copy; Copyright 2019. <a href="https://github.com/zacharysang/flock">Github</a>
+      &copy; Copyright 2019. <a href="https://github.com/zacharysang/flock">GitHub</a>
       {% endblock %}
     </div>
   </body>

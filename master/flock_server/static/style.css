@@ -1,0 +1,123 @@
+html {
+    font-family: 'Roboto', sans-serif;
+    background-color: #eeeeee;
+    font-weight: lighter;
+}
+
+body {
+    margin: 0;
+}
+
+#content {
+    margin-left: 3rem;
+    margin-right: 3rem;
+    margin-top: 5rem;
+}
+
+#project-detail {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#right {
+    flex: 50%;
+}
+
+#left {
+    flex: 50%;
+}
+
+h1, h2 {
+    font-weight: lighter;
+}
+
+.box {
+    margin-left: 0.3rem;
+    margin-right: 0.3rem;
+}
+
+.item {
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
+    padding: 1rem;
+    background-color: #fefefe;
+    display: flex;
+    border-radius: 0.5rem;
+}
+
+.item-name {
+    font-weight: bold;
+    margin-right: 0.7rem;
+}
+
+.vertical-line {
+    margin-top: 1rem;
+    margin-left: 0.3rem;
+    border-left: 0.1rem solid #999999;
+    height: 2rem;
+}
+
+.danger-button {
+    color: #cc0000;
+    background: #F3F3F3;
+    border: 1px #DADADA solid;
+    padding: 0.5rem 1rem;
+    border-radius: 2px;
+    outline: none;
+    text-decoration: none;
+}
+
+.danger-button:hover {
+    border: 1px #C6C6C6 solid;
+    box-shadow: 1px 1px 1px #EAEAEA;
+    color: #af0000;
+    background: #F7F7F7;
+}
+
+#footer {
+    margin: 1rem;
+    margin-top: 3rem;
+    font-size: small;
+}
+
+ul.navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #0075ac;
+    border-bottom: 1px solid #005c86;
+}
+
+ul.navbar li {
+    float: left;
+    display: block;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+}
+
+ul.navbar li p {
+    padding: 1rem 1.1rem;
+    margin: 0;
+}
+
+ul.navbar li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 1rem 1.1rem;
+    text-decoration: none;
+}
+
+ul.navbar li.log {
+    float:right;
+}
+
+/* Change the link color to #111 (black) on hover */
+ul.navbar li a:hover {
+    background-color: #005c86;
+}
