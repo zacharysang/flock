@@ -4,7 +4,9 @@
       src="https://demo.easyrtc.com/socket.io/socket.io.js"></script>
   <script type="text/javascript"
       src="https://demo.easyrtc.com/easyrtc/easyrtc.js"></script>
-  <script type="text/javascript" src="/static/flock.js"></script>
+  <script type="text/javascript"
+      src={{ url_for('static', filename='flock.js') }}>
+  </script>
   <script type="text/javascript" src={{ code_file }} ></script>
   {% if secret %}
     <script type="text/javascript" src={{ secrets_file }} ></script>

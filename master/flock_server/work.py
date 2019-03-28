@@ -12,7 +12,7 @@ from flock_server.host import ApprovalStatus, CODE_FILENAME, SECRETS_FILENAME
 bp = Blueprint('work', __name__, url_prefix='/work')
 
 @bp.route('/')
-def getWorkPage():
+def get_work_page():
     """Returns a work page for a project.
     """
     # get all projects that are approved and running
@@ -39,3 +39,34 @@ def getWorkPage():
 
     
     return render_template('work/index.html', code_file=code_file, secret=False)
+
+@bp.route('/<int:project_id>')
+def get_work_page_for_project(project_id):
+    """Returns the work page for a specific project.
+    """
+
+    # Get the project from the db 
+    db = get_db()
+    project = db.execute('SELECT * FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    # check that this project exists
+    if project is None:
+        abort(404, 'Project not found.')
+
+    # check for key, which allows us to send secret file
+    secret=False
+    secrets_file = ''
+    if request.args.get('key') == project['secret_key']:
+        secret = True
+        # flask makes key a query param:
+        secrets_file = url_for('host.serve_file', project_id=project_id,
+                               filename=SECRETS_FILENAME,
+                               key=project['secret_key'])
+
+    code_file = url_for('host.serve_file', project_id=project_id,
+                        filename=CODE_FILENAME)
+
+    return render_template('work/index.html', code_file=code_file,
+                           secret=secret, secrets_file=secrets_file)
+    
