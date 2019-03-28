@@ -428,7 +428,7 @@ flock.getId = async function(comm, rank) {
     @param tag : tag of number type
     @param comm : the communication group to send array over
  */
- flock.isend = async function(data, dest, comm, tag=null) {
+flock.isend = async function(data, dest, comm, tag=null) {
     
     let rank = await flock.getRank(comm);
     
@@ -473,7 +473,7 @@ flock.getId = async function(comm, rank) {
         return status;
         
     });
- };
+};
  
 // non-blocking receive from a node
 /**
@@ -517,8 +517,8 @@ flock.irecv = async function(source, comm, tag=null) {
     
     return res.then(flock.ackMsgFunc(comm, source, tag));
     
- };
+};
  
- flock.join()
+flock.join()
         .then(flock.awaitClusterSize)
         .then(() => flock.initWorker(window.APP_PATH));
