@@ -23,14 +23,14 @@ async function main() {
                     })
                     .then((imgBlob) => {
                         let url = URL.createObjectURL(imgBlob);
-                        mpi.updateStatus({image: {type: 'img', src: url, width: 50, height: 50}});
+                        mpi.updateStatus({image: {type: 'img', src: url, width: 150, height: 150}});
                     });
     
     // display test svg                
     let testSvg = getSvgDiagram();
     let svgBlob = new Blob([testSvg], {type: 'image/svg+xml'});
     let svgUrl = URL.createObjectURL(svgBlob);
-    mpi.updateStatus({testSvg: {type: 'svg', src: svgUrl, width: 100, height: 100}});
+    mpi.updateStatus({testSvg: {type: 'svg', src: svgUrl, width: 200, height: 200}});
     
     let rank = await mpi.getRank('default');
     

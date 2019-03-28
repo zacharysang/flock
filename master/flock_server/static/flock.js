@@ -155,7 +155,9 @@ let renderStats = function(data) {
     flock.statusEl.innerHTML = `
         <style type="text/css">
             body {
-                background-color: #B6D1FF;
+                background-color: #eeeeee;
+                font-family: 'Roboto', sans-serif;
+                font-weight: lighter;
             }
         
             #status {
@@ -191,15 +193,18 @@ let renderStats = function(data) {
                 justify-content: center;
                 align-items: center;
             
-                background-color: #3682FF;
+                background-color: #0075ac;
                 color: white;
                 min-width: 100px;
+                font-weight: bold;
             }
             
             .statValue {
-                border: 1px solid #3682FF;
+                border: 1px solid #fefefe;
                 margin: 0 5px;
                 background-color: white;
+                
+                min-width: 300px;
             }
             
             .progress {
@@ -496,7 +501,13 @@ flock.callPeer = function(peerId) {
         easyrtc.call(peerId,
                 (caller, media) => {callAck()},
                 (errorCode, errorText) => {
-                    easyrtc.showError(errorCode, errorText);
+                    
+                    let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
+                    
+                    console.warn(errMsg);
+                    
+                    // continue to acknowledge since the fallback is in place
+                    callAck(errMsg);
                 }
         );
     } catch(err) {
