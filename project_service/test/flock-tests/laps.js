@@ -14,7 +14,15 @@ async function main() {
     
     console.log(`got size: ${size}`);
     
-    let a = parseInt(await mpi.storeGet('a')) || 0;
+    let storedA = await mpi.storeGet('a');
+    
+    if (storedA) {
+        console.log(`got stored A: ${storedA}`);
+    } else {
+        console.log(`no stored a value. Using 0...`);
+    }
+    
+    let a = parseInt(storedA) || 0;
     console.log(`got a: ${a}`);
     while (true) {
         
@@ -26,9 +34,13 @@ async function main() {
         
         // send from a to a+1
         if (rank == a) {
+            mpi.updateStatus({sending: next});
             console.log(`sent to next with status: ${await mpi.isend(a, next, 'default')}`);
+            mpi.updateStatus({sending: 'sent'});
         } else if (rank == next) {
+            mpi.updateStatus({receving: a});
             console.log(`received from a: ${await mpi.irecv(a, 'default')}`);
+            mpi.updateStatus({receving: 'recevied'});
         }
         
         a = next;

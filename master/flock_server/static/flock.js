@@ -26,7 +26,7 @@ let APP_NAME = "flock-app";
 // exported object
 let flock = {};
 
-// cache for the rank of this node
+// cache for the rank of this node in different communication groups
 flock.rank = {};
 
 // Stores the status data displayed to the user
@@ -368,9 +368,13 @@ flock.awaitClusterSize = async function(size) {
 };
 
 // get the current node's rank in the given communication group
-flock.getRank = async function(comm) {
+flock.getRank = async function(comm, ignoreCache=false) {
     
-    // TODO add caching
+    // check the cache
+    if (!ignoreCache && flock.rank[comm]) {
+        return flock.rank[comm];
+    }
+    
     return new Promise((resolve, reject) => {
         easyrtc.sendServerMessage(MSG_TYPE_GET_RANK, {comm: comm, id: easyrtc.myEasyrtcid},
         (msgType, msgData) => {
@@ -381,8 +385,10 @@ flock.getRank = async function(comm) {
                 
                 flock.rank[comm] = rank;
                 
-                // update the rank
-                flock.updateStatus({world_rank: rank});
+                // update the rank if world
+                if (MPI_COMM_WORLD === comm) {
+                    flock.updateStatus({world_rank: rank});
+                }
                 
                 resolve(rank);
             }
@@ -402,14 +408,19 @@ flock.getSize = function(comm) {
 
 // get rtcId from rank
 // TODO change name to idFromRank
-flock.getId = async function(comm, rank) {
+flock.getId = async function(comm, rank, ignoreCache=false) {
     
-    // TODO add caching
+    // check the cache
+    if (!ignoreCache && flock.easyrtcIdByRank[comm][rank]) {
+        return flock.easyrtcIdByRank[comm][rank];
+    }
+    
     return new Promise((resolve, reject) => {
         easyrtc.sendServerMessage(MSG_TYPE_GET_ID, {comm, rank},
         (msgType, msgData) => {
             if (MSG_TYPE_GET_ID === msgType) {
                 
+                // cache the id for this rank in this comm
                 flock.easyrtcIdByRank[comm][rank] = msgData;
                 
                 resolve(msgData);
@@ -449,11 +460,12 @@ flock.isend = async function(data, dest, comm, tag=null) {
         
         easyrtc.sendData(destId, MSG_TYPE_MSG, msg, ()=>{});
         
+        // setup the retry
         let interval = setInterval(async () => {
             console.warn(`isend timed out while waiting for acknowledgement. Resending data to rank: ${dest}`);
             
-            // update destId
-            destId = await flock.getId(comm, dest);
+            // update destId and disregard the cache (rety indicates cache may be invalid)
+            destId = await flock.getId(comm, dest, true);
             
             easyrtc.sendData(destId, MSG_TYPE_MSG, msg, ()=>{});
         }, TIMEOUT_MS);
