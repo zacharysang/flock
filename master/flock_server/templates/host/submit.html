@@ -3,7 +3,7 @@
 {% block title %}Submit a Project{% endblock %}
 {% block content %}
   <h1>Submit a Project</h1>
-  <p>Create a new project. After submitting your project information, it will be entered into a moderation queue for approval. You will be notified via email when the project is approved and automatically deployed.</p>
+  <p>Create a new project. After submitting your project information, it will be entered into a moderation queue for approval.</p>
   <div class="vertical-line"></div>
   <div id="submit-project">
     <!-- form for users to submit projects -->
@@ -23,7 +23,7 @@
           </div>
           <div class="form-line">
             <label for="min-workers">Minimum Number of Workers</label>
-            <input class="generic-entry" type="text" name="min-workers"
+            <input class="generic-entry" type="number" name="min-workers"
                 placeholder="1" required>
           </div>
           <div class="form-line">

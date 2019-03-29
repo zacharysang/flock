@@ -22,9 +22,15 @@
   </nav>
   <body>
     <!-- Flash messages that we have -->
-    {% for message in get_flashed_messages() %}
-      <div class="flash">{{ message }}</div>
-    {% endfor %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
     <!-- Content will go here -->
     <div id="content">{% block content %}{% endblock %}</div>

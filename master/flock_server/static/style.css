@@ -184,6 +184,12 @@ small {
   margin-bottom: 0.2rem;
 }
 
+.messages {
+  margin-top: 5rem;
+  margin-left: 3rem;
+  margin-bottom: -3rem;
+}
+
 .flash {
-  margin-top: 2rem;
+  /* TODO */
 }
