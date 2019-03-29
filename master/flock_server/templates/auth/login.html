@@ -4,18 +4,30 @@
 {% block content %}
   <h1> Login </h1>
   Welcome to Flock. Log in on this page.
+  <div class="vertical-line"></div>
   <div id="login">
     <!-- Form for exiting users to log in -->
-    <h2>Existing Users Log In Here</h2>
-    <form id="login-form" action="login" method="post">
-      <label for="email">Email</label>
-      <input class="generic-entry" type="text" name="email" placeholder="Email"
-          required>
-      <label for="password">Password</label>
-      <input class="generic-entry" type="password" name="password"
-          placeholder="Password" required>
-      <input class="submit" type="submit"  name="login-submit" value="Log In">
-    </form>
-    Need an acount? <a href='/register'>Click here to register.</a>
+    <h2>Existing Users - Log In</h2>
+    <div class="box">
+      <div class="form">
+        <form id="login-form" action="login" method="post">
+          <div class="form-line">
+            <label for="email">Email</label>
+            <input class="generic-entry" type="text" name="email" placeholder="Email"
+                required>
+          </div>
+          <div class="form-line">
+            <label for="password">Password</label>
+            <input class="generic-entry" type="password" name="password"
+                placeholder="Password" required>
+          </div>
+          <div class="form-line">
+            <input class="submit" type="submit"  name="login-submit" value="Log In">
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
+  <div class="vertical-line"></div>
+  Need an acount? <a href='/register'>Click here to register.</a>
 {% endblock %}

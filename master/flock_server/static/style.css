@@ -157,7 +157,7 @@ label, input {
 }
 
 .form-line {
-  margin: 1rem;
+  margin: 1.5rem;
 }
 
 .submit {
@@ -173,6 +173,17 @@ label, input {
 .submit:hover {
   border: 1px #C6C6C6 solid;
   box-shadow: 1px 1px 1px #EAEAEA;
-  color: darkgreen;
   background: #F7F7F7;
+}
+
+.file-upload {
+  margin-left: 0;
+}
+
+small {
+  margin-bottom: 0.2rem;
+}
+
+.flash {
+  margin-top: 2rem;
 }
