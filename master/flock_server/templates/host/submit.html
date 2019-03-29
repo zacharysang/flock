@@ -5,19 +5,27 @@
   <h1>Submit a Project</h1>
   <div id="submit-project">
     <!-- form for users to submit projects -->
-    <form id="submit-projet-form" action="submit" method="post">
+    <form id="submit-projet-form" action="submit" enctype="multipart/form-data"
+        method="post">
       <label for="name">Project Name</label>
       <input class="generic-entry" type="text" name="name"
           placeholder="My Project" required>
-      <label for="source-url">Source Code URL</label>
+      <label for="source-url">Source Code URL for reference:</label>
       <input class="generic-entry" type="text" name="source-url"
-          placeholder="https://github.com/me/project" required>
+          placeholder="https://github.com/<me>/project" required>
       <label for="min-workers">Minimum Number of Workers For Project</label>
       <input class="generic-entry" type="text" name="min-workers"
           placeholder="1" required>
       <label for="description">Description</label>
       <input class="generic-entry" type="text" name="description"
           placeholder="This project is for...">
+      <label for="code-file">Code File: (This file contains the worker code,
+          see the documentation for detailed instructions.)</label>
+      <input class="file-upload" type="file" name="code-file" required>
+      <label for="secrets-file">Secret File: (This javascript file contains
+          any secrets that you might not want on volunteer computers, see
+          the documentation for detailed instructions.)</label>
+      <input class="file-upload" type="file" name="secrets-file">
 
       <input class="submit" type="submit" name="project-submit" value="Submit">
     </form>

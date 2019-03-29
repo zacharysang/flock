@@ -17,6 +17,13 @@ const EV_RCV_MSG = "receivedMessage";
 const EV_RCV_ACK = "receivedAck";
 
 const ID_STATUS_EL = 'status';
+const ID_PROJECT_TITLE = 'projectTitle';
+const ID_PROJECT_DESC = 'projectDescription';
+const ID_TASK_DESC = 'taskDescription';
+const ID_WORLD_RANK = 'world_rank';
+const ID_STATE = 'state';
+const ID_PROGRESS = 'progress';
+const ID_DATA = 'data';
 
 const STORE_KEY_NAMES = 'store_names';
 
@@ -29,8 +36,9 @@ let flock = {};
 // cache for the rank of this node in different communication groups
 flock.rank = {};
 
+// TODO populate other project metadata values here (project title, description, task desc, etc.)
 // Stores the status data displayed to the user
-flock.status = {};
+flock.status = {progress: 0};
 
 flock.statusEl = document.getElementById(ID_STATUS_EL);
 
@@ -139,10 +147,212 @@ flock.storeGet = function(name) {
     return window.sessionStorage.getItem(name);
 }
 
+let renderStats = function(data) {
+    
+    // make a copy of data since we are modifying it here
+    data = Object.assign({}, data);
+    
+    flock.statusEl.innerHTML = `
+        <style type="text/css">
+            body {
+                background-color: #eeeeee;
+                font-family: 'Roboto', sans-serif;
+                font-weight: lighter;
+            }
+        
+            #status {
+                display: flex;
+                flex-direction: vertical;
+                flex-wrap: wrap;
+                justify-content: left;
+            }
+        
+            #reserved .statLabel {
+                width: 150px;
+            }
+            
+            #reserved .statValue {
+                width: 300px;
+            }
+        
+            .stat {
+                display: flex;
+                
+                margin: 5px 10px;
+            }
+        
+            .stat .statLabel, .stat .statValue {
+                display: inline-block;
+                border-radius: 3px;
+                padding: 10px 20px;
+            }
+            
+            .statLabel {
+            
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            
+                background-color: #0075ac;
+                color: white;
+                min-width: 100px;
+                font-weight: bold;
+            }
+            
+            .statValue {
+                border: 1px solid #fefefe;
+                margin: 0 5px;
+                background-color: white;
+                
+                min-width: 300px;
+            }
+            
+            .progress {
+                color: white;
+            }
+        </style>
+        <div id="reserved">
+            <div class="stat">
+                <div class="statLabel">Project Title</div>
+                <div class="statValue" id="${ID_PROJECT_TITLE}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Project Description</div>
+                <div class="statValue" id="${ID_PROJECT_DESC}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Task Description</div>
+                <div class="statValue" id="${ID_TASK_DESC}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">World Rank</div>
+                <div class="statValue" id="${ID_WORLD_RANK}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">State</div>
+                <div class="statValue" id="${ID_STATE}"></div>
+            </div>
+            <div class="stat">
+                <div class="statLabel">Progress</div>
+                <div class="statValue progress" id="${ID_PROGRESS}"></div>
+            </div>
+        </div>
+        <div id="data">
+        </div>
+    `;
+    
+    // insert reserved values (and remove them from data)
+    
+    let titleEl = document.getElementById(ID_PROJECT_TITLE);
+    titleEl.innerText = data[ID_PROJECT_TITLE];
+    delete data[ID_PROJECT_TITLE];
+    
+    let descEl = document.getElementById(ID_PROJECT_DESC);
+    descEl.innerText = data[ID_PROJECT_DESC];
+    delete data[ID_PROJECT_DESC];
+    
+    let taskEl = document.getElementById(ID_TASK_DESC);
+    taskEl.innerText = data[ID_TASK_DESC];
+    delete data[ID_TASK_DESC];
+    
+    let rankEl = document.getElementById(ID_WORLD_RANK);
+    rankEl.innerText = data[ID_WORLD_RANK];
+    delete data[ID_WORLD_RANK];
+    
+    let stateEl = document.getElementById(ID_STATE);
+    stateEl.innerText = data[ID_STATE];
+    delete data[ID_STATE];
+    
+    let progressEl = document.getElementById(ID_PROGRESS);
+    if (!isNaN(parseInt(data[ID_PROGRESS]))) {
+        console.log(`progress: ${data[ID_PROGRESS]}`);
+        progressEl.innerText = data[ID_PROGRESS] + '%';
+        progressEl.setAttribute('style', `background-image: linear-gradient(90deg, green ${data[ID_PROGRESS]}%, white ${data[ID_PROGRESS]}%)`);
+    }
+    delete data[ID_PROGRESS];
+    
+    // sort the remaining values
+    let entries = Object.entries(data);
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+    
+    let fragment = document.createDocumentFragment();
+    entries.forEach((entry) => {
+        let el = renderStat(entry[0], entry[1]);
+        fragment.appendChild(el);
+    });
+    
+    // replace the data element with new content
+    let dataEl = document.getElementById(ID_DATA);
+    dataEl.innerHTML = '';
+    dataEl.appendChild(fragment);
+    
+    // define behavior for updating a single stat
+    function renderStat(label, value) {
+        `
+            <div class="stat">
+                <div class="statLabel">Arbitrary data 4</div>
+                <div class="statValue"></div>
+            </div>
+        `
+        let statEl = document.createElement('div');
+        statEl.setAttribute('class', 'stat');
+        
+        let labelEl = document.createElement('div');
+        labelEl.setAttribute('class', 'statLabel');
+        labelEl.innerText = label;
+        
+        // TODO handle special value types here (eg: svg, img, etc.)
+        let valueEl = document.createElement('div');
+        valueEl.setAttribute('class', 'statValue');
+        
+        if (value.type) {
+            switch (value.type) {
+                case 'img':
+                    let imgEl = document.createElement('img');
+                    imgEl.setAttribute('src', value.src);
+                    imgEl.setAttribute('width', value.width || 200);
+                    imgEl.setAttribute('height', value.height || 200);
+                    valueEl.appendChild(imgEl);
+                    break;
+                case 'svg':
+                    let svgEl = document.createElement('img');
+                    svgEl.setAttribute('src', value.src);
+                    svgEl.setAttribute('width', value.width || 400);
+                    svgEl.setAttribute('height', value.height || 400);
+                    valueEl.appendChild(svgEl);
+                    break;
+                default:
+                    console.warn(`Unexpected type: ${value.type}. Rendering as string`);
+                    value.innerText = JSON.stringify(value);
+            }
+        } else {
+            valueEl.innerText = JSON.stringify(value);
+        }
+        
+        // append label and value to statEl
+        statEl.appendChild(labelEl);
+        statEl.appendChild(valueEl);
+        
+        return statEl;
+    }
+    
+}
 
 flock.updateStatus = function(data) {
+    
+    // modify the progress attribute to be merged in correctly to current status
+    if (data.progress) {
+        let inc = parseInt(data.progress);
+        if (!isNaN(inc)) {
+            data.progress = (flock.status.progress + inc) % 100;
+        }
+    }
+    
     Object.assign(flock.status, data);
-    flock.statusEl.innerText = JSON.stringify(flock.status);
+    
+    // render the stats object to the volunteer's view
+    renderStats(flock.status);
+    
 };
 
 /*
@@ -291,7 +501,13 @@ flock.callPeer = function(peerId) {
         easyrtc.call(peerId,
                 (caller, media) => {callAck()},
                 (errorCode, errorText) => {
-                    easyrtc.showError(errorCode, errorText);
+                    
+                    let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
+                    
+                    console.warn(errMsg);
+                    
+                    // continue to acknowledge since the fallback is in place
+                    callAck(errMsg);
                 }
         );
     } catch(err) {
