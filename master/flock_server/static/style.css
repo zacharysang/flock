@@ -188,8 +188,15 @@ small {
   margin-top: 5rem;
   margin-left: 3rem;
   margin-bottom: -3rem;
+  margin-right: 3rem;
 }
 
 .flash {
-  /* TODO */
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 2px;
+  background-color: rgba(256, 0, 0, 0.1);
+  border: 1px solid #7a2020;
+  color: #7a2020;
+  margin: 0.1rem 0;
 }
