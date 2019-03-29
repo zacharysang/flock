@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 from flock_server.db import get_db
 
 
@@ -33,28 +34,37 @@ def test_owner_required(client, auth, path):
     response = client.get(path, follow_redirects=True)
     assert b'permissions' in response.data
 
-@pytest.mark.parametrize(('name', 'source_url', 'min_workers', 'message'), (
-    ('', 'https://kurtjlewis.com', '1', b'Name is required.'),
-    ('test proj', '', '1', b'Source URL is required'),
+@pytest.mark.parametrize(('name', 'source_url', 'min_workers', 'code_file',
+                          'message'), (
+    ('', 'https://kurtjlewis.com', '1', (BytesIO(b'CODE FILE'), 'flock.js'),
+     b'Name is required.'),
+    ('test proj', '', '1', (BytesIO(b'CODE FILE'), 'flock.js'),
+     b'Source URL is required'),
     ('test proj2', 'https://kurtjlewis.com', '',
-      b'Minimum number of workers is required.')
+     (BytesIO(b'CODE FILE'), 'flock.js'),
+     b'Minimum number of workers is required.'),
+    ('test proj', 'https://kurtjlewis.com', '1', '',
+     b'Code file must be uploaded.')
 ))
 def test_submit_validation(client, auth, name, source_url, min_workers, 
-                           message):
+                           code_file, message):
     auth.login()
 
     response = client.post(
-        '/host/submit',
+        '/host/submit', buffered=True,
+        content_type='multipart/form-data',
         data= { 'name' : name, 'source-url': source_url,
                 'min-workers': min_workers,
-                'description' : '' }
+                'description' : '',
+                'code-file' : code_file}
     )
     assert message in response.data
 
 @pytest.mark.parametrize('path', (
     '/9',
     '/9/approve',
-    '/9/delete'
+    '/9/delete',
+    '/9/file/flock.js'
 ))
 def test_404(client, auth, path):
     """Test that all project urls show a 404 when the project doesn't exist.
@@ -71,17 +81,20 @@ def test_submit(client, auth, app):
     auth.login()
     assert client.get('/host/submit').status_code == 200
     client.post(
-        '/host/submit',
+        '/host/submit', buffered=True,
+        content_type='multipart/form-data',
         data = { 'name': 'submit-test',
                  'source-url': 'https://zacharysang.com',
                  'min-workers': '1',
-                 'description': 'Creation description'
+                 'description': 'Creation description',
+                 'code-file': (BytesIO(b'CODE_FILE'), 'flock.js'),
+                 'secrets-file': (BytesIO(b'SECRETS'), 'secrets.js')
         }
     )
 
     with app.app_context():
         db = get_db()
-        count = db.execute('SELECT COUNT(id) FROM projects').fetchone()[0]
+        count = db.execute('SELECT COUNT(id) FROM projects;').fetchone()[0]
         assert count == 3
     
 
@@ -95,7 +108,7 @@ def test_approve(client, auth, app):
 
     with app.app_context():
         db = get_db()
-        project = db.execute('SELECT * FROM projects WHERE id=1').fetchone()
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
         assert project['approval_status'] == 1
 
 
@@ -117,3 +130,53 @@ def test_delete(client, auth, app):
         db = get_db()
         project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
         assert project is None
+
+
+def test_serve_file(client, auth, app):
+    # need to submit some files first
+    auth.login()
+    project_name = 'serve-file-test'
+    code_file_content = b'CODE FILE'
+    secrets_file_content = b'SECRETS FILE'
+    client.post(
+        '/host/submit', buffered=True,
+        content_type='multipart/form-data',
+        data = { 'name': project_name, 
+                 'source-url': 'https://zacharysang.com',
+                 'min-workers': '1',
+                 'description': 'Creation description',
+                 'code-file': (BytesIO(code_file_content), 'flock.js'),
+                 'secrets-file': (BytesIO(secrets_file_content), 'secrets.js')
+        }
+    )
+    # project is created, logout because these urls don't require sessions
+    auth.logout()
+    
+    # get app context so we can get the project id
+    with app.app_context():
+        db = get_db()
+        project = db.execute('SELECT * FROM projects WHERE name=(?);',
+                             (project_name,)).fetchone()
+        # make sure the project exists
+        assert project is not None
+
+        # check a couple of different urls to make sure they return content
+
+        # check for flock.js
+        response = client.get('/host/{}/file/flock.js'.format(project['id']))
+        assert response.status_code == 200
+        assert code_file_content in response.data
+
+        # check for secret.js without key
+        response = client.get('/host/{}/file/secret.js'.format(project['id']))
+        assert response.status_code == 403
+
+        # check for secret.js with key
+        response = client.get('/host/{}/file/secret.js?key={}'
+                              .format(project['id'], project['secret_key']))
+        assert response.status_code == 200
+        assert secrets_file_content in response.data
+
+        # check for file that doesn't exist
+        response = client.get('/host/{}/file/not-real.js'.format(project['id']))
+        assert response.status_code == 404
