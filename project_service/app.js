@@ -126,7 +126,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 
                 let commMap = idsByRank[MPI_COMM_WORLD];
                 
-                // check if the session id is already in the map
+                // check if the session id is already in the map for a certain rank
                 let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sid);
                 if (rank) {
                     // if sid corresponds to a rank in the map already, check that there is not already an active id
@@ -150,14 +150,21 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                         // (this means that this browser session has no active tabs, and we should assign this new connection to the session)
                         Object.assign(commMap[rank], {id: easyrtcid});
                     }
-                } else {
+                } else { // session id is not in idsByRank
                     
-                    // assign new node to a rank with missing id if any (also send persisted data)
+                    let commMap = idsByRank[MPI_COMM_WORLD];
                     
+                    // try to find rank where id is missing
+                    let rank = Object.keys(commMap).find((rank) => commMap[rank].id === null || commMap[rank].id === undefined);
                     
-                    // if no ranks are missing an id, increase the cluster size by 1 and assign this sid to the new rank
-                    let nextRank = Object.keys(commMap).length;
-                    commMap[nextRank] = {id: easyrtcid, sid: sid};
+                    if (rank) {
+                        // if rank is found with missing id, then assign this new sid
+                        commMap[rank] = {id: easyrtcid, sid: sid};
+                    } else {
+                        // if no ranks are missing an id, increase the cluster size by 1 and assign this sid to the new rank
+                        let nextRank = Object.keys(commMap).length;
+                        commMap[nextRank] = {id: easyrtcid, sid: sid};
+                    }
                 }
                 
                 console.log(`Updated cluster size counter to: ${getSize()}`);
