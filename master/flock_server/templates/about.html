@@ -2,35 +2,34 @@
 {% block title %}About{% endblock %}
 {% block content %}
   <h1>About</h1>
-  <p>Learn the basics about Flock. What the whole point is, how to get started, and more!</p>
+  <p>Learn the basics about Flock. What the whole point is, how to get
+      started, and more!</p>
   <div class="vertical-line"></div>
   <div class="box">
-    <h2></h2>
-  </div>
-  <div id="welcome">
-    <p>
-      Welcome to Flock. From this homepage you can volunteer your computing resources
-      or sign up to host a project.
-    </p>
-    <p>
-      Volunteering your computing resources is easy with flock! Just click the "Volunteer"
-      button below to get started!
-    </p>
-    <p>
-      Have a project you want to host on flock? Click "Sign Up" or "Login" to get started!
+    <h2>What is Flock?</h2>
+    <p>Flock is a platform-as-a-service for distributed and volunteer
+        computing projects. Flock makes it easier for you to build,
+        host, monitor, and find workers for your distributed computing
+        applications. Programs on the Flock platform are run entirely
+        in the browser, and built based on the OpenMPI standard implemented
+        in our JavaScript-based MPI libraries. Flock also provides automated
+        hosting and project monitoring for all distributed computing
+        projects on the platform.
     </p>
   </div>
-  
-  <div id="volunteer-button">
-    <a href="/work">Volunteer your computing resources!</a>
+  <div class="vertical-line"></div>
+  <div class="box">
+    <h2>Why the Web?</h2>
+    <p>Running projects in the web offers better security and accessibility
+        than native distributed computing applications. Web browsers have
+        built-in sandboxing that assures volunteers it is safe for them to run
+        your programs on their devices. Web-based volunteering means that your
+        volunteers don't need to worry about installing software to help
+        run your distributed computing program - all they need to do is leave
+        a browser tab open on your project URL, and their browser will
+        automatically begin working on your project. Web-based projects
+        are significantly more accessible, and can even be run on volunteers'
+        cell phones!
+    </p>
   </div>
-  <p/>
-  <div id="host-button">
-    {% if g.user %}
-      <a href="/host/submit">Submit a new project</a>
-    {% else %}
-      <a href="/login">Sign up or log in!</a>
-    {% endif %}
-  </div>
-  <p/>
 {% endblock %}
