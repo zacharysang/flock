@@ -3,31 +3,54 @@
 {% block title %}Submit a Project{% endblock %}
 {% block content %}
   <h1>Submit a Project</h1>
+  <p>Create a new project. After submitting your project information, it will be entered into a moderation queue for approval.</p>
+  <div class="vertical-line"></div>
   <div id="submit-project">
     <!-- form for users to submit projects -->
-    <form id="submit-projet-form" action="submit" enctype="multipart/form-data"
-        method="post">
-      <label for="name">Project Name</label>
-      <input class="generic-entry" type="text" name="name"
-          placeholder="My Project" required>
-      <label for="source-url">Source Code URL for reference:</label>
-      <input class="generic-entry" type="text" name="source-url"
-          placeholder="https://github.com/<me>/project" required>
-      <label for="min-workers">Minimum Number of Workers For Project</label>
-      <input class="generic-entry" type="text" name="min-workers"
-          placeholder="1" required>
-      <label for="description">Description</label>
-      <input class="generic-entry" type="text" name="description"
-          placeholder="This project is for...">
-      <label for="code-file">Code File: (This file contains the worker code,
-          see the documentation for detailed instructions.)</label>
-      <input class="file-upload" type="file" name="code-file" required>
-      <label for="secrets-file">Secret File: (This javascript file contains
-          any secrets that you might not want on volunteer computers, see
-          the documentation for detailed instructions.)</label>
-      <input class="file-upload" type="file" name="secrets-file">
-
-      <input class="submit" type="submit" name="project-submit" value="Submit">
-    </form>
+    <h2>Project Information</h2>
+    <div class="box">
+      <div class="form">
+        <form id="submit-projet-form" action="submit" method="post">
+          <div class="form-line">
+            <label for="name">Project Name</label>
+            <input class="generic-entry" type="text" name="name"
+                placeholder="My Project" required>
+          </div>
+          <div class="form-line">
+            <label for="source-url">Source Code URL</label>
+            <input class="generic-entry" type="text" name="source-url"
+                placeholder="https://github.com/me/project" required>
+          </div>
+          <div class="form-line">
+            <label for="min-workers">Minimum Number of Workers</label>
+            <input class="generic-entry" type="number" name="min-workers"
+                placeholder="1" required>
+          </div>
+          <div class="form-line">
+            <label for="description">Description</label>
+            <input class="generic-entry" type="text" name="description"
+                placeholder="This project is for...">
+          </div>
+          <div class="form-line">
+            <label for="code-file">Code File</label>
+            <small>This JavaScript file contains the worker code. See
+                documentation for detailed instructions.
+            </small>
+            <input class="file-upload" type="file" name="code-file" required>
+          </div>
+          <div class="form-line">
+            <label for="secrets-file">Secrets File</label>
+            <small>This JavaScript file contains any secrets that you
+                might not want on volunteer computers. See documentation
+                for detailed instructions.
+            </small>
+            <input class="file-upload" type="file" name="secrets-file">
+          </div>
+          <div class="form-line">
+            <input class="submit" type="submit" name="project-submit" value="Submit Project">
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 {% endblock %}

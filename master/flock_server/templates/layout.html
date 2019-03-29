@@ -9,7 +9,7 @@
   <nav>
     <ul class="navbar">
       <li><a href="/">Flock</a></li>
-      <li><a href="/">Home</a></li>
+      <li><a href="/about">About</a></li>
       <li><a href="/">Project Listing</a></li>
       {% if g.user %}
         <li class="log"><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
@@ -22,9 +22,15 @@
   </nav>
   <body>
     <!-- Flash messages that we have -->
-    {% for message in get_flashed_messages() %}
-      <div class="flash">{{ message }}</div>
-    {% endfor %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+            <div class="flash">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
     <!-- Content will go here -->
     <div id="content">{% block content %}{% endblock %}</div>
