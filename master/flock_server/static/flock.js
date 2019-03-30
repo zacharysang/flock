@@ -115,6 +115,8 @@ let storeSetBatch = function(store) {
 let fetchPubStore = async function() {
     let store = await getPubStore();
     
+    flock.updateStatus({fetchedData: store});
+    
     storeSetBatch(store);
 } 
 
@@ -181,12 +183,27 @@ flock.storeSet = function(name, value) {
     
     // set up store 'beacon' on first store
     if (!window.onbeforeunload) {
-        window.onbeforeunload = (ev) => {
+        
+        let save = (ev) => {
+            
+            // make sure ev is not visibility change to visible
+            if (ev.type === 'visibilitychange' && !document.hidden) {
+                return;
+            }
+        
+            ev.preventDefault();
         
             publishStore();
             
-            return 'Thank you for contributing to flock!';  
+            let leaveMsg = 'Thank you for contributing to flock!';
+            
+            ev.returnValue = leaveMsg;
+            
+            return leaveMsg;  
         };
+        
+        window.onvisibilitychange = window.onpagehide = window.onunload = window.onbeforeunload = save;
+        
     }
     
     // add to the list of keys if not already present
