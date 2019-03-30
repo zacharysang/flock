@@ -5,9 +5,9 @@
   <script type="text/javascript"
       src="https://demo.easyrtc.com/easyrtc/easyrtc.js"></script>
   <script type="text/javascript"
-      src={{ url_for('static', filename='flock.js') }}>
+      src={{ url_for('static', filename='flock.js') }} defer>
   </script>
-  <script type="text/javascript" defer>
+  <script type="text/javascript">
      window.APP_PATH = "{{ code_file }}"
      window.SOCKET_URL = "{{ deployment_url }}"
   </script>
