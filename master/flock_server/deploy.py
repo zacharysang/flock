@@ -5,8 +5,10 @@ This file handles the automagic deployment of projects onto AWS
 import hashlib
 import logging
 import os
+import random
 import re
 import shutil
+import string
 import subprocess
 
 from flask import current_app
@@ -98,7 +100,10 @@ def deploy_project(project_id):
         hash_id = project['hash_id']
     
     # first need to build config files
-    build_config_files(hash_id)
+    build_config_files(hash_id,
+                       project['id'],
+                       project['min_workers'],
+                       project['secret_key'])
 
     start_container(hash_id)
 
@@ -127,7 +132,7 @@ def destroy_project(project_id):
 
     
 
-def build_config_files(hash_id):
+def build_config_files(hash_id, project_id, min_workers, secret_key):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
@@ -174,13 +179,20 @@ def build_config_files(hash_id):
     # get the paths for the files
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
 
+    # create session secret
+    session_secret = ''.join(random.SystemRandom()
+                             .choice(string.ascii_uppercase +
+                                     string.ascii_lowercase +
+                                     string.digits)
+                             for _ in range(10))
+
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
                                            image_name=current_app.config['FLOCK_CONTAINER_NAME'],
-                                           flock_min_size='temp',
+                                           flock_min_size=min_workers,
                                            flock_port=current_app.config['FLOCK_PORT'],
-                                           flock_session_secret='temp',
-                                           flock_url='temp',
+                                           flock_session_secret=session_secret,
+                                           flock_url=current_app.config['FLOCK_URL'] + '/work/{}?key={}'.format(project_id, secret_key),
                                            group=current_app.config['FLOCK_LOG_GROUP'],
                                            region=current_app.config['FLOCK_REGION'],)
     with open(docker_compose_path, 'w') as file:
