@@ -12,6 +12,7 @@ const MSG_TYPE_SIZE_CHECK = "size_check";
 const MSG_TYPE_GET_RANK = "get_rank";
 const MSG_TYPE_GET_ID = "get_easyrtcid";
 const MSG_TYPE_PUB_STORE = "publish_store";
+const MSG_TYPE_GET_STORE = 'get_store';
 
 const EV_RCV_MSG = "receivedMessage";
 const EV_RCV_ACK = "receivedAck";
@@ -45,32 +46,77 @@ flock.statusEl = document.getElementById(ID_STATUS_EL);
 // cache for rank <-> easyrtc mappings of other nodes
 flock.easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
 
-
 // stores incoming messages by tag
 let inbox = {};
 
-/*
-Uncomment this when allowing takeovers to occur
-
 let storeDump = function() {
-    let namesStr = window.sessionStorage.getItem(STORE_KEY_NAMES);
-    let names = JSON.parse(namesStr);
     
-    names.map((name) => { return {[name]: window.sessionStorage.getItem(name)} })
-        .reduce((entry, acc) => {
+    // get list of value names
+    let namesStr = window.sessionStorage.getItem(STORE_KEY_NAMES);
+    let names = JSON.parse(namesStr) || [];
+    
+    // retrieve store values and collect them into a dictionary
+    let entries = names.map((name) => { return {[name]: window.sessionStorage.getItem(name)} });
+    let store = entries.reduce((entry, acc) => {
             return Object.assign(acc, entry);
         }, {});
-}
+        
+    return store;
+};
 
-let publishStore = function() {
+let publishStore = async function() {
+    
+    let rank = await flock.getRank(MPI_COMM_WORLD);
+    
     let store = storeDump();
     
-    easyrtc.sendServerMessage(MSG_TYPE_PUB_STORE, store,
-        null, (errCode, errMsg) => {
-            console.error('Failed to publish the local store');
-        });
+    return new Promise((resolve, reject) => {
+        easyrtc.sendServerMessage(MSG_TYPE_PUB_STORE, 
+                                {rank: rank, data: store},
+                                (msgType, msgData) => {
+                                    resolve();
+                                } , 
+                                (errCode, errMsg) => {
+                                    let error = `Failed to publish the local store (${errCode}: ${errMsg})`;
+                                    console.error(error);
+                                    reject(error)
+                                }); 
+    });
+};
+
+// return an object with the store under this rank from the project service
+let getPubStore = async function() {
+    let rank = await flock.getRank(MPI_COMM_WORLD);
+    
+    return new Promise((resolve, reject) => {
+        easyrtc.sendServerMessage(MSG_TYPE_GET_STORE,
+                                {rank: rank},
+                                (msgType, msgData) => {
+                                    resolve(msgData.data);
+                                },
+                                (errCode, errMsg) => {
+                                    let error = `Failed to get store from the project service`;
+                                    console.error(error);
+                                    reject(error);
+                                });
+    });
 }
-*/
+
+let storeSetBatch = function(store) {
+    if (typeof(store) === 'object') {
+        let keys = Object.keys(store);
+        
+        keys.forEach((key) => {
+            flock.storeSet(key, store[key]);
+        });
+    }
+};
+
+let fetchPubStore = async function() {
+    let store = await getPubStore();
+    
+    storeSetBatch(store);
+} 
 
 // connection status
 flock.isConnected = false;
@@ -131,14 +177,24 @@ flock.initWorker = function(appPath) {
 
 flock.storeSet = function(name, value) {
     
-    let keys = JSON.parse(window.sessionStorage.getItem(STORE_KEY_NAMES)) || []
+    let keys = JSON.parse(window.sessionStorage.getItem(STORE_KEY_NAMES)) || [];
+    
+    // set up store 'beacon' on first store
+    if (!window.onbeforeunload) {
+        window.onbeforeunload = (ev) => {
+        
+            publishStore();
+            
+            return 'Thank you for contributing to flock!';  
+        };
+    }
     
     // add to the list of keys if not already present
-    if (keys.indexOf(name) >= 0) {
+    if (keys.indexOf(name) < 0) {
         keys.push(name);
         window.sessionStorage.setItem(STORE_KEY_NAMES, JSON.stringify(keys));
     }
-    
+
     // store the key value pair
     window.sessionStorage.setItem(name, value);
 }
@@ -265,7 +321,6 @@ let renderStats = function(data) {
     
     let progressEl = document.getElementById(ID_PROGRESS);
     if (!isNaN(parseInt(data[ID_PROGRESS]))) {
-        console.log(`progress: ${data[ID_PROGRESS]}`);
         progressEl.innerText = data[ID_PROGRESS] + '%';
         progressEl.setAttribute('style', `background-image: linear-gradient(90deg, green ${data[ID_PROGRESS]}%, white ${data[ID_PROGRESS]}%)`);
     }
@@ -304,8 +359,7 @@ let renderStats = function(data) {
         // TODO handle special value types here (eg: svg, img, etc.)
         let valueEl = document.createElement('div');
         valueEl.setAttribute('class', 'statValue');
-        
-        if (value.type) {
+        if (value && value.type) {
             switch (value.type) {
                 case 'img':
                     let imgEl = document.createElement('img');
@@ -449,6 +503,9 @@ flock.join = async function() {
             
             // establish connection to other peers in the cluster
             let peerCalls = flock.connectToPeers();
+            
+            // get any store data for this rank
+            fetchPubStore()
             
             // once all peers are called, update the isConnected att
             peerCalls.then(() => {
@@ -746,7 +803,7 @@ flock.irecv = async function(source, comm, tag=null) {
     return res.then(flock.ackMsgFunc(comm, source, tag));
     
 };
- 
+
 flock.join()
         .then(flock.awaitClusterSize)
         .then(() => flock.initWorker(window.APP_PATH));

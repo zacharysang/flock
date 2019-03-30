@@ -51,6 +51,7 @@ const MSG_TYPE_SIZE_CHECK = 'size_check';
 const MSG_TYPE_GET_RANK = 'get_rank';
 const MSG_TYPE_GET_ID = 'get_easyrtcid';
 const MSG_TYPE_PUB_STORE = 'publish_store';
+const MSG_TYPE_GET_STORE = 'get_store';
 
 // initialize dotenv variables
 dotenv.config();
@@ -158,13 +159,15 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                     let rank = Object.keys(commMap).find((rank) => commMap[rank].id === null || commMap[rank].id === undefined);
                     
                     if (rank) {
-                        // if rank is found with missing id, then assign this new sid
-                        commMap[rank] = {id: easyrtcid, sid: sid};
+                        // if rank is found with missing id, then do a handoff and assign the new ids to this rank
+                        Object.assign(commMap[rank], {id: easyrtcid, sid: sid});
+                        
                     } else {
                         // if no ranks are missing an id, increase the cluster size by 1 and assign this sid to the new rank
                         let nextRank = Object.keys(commMap).length;
                         commMap[nextRank] = {id: easyrtcid, sid: sid};
                     }
+
                 }
                 
                 console.log(`Updated cluster size counter to: ${getSize()}`);
@@ -233,10 +236,33 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
                     result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
                 } else {
-                    result = {err: `Rank '${msg.msgData.rank}' does not exist`};
+                    result = {err: `Invalid rank: ${msg.msgData.rank}`};
                 }
                 
                 socketCallback({msgType: MSG_TYPE_GET_ID, msgData: result});
+            }
+            
+            if (msg.msgType === MSG_TYPE_PUB_STORE) {
+                
+                if (idsByRank[MPI_COMM_WORLD][msg.msgData.rank]) {
+                    
+                    // save the passed data under this rank
+                    idsByRank[MPI_COMM_WORLD][msg.msgData.rank].data = msg.msgData.data; 
+                    
+                    socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: true});
+                } else {
+                    socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
+                }
+                
+            }
+            
+            if (msg.msgType === MSG_TYPE_GET_STORE) {
+                
+                if (idsByRank[MPI_COMM_WORLD][msg.msgData.rank]) {
+                    socketCallback({msgType: MSG_TYPE_GET_STORE, msgData: {data: idsByRank[MPI_COMM_WORLD][msg.msgData.rank].data}});
+                } else {
+                    socketCallback({msgType: MSG_TYPE_GET_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
+                }
             }
             
             // continue the chain

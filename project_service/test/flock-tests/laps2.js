@@ -32,6 +32,10 @@ async function main() {
     let svgUrl = URL.createObjectURL(svgBlob);
     mpi.updateStatus({testSvg: {type: 'svg', src: svgUrl, width: 200, height: 200}});
     
+    let dummyVal = `dummy val: ${Math.random()}`;
+    mpi.storeSet('test', dummyVal);
+    mpi.updateStatus({test: dummyVal});
+    
     while(true) {
         console.log('going into barrier');
         await mpi.ibarrier('default');
