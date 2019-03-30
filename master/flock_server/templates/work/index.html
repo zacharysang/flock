@@ -8,7 +8,8 @@
       src={{ url_for('static', filename='flock.js') }}>
   </script>
   <script type="text/javascript">
-     window.APP_PATH = "{{ code_file }}" >
+     window.APP_PATH = "{{ code_file }}"
+     window.SOCKET_URL = "{{ deployment_url }}"
   </script>
   {% if secret %}
     <script type="text/javascript" src="{{ secrets_file }}" ></script>
