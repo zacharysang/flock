@@ -10,6 +10,7 @@ import re
 import shutil
 import string
 import subprocess
+from datetime import datetime
 
 from flask import current_app
 
@@ -25,7 +26,7 @@ def generate_hash_id(user_id, project_name):
     Concatenates user id to project name and hashes that using sha1.
     Safe to call not in a deployment environment
     """
-    string = str(user_id) + str(project_name)
+    string = str(user_id) + str(project_name) + str(datetime.now())
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 def get_deploy_folder_path():
