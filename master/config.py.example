@@ -7,6 +7,7 @@
 SECRET_KEY = '' # Secret Key value
 DO_DEPLOY = True # True or false value instructing the tool to run deploys
 # Nothing under this point is needed if DO_DEPLOY = False
+ECS_CLI_PATH = '/usr/local/bin/ecs-cli' # full path to ecs-cli
 FLOCK_URL = '' # URL flock is at
 FLOCK_VPC_ID = '' # Flock VPC ID
 FLOCK_SECURITY_GROUP_ID = '' # Flock Security Group ID

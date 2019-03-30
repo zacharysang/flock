@@ -213,13 +213,14 @@ def start_container(hash_id):
     # build the start command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    start_cmd = ('ecs-cli compose --project-name {hash_id} '
+    start_cmd = ('{ecs_cli_path} compose --project-name {hash_id} '
                  '--ecs-params {ecs_params} '
                  '--file {docker_compose} '
                  'up '
                  '--cluster-config {cluster_config} '
                  '--ecs-profile {ecs_profile} ')
-    start_cmd = start_cmd.format(hash_id=hash_id,
+    start_cmd = start_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                                 hash_id=hash_id,
                                  cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                  ecs_params=ecs_params_path,
                                  docker_compose=docker_compose_path,
@@ -239,13 +240,14 @@ def stop_container(hash_id):
     # build the stop command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    stop_cmd= ('ecs-cli compose --project-name {hash_id} '
+    stop_cmd= ('{ecs_cli_path} compose --project-name {hash_id} '
                '--ecs-params {ecs_params} '
                '--file {docker_compose} '
                'down '
                '--cluster-config {cluster_config} '
                '--ecs-profile {ecs_profile}')
-    stop_cmd = stop_cmd.format(hash_id=hash_id,
+    stop_cmd = stop_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                               hash_id=hash_id,
                                cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                ecs_params=ecs_params_path,
                                docker_compose=docker_compose_path,
@@ -274,13 +276,14 @@ def update_status(project_id):
     # build the status command
     # TODO - I'm not sure if project-name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    status_cmd = ('ecs-cli compose --project-name {hash_id} '
+    status_cmd = ('{ecs_cli_path} compose --project-name {hash_id} '
                   '--ecs-params {ecs_params} '
                   '--file {docker_compose} '
                   'ps '
                   '--cluster-config {cluster_config} '
                   '--ecs-profile {ecs_profile}')
-    status_cmd = status_cmd.format(hash_id=hash_id,
+    status_cmd = status_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                                   hash_id=hash_id,
                                    ecs_params=ecs_params_path,
                                    docker_compose = docker_compose_path,
                                    cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
