@@ -24,7 +24,7 @@ class ApprovalStatus(Enum):
     APPROVED=1
 
 # Constants for filenames of code and js file
-CODE_FILENAME = 'flock.js'
+CODE_FILENAME = 'user-code.js'
 SECRETS_FILENAME = 'secret.js'
 
 @bp.route('/queue')
