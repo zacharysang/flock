@@ -3,7 +3,8 @@ import os
 import random
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for,
+    abort
 )
 
 from flock_server.db import get_db

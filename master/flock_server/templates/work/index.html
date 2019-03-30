@@ -7,9 +7,9 @@
   <script type="text/javascript"
       src={{ url_for('static', filename='flock.js') }}>
   </script>
-  <script type="text/javascript" src={{ code_file }} ></script>
+  <script type="text/javascript" src="{{ code_file }}" ></script>
   {% if secret %}
-    <script type="text/javascript" src={{ secrets_file }} ></script>
+    <script type="text/javascript" src="{{ secrets_file }}" ></script>
   {% endif %}
 {% endblock %}
 {% block title %}Volunteer{% endblock %}
