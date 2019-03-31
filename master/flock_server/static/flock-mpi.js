@@ -10,6 +10,9 @@
  */
 var mpi = {};
 
+// name of the 'world' communication group
+mpi.MPI_COMM_WORLD = 'default';
+
 // store resolve function for outstanding requests
 let outbox = {};
 
@@ -105,11 +108,24 @@ mpi.storeGet = async function (name) {
 };
 
 /**
- * Updates status information that is stored on the volunteer's UI. Can be used to keep the user in the know about what they haev contributed.
+ * Updates status information that is stored on the volunteer's UI. Useful for keeping the user in the know about what they are contributing.
+ * <br/><br/>
+ * Reserved Labels: <br/>
+ * Some labels are reserved and display specific information to the volunteer such as project title and description. The developer can use this function to provide values for these reserved labels and the resulting information will be presented to the user. These reserved labels are described below: <br/>
+ *      * projectTitle : The title of the current project <br/>
+ *      * projectDescription : An overview of the motivation and purpose of this project <br/>
+ *      * taskDescription : A specific explanation of what work is being done on the volunteer's browser <br/>
+ *      * progress : An incrementing percentage value indicating how much work the volunteer has completed. The given value will be added to the current total. When 100 is reached, the total will wrap around. <br/>
+ * <br/>
+ * Data Types: <br/>
+ * By default, each key's value will be treated as a string and displayed as text on the volunteer's page. In the case that the given value is an object, the `type` attribute will be checked to match the following. If a match is found, the value will be presented according to the given type: <br/>
+ *      * img : Displays the image given by the `src` attribute on the value object <br/>
+ *      * svg : Displays an svg element given by the 'svg' attribute on the value object <br/>
+ * Additionally, 'width' and 'height' attributes can be used for the above data types to render them at a certain size on the volunteer's page. <br/>
  * 
  * @function mpi.updateStatus
  * 
- * @param {object} status - An object with status keys and corresponding values
+ * @param {object} status - An object with status keys and corresponding values. The keys of this object will be used to label the data passed as the corresponding value on this object (See above for details on reserved labels). Data values will be treated according to the 'Data Types' section above.
  * 
  */
 mpi.updateStatus = function(status) {

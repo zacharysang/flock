@@ -51,6 +51,7 @@ const MSG_TYPE_SIZE_CHECK = 'size_check';
 const MSG_TYPE_GET_RANK = 'get_rank';
 const MSG_TYPE_GET_ID = 'get_easyrtcid';
 const MSG_TYPE_PUB_STORE = 'publish_store';
+const MSG_TYPE_GET_STORE = 'get_store';
 
 // initialize dotenv variables
 dotenv.config();
@@ -60,13 +61,10 @@ const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
 console.log(SESSION_SECRET);
 
+// maintain map of ids (easyrtcid and easyrtcsid) to ranks
+let idsByRank = {[MPI_COMM_WORLD]: {}};
+
 (async () => {
-    
-    // Counter for size of cluster
-    let size = 0;
-    
-    // maintain map of ids (easyrtcid and easyrtcsid) to ranks
-    let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     let expressApp = express();
     
@@ -85,7 +83,7 @@ console.log(SESSION_SECRET);
     
     if (process.env['FLOCK_DEV'] === 'true') {
         
-        // Note: This must be installed with npm's '--unsafe perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
+        // Note: This must be installed with npm's '--unsafe-perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
         let ngrok = require('ngrok');
         
         easyrtc.setOption('logLevel', 'debug');
@@ -123,29 +121,60 @@ console.log(SESSION_SECRET);
         
         easyrtc.events.on('easyrtcAuth', (socket, easyrtcid, msg, socketCallback, callback) => {
             easyrtc.events.defaultListeners['easyrtcAuth'](socket, easyrtcid, msg, socketCallback, (err, connectionObj) => {
+                
                 // assign an rank to this connection in the WORLD communication group
                 let session = connectionObj.getSession();
                 let sid = session.getEasyrtcsid();
                 
                 let commMap = idsByRank[MPI_COMM_WORLD];
                 
-                // check if the session id is already in the map
+                // check if the session id is already in the map for a certain rank
                 let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sid);
                 if (rank) {
-                    // if sid corresponds to a rank in the map already, update the easyrtcid
-                    Object.assign(commMap[rank], {id: easyrtcid});
-                } else {
-                    // if rank for sid not in map, make a new entry for this new sid
-                    commMap[Object.keys(commMap).length] = {id: easyrtcid, sid: sid};
+                    // if sid corresponds to a rank in the map already, check that there is not already an active id
+                    if (commMap[rank].id) {
+                        console.log(`Got duplicate node session for easyrtcid: ${easyrtcid}`);
+                        connectionObj.getRoomNames((err, names) => {
+                            names.forEach((name) => {
+                                pub.events.emit('roomLeave',
+                                connectionObj,
+                                'default',
+                                (err) => {
+                                    console.log(`Error while leaving room: ${JSON.stringify(err)}`);
+                                });
+                            });
+                        });
+                        
+                        return;
+                        
+                    } else {
+                        // if there isn't an active id for this sid, use this id
+                        // (this means that this browser session has no active tabs, and we should assign this new connection to the session)
+                        Object.assign(commMap[rank], {id: easyrtcid});
+                    }
+                } else { // session id is not in idsByRank
+                    
+                    let commMap = idsByRank[MPI_COMM_WORLD];
+                    
+                    // try to find rank where id is missing
+                    let rank = Object.keys(commMap).find((rank) => commMap[rank].id === null || commMap[rank].id === undefined);
+                    
+                    if (rank) {
+                        // if rank is found with missing id, then do a handoff and assign the new ids to this rank
+                        Object.assign(commMap[rank], {id: easyrtcid, sid: sid});
+                        
+                    } else {
+                        // if no ranks are missing an id, increase the cluster size by 1 and assign this sid to the new rank
+                        let nextRank = Object.keys(commMap).length;
+                        commMap[nextRank] = {id: easyrtcid, sid: sid};
+                    }
+
                 }
                 
-                // after connected, update cluster size
-                size++;
-                
-                console.log(`Updated cluster size counter to: ${size}`);
+                console.log(`Updated cluster size counter to: ${getSize()}`);
                 
                 // publish go-ahead signal if we have reached the minSize
-                if (size >= MIN_SIZE) {
+                if (getSize() === MIN_SIZE) {
                     
                     // when size is met, send go-ahead to all nodes
                     // send go-ahead to all connected nodes
@@ -153,11 +182,12 @@ console.log(SESSION_SECRET);
                         
                         if (appObj) {
                             
-                            appObj.getConnectionEasyrtcids((err, ids) => {
-                                
-                                ids.forEach((id) => {
-                                    appObj.connection(id, (err, connection) => {
-                                       pub.events.emit('emitEasyrtcMsg', 
+                            let ids = getActiveIds();
+                            ids.forEach((id) => {
+                                appObj.connection(id, (err, connection) => {
+                                        if (isInCluster(id)) {
+                                    
+                                            pub.events.emit('emitEasyrtcMsg', 
                                                         connection,
                                                         MSG_TYPE_SIZE_CHECK,
                                                         {msgData: true}, (msg) => {},
@@ -165,15 +195,15 @@ console.log(SESSION_SECRET);
                                                             if (err) {
                                                                 console.error(`Sending size check had errors: ${JSON.stringify(err)}`);
                                                             }
-                                                        }) 
-                                    });
+                                                        });
+                                        }
                                 });
                             });
+                            
                         } else {
                             console.error(`Error getting easyrtc appObj: ${JSON.stringify(err)}`);
                         }
                     });
-                    
                     
                 }
                 
@@ -185,7 +215,8 @@ console.log(SESSION_SECRET);
         easyrtc.events.on('easyrtcMsg', (connectionObj, msg, socketCallback, next) => {
     
             if (msg.msgType === MSG_TYPE_SIZE_CHECK) {
-                socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: size >= MIN_SIZE});
+                let id = connectionObj.getEasyrtcid();
+                socketCallback({msgType: MSG_TYPE_SIZE_CHECK, msgData: isInCluster(id) && getSize() >= MIN_SIZE});
             }
             
             if (msg.msgType === MSG_TYPE_GET_RANK) {
@@ -206,10 +237,33 @@ console.log(SESSION_SECRET);
                 if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
                     result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
                 } else {
-                    result = {err: 'Rank does not exist'};
+                    result = {err: `Invalid rank: ${msg.msgData.rank}`};
                 }
                 
                 socketCallback({msgType: MSG_TYPE_GET_ID, msgData: result});
+            }
+            
+            if (msg.msgType === MSG_TYPE_PUB_STORE) {
+                
+                if (idsByRank[MPI_COMM_WORLD][msg.msgData.rank]) {
+                    
+                    // save the passed data under this rank
+                    idsByRank[MPI_COMM_WORLD][msg.msgData.rank].data = msg.msgData.data; 
+                    
+                    socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: true});
+                } else {
+                    socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
+                }
+                
+            }
+            
+            if (msg.msgType === MSG_TYPE_GET_STORE) {
+                
+                if (idsByRank[MPI_COMM_WORLD][msg.msgData.rank]) {
+                    socketCallback({msgType: MSG_TYPE_GET_STORE, msgData: {data: idsByRank[MPI_COMM_WORLD][msg.msgData.rank].data}});
+                } else {
+                    socketCallback({msgType: MSG_TYPE_GET_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
+                }
             }
             
             // continue the chain
@@ -221,15 +275,13 @@ console.log(SESSION_SECRET);
         easyrtc.events.on('disconnect', (connectionObj, next) => {
             let id = connectionObj.getEasyrtcid();
             
-            size--;
-            
             // update idsByRank map
             let commMap = idsByRank[MPI_COMM_WORLD];
             
             // find if the disconnect id corresponds to a rank and if so, nullify
             let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
             if (rank) {
-                commMap[rank].id = null;   
+                commMap[rank].id = null;  
             }
             
             // run the default behavior
@@ -254,4 +306,30 @@ async function initializeNode0(url) {
     let page = await browser.newPage();
     await page.goto(url);
     console.log('browser node 0 launched');
+}
+
+// return the number of active nodes in the cluster
+function getSize() {
+    let activeIds = getActiveIds();
+    
+    return activeIds.length;
+}
+
+function getIds() {
+    let ids = Object.values(idsByRank[MPI_COMM_WORLD]).map((el) => el.id);
+    return ids;
+}
+
+function getActiveIds() {
+    let ids = getIds();
+    return ids.filter((id) => id !== undefined && id !== null);
+}
+
+// return true if the given easyrtcid refers to a valid cluster node
+// (excludes duplicate nodes on the same session)
+function isInCluster(id) {
+    let worldMap = idsByRank[MPI_COMM_WORLD];
+    let rank = Object.keys(worldMap).find((rank) => worldMap[rank].id === id);
+    
+    return rank !== undefined;
 }

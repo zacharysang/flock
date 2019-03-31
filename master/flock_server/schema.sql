@@ -18,6 +18,7 @@ CREATE TABLE projects (
   deployment_url TEXT,
   approval_status INTEGER NOT NULL DEFAULT 0,
   description TEXT,
+  secret_key TEXT,
   hash_id TEXT,
   min_workers INTEGER,
   session_secret TEXT,
