@@ -146,6 +146,8 @@ def build_config_files(hash_id, project_id, min_workers, secret_key):
                       '      - FLOCK_PORT={flock_port}\n'
                       '      - FLOCK_SESSION_SECRET={flock_session_secret}\n'
                       '      - FLOCK_URL={flock_url}\n'
+                      '      - FLOCK_COMM_URL={flock_node_0_communicate_url}\n'
+                      '      - FLOCK_PROJECT_SECRET={flock_project_secret}\n'
                       '    ports:\n'
                       '      - "{flock_port}:{flock_port}"\n'
                       '    logging:\n'
@@ -194,6 +196,8 @@ def build_config_files(hash_id, project_id, min_workers, secret_key):
                                            flock_port=current_app.config['FLOCK_PORT'],
                                            flock_session_secret=session_secret,
                                            flock_url=current_app.config['FLOCK_URL'] + '/work/{}?key={}'.format(project_id, secret_key),
+                                           flock_node_0_communicate_url=current_app.config['FLOCK_URL'] + '/host/{}/node-0-communicate'.format(project_id),
+                                           flock_project_secret=secret_key,
                                            group=current_app.config['FLOCK_LOG_GROUP'],
                                            region=current_app.config['FLOCK_REGION'],)
     with open(docker_compose_path, 'w') as file:

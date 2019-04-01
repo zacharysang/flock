@@ -236,3 +236,45 @@ def serve_file(project_id, filename):
     
     # serve the requested file
     return send_from_directory(project_folder_path, filename)
+
+@bp.route('/<int:project_id>/node-0-communicate', method=('POST'))
+def node_0_communicate(project_id):
+    """An endpoint for the node 0 to send information to the master server.
+    Required values in POST json:
+        secret_key : secret key for project
+    Optional values in POST json:
+        deployment_url : the url the server is deployed at
+        worker_count : the number of workers currently working on the project
+
+    """
+    if request.method != 'POST':
+        abort(405)
+
+    # get the project to pull information from
+    db = get_db()
+    project = db.execute('SELECT * FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    if ('secret_key' not in request.json or
+        request.json['secret_key'] != project['secret_key']):
+        abort(403, 'Bad secret key.')
+
+    # build the information that this can accept
+    deployment_url = project['deployment_url']
+    worker_count = project['worker_count']
+
+    if 'deployment_url' in request.json:
+        deployment_url = request.json['deployment_url']
+
+    if 'worker_count' in request.json:
+        worker_count = project['worker_count']
+
+    # update the database
+    db.execute(('UPDATE projects SET deployment_url=(?), '
+                'worker_count=(?) WHERE id=(?);'),
+                (deployment_url, worker_count, project_id,))
+    db.commit()
+
+    return '', 200
+
+    
