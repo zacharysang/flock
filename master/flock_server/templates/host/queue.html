@@ -5,12 +5,28 @@
   <h1>Moderator Queue</h1>
   <div id="queue">
   {% for project in projects %}
-    <div id="queue-item">
-      <span>{{ project['name'] }}</span>
-      <span><a href={{ project['source_url'] }}>Source Link</a></span>
-      <span>{{ project['description'] }}</span> 
-      <span><a href={{ url_for('host.approve', project_id=project['id']) }}>
-          Approve</a></span
+    <div class="vertical-line"></div>
+    <div id="basic-info">
+      <h2>{{ project['name'] }}</h2>
+      <div class="box">
+        <div class="item">
+          <div class="item-name">Description</div>
+          <div class="item-desc">{{ project['description'] }}</div>
+        </div>
+        <div class="item">
+          <div class="item-name">Source URL</div>
+          <div class="Item-desc">
+            <a href={{ project['source_url'] }}>{{ project['source_url'] }}</a>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-name">Approval Link</div>
+          <div class="item-desc">
+            <a href={{ url_for('host.approve', project_id=project['id']) }}>
+              Click to Approve. (Slow Request)
+            </a>
+          </div>
+        </div>
     </div> 
   {% endfor %}  
   </div>
