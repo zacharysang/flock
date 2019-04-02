@@ -57,6 +57,8 @@ const MSG_TYPE_GET_STORE = 'get_store';
 // initialize dotenv variables
 dotenv.config();
 
+const IS_DEV = process.env['FLOCK_DEV'] === 'true';
+
 const PORT = parseInt(process.env['FLOCK_PORT']);
 const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
@@ -83,7 +85,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     let url = process.env['FLOCK_URL'];
     
-    if (process.env['FLOCK_DEV'] === 'true') {
+    if (IS_DEV) {
         
         easyrtc.setOption('logLevel', 'debug');
         
@@ -105,11 +107,16 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     }
     
     let tunnel = new Promise((resolve, reject) => {
-        localtunnel(PORT, {
-            subdomain: DEPLOY_SUBDOMAIN,
-            domain: LOCALTUNNEL_URL,
-            host: `https://${LOCALTUNNEL_URL}`
-        },
+        let opts = {
+          domain: LOCALTUNNEL_URL,
+          host: `https://${LOCALTUNNEL_URL}`
+        };
+        
+        if (DEPLOY_SUBDOMAIN && IS_DEV) {
+            opts.subdomain = DEPLOY_SUBDOMAIN;
+        }
+        
+        localtunnel(PORT, opts,
         (err, tunnel) => {
             if (err) {
                 reject(err);
