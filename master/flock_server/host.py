@@ -43,6 +43,27 @@ def queue():
 
     return render_template('host/queue.html', projects=projects)
 
+@bp.route('/list')
+def list():
+    """Renders a list of projects separated into my projects and all projects
+    """
+    db = get_db()
+    # check for a current user
+    my_projects = None
+    if g.user is None:
+        projects = db.execute('SELECT * FROM projects;').fetchall()
+        
+    else:
+        # there is a user, render both my projects and all projects
+        my_projects = db.execute('SELECT * FROM projects WHERE owner_id=(?);',
+                                 (g.user['id'],)).fetchall()
+        projects = db.execute('SELECT * FROM projects WHERE owner_id!=(?);',
+                              (g.user['id'],)).fetchall()
+
+    return render_template('host/list.html', projects=projects,
+                           my_projects=my_projects)
+
+
 @bp.route('/<int:project_id>/approve')
 @auth_required
 @super_user_permissions_required
