@@ -104,7 +104,8 @@ def deploy_project(project_id):
     build_config_files(hash_id,
                        project['id'],
                        project['min_workers'],
-                       project['secret_key'])
+                       project['secret_key'],
+                       project['deployment_subdomain'])
 
     start_container(hash_id)
 
@@ -133,7 +134,8 @@ def destroy_project(project_id):
 
     
 
-def build_config_files(hash_id, project_id, min_workers, secret_key):
+def build_config_files(hash_id, project_id, min_workers, secret_key,
+                       deployment_subdomain):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
@@ -146,6 +148,8 @@ def build_config_files(hash_id, project_id, min_workers, secret_key):
                       '      - FLOCK_PORT={flock_port}\n'
                       '      - FLOCK_SESSION_SECRET={flock_session_secret}\n'
                       '      - FLOCK_URL={flock_url}\n'
+                      '      - DEPLOY_SUBDOMAIN={deploy_subdomain}\n'
+                      '      - LOCALTUNNEL_URL={localtunnel_url}\n'
                       '      - FLOCK_COMM_URL={flock_node_0_communicate_url}\n'
                       '      - FLOCK_PROJECT_SECRET={flock_project_secret}\n'
                       '    ports:\n'
@@ -196,6 +200,8 @@ def build_config_files(hash_id, project_id, min_workers, secret_key):
                                            flock_port=current_app.config['FLOCK_PORT'],
                                            flock_session_secret=session_secret,
                                            flock_url=current_app.config['FLOCK_URL'] + '/work/{}?key={}'.format(project_id, secret_key),
+                                           deploy_subdomain=deployment_subdomain,
+                                           localtunnel_url=current_app.config['LOCALTUNNEL_URL'],
                                            flock_node_0_communicate_url=current_app.config['FLOCK_URL'] + '/host/{}/node-0-communicate'.format(project_id),
                                            flock_project_secret=secret_key,
                                            group=current_app.config['FLOCK_LOG_GROUP'],
@@ -312,7 +318,7 @@ def update_status(project_id):
     match = re.search(regex, output)
 
     if match is not None:
-        db.execute(('UPDATE projects SET deployment_url=(?), health_status=(?) '
+        db.execute(('UPDATE projects SET deployment_ip=(?), health_status=(?) '
                    'WHERE id=(?);'),
                    (match.group('ip'), match.group('status'), project_id,))
         db.commit()

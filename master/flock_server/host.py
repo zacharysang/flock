@@ -95,6 +95,8 @@ def submit_project():
             # good to go forward with input
             # generate hash_id from owner id and name
             hash_id = generate_hash_id(g.user['id'], name)
+            deployment_subdomain = hash_id[:25]
+            deployment_url = deployment_subdomain + '.' + current_app.config['LOCALTUNNEL_URL']
             
             # generate a secret key for the project
             secret_key = ''.join(random.SystemRandom()
@@ -105,10 +107,11 @@ def submit_project():
 
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                 'min_workers, secret_key, hash_id, owner_id) VALUES '
-                 '(?, ?, ?, ?, ?, ?, ?);'),
+                 'min_workers, secret_key, hash_id, deployment_subdomain, '
+                 'deployment_url, owner_id) VALUES '
+                 '(?, ?, ?, ?, ?, ?, ?, ?, ?);'),
                 (name, source_url, description, min_workers, secret_key,
-                 hash_id, g.user['id'])
+                 hash_id, deployment_subdomain, deployment_url, g.user['id'])
             )
             db.commit()
 
@@ -237,7 +240,7 @@ def serve_file(project_id, filename):
     # serve the requested file
     return send_from_directory(project_folder_path, filename)
 
-@bp.route('/<int:project_id>/node-0-communicate', method=('POST'))
+@bp.route('/<int:project_id>/node-0-communicate', methods=('POST',))
 def node_0_communicate(project_id):
     """An endpoint for the node 0 to send information to the master server.
     Required values in POST json:
