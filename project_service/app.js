@@ -39,6 +39,7 @@ const serveStatic = require('serve-static');  // serve static files
 const socketIo = require('socket.io');        // web socket external module
 const puppeteer = require('puppeteer');       // Note: This has other dependencies (namely the latest version of chrome). See here for instructions https://developers.google.com/web/updates/2017/04/headless-chrome
 const easyrtc = require('easyrtc');           // EasyRTC internal module
+const localtunnel = require('localtunnel');
 
 const APP_NAME = 'flock-app';
 
@@ -59,6 +60,8 @@ dotenv.config();
 const PORT = parseInt(process.env['FLOCK_PORT']);
 const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
+const LOCALTUNNEL_URL = process.env['LOCALTUNNEL_URL'];
+const DEPLOY_SUBDOMAIN = process.env['DEPLOY_SUBDOMAIN'];
 
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
@@ -82,21 +85,44 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     if (process.env['FLOCK_DEV'] === 'true') {
         
-        // Note: This must be installed with npm's '--unsafe-perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
-        let ngrok = require('ngrok');
-        
         easyrtc.setOption('logLevel', 'debug');
         
         // In dev mode, start a static server for flock js files
         expressApp.use(express.static('test/flock-tests'));
         expressApp.use('/static', express.static('../master/flock_server/static'));
         
-        // Override url to the ngrok public url
-        try {
-            url = await ngrok.connect(PORT);
-        } catch (err) {
-            console.log(`ngrok error: ${err}`);
-        }
+        /* Commenting this out since we can use localtunnel on localtunnel.kurtjlewis.com
+            // Note: This must be installed with npm's '--unsafe-perm' argument to avoid issues when installing as 'nobody' user (See: https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124)
+            //let ngrok = require('ngrok');
+            
+            // Override url to the ngrok public url
+            try {
+                url = await ngrok.connect(PORT);
+            } catch (err) {
+                console.log(`ngrok error: ${err}`);
+            }
+        */
+    }
+    
+    let tunnel = new Promise((resolve, reject) => {
+        localtunnel(PORT, {
+            subdomain: DEPLOY_SUBDOMAIN,
+            domain: LOCALTUNNEL_URL,
+            host: `https://${LOCALTUNNEL_URL}`
+        },
+        (err, tunnel) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(tunnel);
+            }
+        }); 
+    });
+    
+    try {
+        url = (await tunnel).url;
+    } catch (err) {
+        console.log(`error with localtunnel: ${err}`);    
     }
     
     // Start Express http server on port 8080
@@ -296,7 +322,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     return url;
     
-})().then((url) => console.log(`ngrok url: ${url}`));
+})().then((url) => console.log(`project url: ${url}`));
 
 async function initializeNode0(url) {
     // Launch headless chrome
