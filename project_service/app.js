@@ -112,8 +112,12 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
           host: `https://${LOCALTUNNEL_URL}`
         };
         
-        if (DEPLOY_SUBDOMAIN && IS_DEV) {
+        // if DEPLOY_SUBDOMAIN env is present, add to localtunnel options
+        if (DEPLOY_SUBDOMAIN) {
             opts.subdomain = DEPLOY_SUBDOMAIN;
+        } else if (!IS_DEV) {
+            // subdomain should be required to start project ourside of the dev env
+            throw 'DEPLOY_SUBDOMAIN is required outside of dev environment';
         }
         
         localtunnel(PORT, opts,
@@ -129,7 +133,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     try {
         url = (await tunnel).url;
     } catch (err) {
-        console.log(`error with localtunnel: ${err}`);    
+        console.log(`Error when initializing localtunnel: ${err}`);    
     }
     
     // Start Express http server on port 8080
