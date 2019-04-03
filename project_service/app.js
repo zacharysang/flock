@@ -274,7 +274,13 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 let commMap = idsByRank[msg.msgData.comm];
                 
                 let session = connectionObj.getSession();
-                let sessionId = session.getEasyrtcsid();
+                
+                let sessionId;
+                if (session) {
+                    sessionId = session.getEasyrtcsid();
+                } else {
+                    sessionId = connectionObj.getEasyrtcid();    
+                }
                 
                 let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sessionId);
                 
