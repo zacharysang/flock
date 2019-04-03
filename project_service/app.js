@@ -72,6 +72,12 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     let expressApp = express();
     
+    expressApp.use(function(req, res, next) {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+      next();
+    });
+    
     // TODO for production, use a real session store (default is a naive in-memory store) (see the 'store' option)
     // Note: easyrtc requires 'httpOnly = false' so that cookies are visible to easyrtc via JS
     // this is a security risk, because it means the session id can be accessed during an XSS attack
