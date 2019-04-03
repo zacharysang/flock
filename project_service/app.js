@@ -166,13 +166,20 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 
                 // assign an rank to this connection in the WORLD communication group
                 let session = connectionObj.getSession();
-                let sid = session.getEasyrtcsid();
+                
+                let sid;
+                if (session) {
+                    sid = session.getEasyrtcsid();
+                } else {
+                    sid = easyrtcid;
+                }
                 
                 let commMap = idsByRank[MPI_COMM_WORLD];
                 
                 // check if the session id is already in the map for a certain rank
                 let rank = Object.keys(commMap).find((rank) => commMap[rank].sid === sid);
                 if (rank) {
+                    
                     // if sid corresponds to a rank in the map already, check that there is not already an active id
                     if (commMap[rank].id) {
                         console.log(`Got duplicate node session for easyrtcid: ${easyrtcid}`);
