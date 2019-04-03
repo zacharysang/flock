@@ -65,8 +65,7 @@ def get_work_page_for_project(project_id):
     code_file = url_for('host.serve_file', project_id=project_id,
                         filename=CODE_FILENAME)
 
-    deployment_url = '{deploy_url}:{port}'.format(deploy_url=project['deployment_url'],
-                                                  port=current_app.config['FLOCK_PORT'])
+    deployment_url = project['deployment_url']
 
     return render_template('work/index.html',
                            code_file=code_file,
