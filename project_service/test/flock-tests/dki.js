@@ -242,7 +242,8 @@ async function main() {
                         if (!links) {
                             continue;
                         }
-                        total += links.length;
+                        total +=
+                    .length;
                         if (total >= 5000 && !flag) {
                             flag = true;
                             let t = Date.now() - starttime;
