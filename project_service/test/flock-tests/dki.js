@@ -62,7 +62,7 @@ class Scrape {
 
         this.num_discovered_links += ret_links.length;
         let tmp = this.num_discovered_links;
-        mpi.updateStatus({'numParsedLinks': tmp});
+        mpi.updateStatus({'numDiscoveredLinks': tmp});
         //console.log('retlinks: ' + ret_links)
         return ret_links;
     }
@@ -154,12 +154,12 @@ async function main() {
     let size = await mpi.getSize('default');
     console.log(`got size: ${size}`);
 
-    let sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
+    let sources = new Set(['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/']);
     //politico, cnn
     //let sources = ['https://www.cnn.com/', 'https://www.politico.com/']
     let outstandingReqs = 0;
     let receiveMessages = [];
-    let explored = new Set();
+    //let explored = new Set();
     //let uniqueKeywords = new Set();
     let stopTime = -1;
     let total = 0;
@@ -173,15 +173,21 @@ async function main() {
     if (rank === 0) {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
-            mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+            mpi.updateStatus({progress: Math.floor(1/sources.size * 100)});
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
-            if (sources.length > 0) {
-                let batch = sources.slice(0, batchsize);
+            if (sources.size > 0) {
+                let tmp = 0;
+                let batch = [];
+                for(let l of sources){
+                    batch.push(l);
+                    sources.delete(l);
+                    tmp++;
+                    if (tmp === batchsize) break;
+                }
                 mpi.isend(batch, idx + 1, 'default');
                 count += batchsize;
                 mpi.updateStatus({'numExploredLinks': count});
-                sources = sources.slice(batchsize, sources.length - 1);
                 outstandingReqs++;
             } else {
                 mpi.isend([''], idx + 1, 'default');
@@ -191,7 +197,8 @@ async function main() {
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+            mpi.updateStatus({progress: Math.floor(1/sources.size * 100)});
+            mpi.updateStatus({'lengthSources ': sources.size});
             for (let idx = 0; idx < receiveMessages.length; idx++) {
                 let res = await receiveMessages[idx][1];
                 //let res = req[1];
@@ -203,14 +210,20 @@ async function main() {
                     let links_arr = res;
 
 
-                    if (sources.length > 0) {
+                    if (sources.size > 0) {
                         //console.log('sources: '+sources);
-                        let batch = sources.slice(0, batchsize);
+                        let tmp = 0;
+                        let batch = [];
+                        for(let l of sources){
+                            batch.push(l);
+                            sources.delete(l);
+                            tmp++;
+                            if (tmp === batchsize) break;
+                        }
                         console.log('sending to child: ' + batch);
                         mpi.isend(batch, rec_rank, 'default');
                         count += batchsize;
                         mpi.updateStatus({'numExploredLinks': count});
-                        sources = sources.slice(batchsize, sources.length - 1);
 
                         outstandingReqs++;
                     } else {
@@ -241,17 +254,18 @@ async function main() {
                             let link = links[kdx];
 
                             console.log('evaluating link: ' + link);
-                            console.log('length of explored: ' + explored.size);
-                            if (!explored.has(link)) {
-                                sources.push(link);
-                                explored.add(link);
-                                // if (explored.size >= 5000){
-                                //     mpi.updateStatus({'timeto5kUNIQUE': Date.now()-starttime});
-                                //     return;
-                                // }
+                            //console.log('length of explored: ' + explored.size);
+                            //if (!explored.has(link)) {
+                            sources.add(link);
+                            mpi.updateStatus({'lengthSources ': sources.size});
+                                //explored.add(link);
+                                /* if (explored.size >= 5000){
+                                     mpi.updateStatus({'timeto5kUNIQUE': Date.now()-starttime});
+                                     return;
+                                 }
                             } else {
                                 console.log('repeated link');
-                            }
+                            }*/
                         }
                     }
                 }
