@@ -5,9 +5,12 @@ This file handles the automagic deployment of projects onto AWS
 import hashlib
 import logging
 import os
+import random
 import re
 import shutil
+import string
 import subprocess
+from datetime import datetime
 
 from flask import current_app
 
@@ -23,7 +26,7 @@ def generate_hash_id(user_id, project_name):
     Concatenates user id to project name and hashes that using sha1.
     Safe to call not in a deployment environment
     """
-    string = str(user_id) + str(project_name)
+    string = str(user_id) + str(project_name) + str(datetime.now())
     return hashlib.sha1(string.encode('utf-8')).hexdigest()
 
 def get_deploy_folder_path():
@@ -98,7 +101,11 @@ def deploy_project(project_id):
         hash_id = project['hash_id']
     
     # first need to build config files
-    build_config_files(hash_id)
+    build_config_files(hash_id,
+                       project['id'],
+                       project['min_workers'],
+                       project['secret_key'],
+                       project['deployment_subdomain'])
 
     start_container(hash_id)
 
@@ -127,7 +134,8 @@ def destroy_project(project_id):
 
     
 
-def build_config_files(hash_id):
+def build_config_files(hash_id, project_id, min_workers, secret_key,
+                       deployment_subdomain):
     """Builds the config files needed for deploying to AWS.
     """
     # define the docker compose file with params
@@ -140,6 +148,10 @@ def build_config_files(hash_id):
                       '      - FLOCK_PORT={flock_port}\n'
                       '      - FLOCK_SESSION_SECRET={flock_session_secret}\n'
                       '      - FLOCK_URL={flock_url}\n'
+                      '      - DEPLOY_SUBDOMAIN={deploy_subdomain}\n'
+                      '      - LOCALTUNNEL_URL={localtunnel_url}\n'
+                      '      - FLOCK_COMM_URL={flock_node_0_communicate_url}\n'
+                      '      - FLOCK_PROJECT_SECRET={flock_project_secret}\n'
                       '    ports:\n'
                       '      - "{flock_port}:{flock_port}"\n'
                       '    logging:\n'
@@ -174,13 +186,24 @@ def build_config_files(hash_id):
     # get the paths for the files
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id)
 
+    # create session secret
+    session_secret = ''.join(random.SystemRandom()
+                             .choice(string.ascii_uppercase +
+                                     string.ascii_lowercase +
+                                     string.digits)
+                             for _ in range(10))
+
     # generate the docker compose file
     docker_compose = docker_compose.format(hash_id=hash_id,
                                            image_name=current_app.config['FLOCK_CONTAINER_NAME'],
-                                           flock_min_size='temp',
+                                           flock_min_size=min_workers,
                                            flock_port=current_app.config['FLOCK_PORT'],
-                                           flock_session_secret='temp',
-                                           flock_url='temp',
+                                           flock_session_secret=session_secret,
+                                           flock_url=current_app.config['FLOCK_URL'] + '/work/{}?key={}'.format(project_id, secret_key),
+                                           deploy_subdomain=deployment_subdomain,
+                                           localtunnel_url=current_app.config['LOCALTUNNEL_URL'],
+                                           flock_node_0_communicate_url=current_app.config['FLOCK_URL'] + '/host/{}/node-0-communicate'.format(project_id),
+                                           flock_project_secret=secret_key,
                                            group=current_app.config['FLOCK_LOG_GROUP'],
                                            region=current_app.config['FLOCK_REGION'],)
     with open(docker_compose_path, 'w') as file:
@@ -200,13 +223,14 @@ def start_container(hash_id):
     # build the start command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    start_cmd = ('ecs-cli compose --project-name {hash_id} '
+    start_cmd = ('{ecs_cli_path} compose --project-name {hash_id} '
                  '--ecs-params {ecs_params} '
                  '--file {docker_compose} '
                  'up '
                  '--cluster-config {cluster_config} '
                  '--ecs-profile {ecs_profile} ')
-    start_cmd = start_cmd.format(hash_id=hash_id,
+    start_cmd = start_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                                 hash_id=hash_id,
                                  cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                  ecs_params=ecs_params_path,
                                  docker_compose=docker_compose_path,
@@ -226,13 +250,14 @@ def stop_container(hash_id):
     # build the stop command
     # TODO - i'm not sure if project name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    stop_cmd= ('ecs-cli compose --project-name {hash_id} '
+    stop_cmd= ('{ecs_cli_path} compose --project-name {hash_id} '
                '--ecs-params {ecs_params} '
                '--file {docker_compose} '
                'down '
                '--cluster-config {cluster_config} '
                '--ecs-profile {ecs_profile}')
-    stop_cmd = stop_cmd.format(hash_id=hash_id,
+    stop_cmd = stop_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                               hash_id=hash_id,
                                cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
                                ecs_params=ecs_params_path,
                                docker_compose=docker_compose_path,
@@ -261,13 +286,14 @@ def update_status(project_id):
     # build the status command
     # TODO - I'm not sure if project-name means something different
     # TODO - see if I can just use 'cluster' instead of cluster-config
-    status_cmd = ('ecs-cli compose --project-name {hash_id} '
+    status_cmd = ('{ecs_cli_path} compose --project-name {hash_id} '
                   '--ecs-params {ecs_params} '
                   '--file {docker_compose} '
                   'ps '
                   '--cluster-config {cluster_config} '
                   '--ecs-profile {ecs_profile}')
-    status_cmd = status_cmd.format(hash_id=hash_id,
+    status_cmd = status_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+                                   hash_id=hash_id,
                                    ecs_params=ecs_params_path,
                                    docker_compose = docker_compose_path,
                                    cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
@@ -292,7 +318,7 @@ def update_status(project_id):
     match = re.search(regex, output)
 
     if match is not None:
-        db.execute(('UPDATE projects SET deployment_url=(?), health_status=(?) '
+        db.execute(('UPDATE projects SET deployment_ip=(?), health_status=(?) '
                    'WHERE id=(?);'),
                    (match.group('ip'), match.group('status'), project_id,))
         db.commit()

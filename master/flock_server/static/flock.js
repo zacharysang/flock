@@ -494,6 +494,8 @@ flock.consumeFromInbox = function(tag=null) {
 flock.join = async function() {
     
     flock.updateStatus({state: 'joining'});
+
+    easyrtc.setSocketUrl(window.SOCKET_URL);
     
     easyrtc.enableDataChannels(true);
     

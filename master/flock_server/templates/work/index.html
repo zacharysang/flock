@@ -5,19 +5,18 @@
   <script type="text/javascript"
       src="https://demo.easyrtc.com/easyrtc/easyrtc.js"></script>
   <script type="text/javascript"
-      src={{ url_for('static', filename='flock.js') }}>
+      src={{ url_for('static', filename='flock.js') }} defer>
   </script>
-  <script type="text/javascript" src={{ code_file }} ></script>
+  <script type="text/javascript">
+     window.APP_PATH = "{{ code_file }}"
+     window.SOCKET_URL = "{{ deployment_url }}"
+  </script>
   {% if secret %}
-    <script type="text/javascript" src={{ secrets_file }} ></script>
+    <script type="text/javascript" src="{{ secrets_file }}" ></script>
   {% endif %}
 {% endblock %}
 {% block title %}Volunteer{% endblock %}
 
 {% block content %}
-  Test Application
-  <script type="text/javascript">
-    flock.join();
-  </script>
-  <input type="button" onclick="flock.initWorker()" value="Start"/>
+  <div id="status"></div>
 {% endblock %}
