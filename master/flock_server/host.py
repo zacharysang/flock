@@ -24,7 +24,7 @@ class ApprovalStatus(Enum):
     APPROVED=1
 
 # Constants for filenames of code and js file
-CODE_FILENAME = 'flock.js'
+CODE_FILENAME = 'user-code.js'
 SECRETS_FILENAME = 'secret.js'
 
 @bp.route('/queue')
@@ -42,6 +42,27 @@ def queue():
         (ApprovalStatus.WAITING.value,)).fetchall()
 
     return render_template('host/queue.html', projects=projects)
+
+@bp.route('/list')
+def list():
+    """Renders a list of projects separated into my projects and all projects
+    """
+    db = get_db()
+    # check for a current user
+    my_projects = None
+    if g.user is None:
+        projects = db.execute('SELECT * FROM projects;').fetchall()
+        
+    else:
+        # there is a user, render both my projects and all projects
+        my_projects = db.execute('SELECT * FROM projects WHERE owner_id=(?);',
+                                 (g.user['id'],)).fetchall()
+        projects = db.execute('SELECT * FROM projects WHERE owner_id!=(?);',
+                              (g.user['id'],)).fetchall()
+
+    return render_template('host/list.html', projects=projects,
+                           my_projects=my_projects)
+
 
 @bp.route('/<int:project_id>/approve')
 @auth_required
@@ -95,6 +116,8 @@ def submit_project():
             # good to go forward with input
             # generate hash_id from owner id and name
             hash_id = generate_hash_id(g.user['id'], name)
+            deployment_subdomain = hash_id[:25]
+            deployment_url = deployment_subdomain + '.' + current_app.config['LOCALTUNNEL_URL']
             
             # generate a secret key for the project
             secret_key = ''.join(random.SystemRandom()
@@ -105,10 +128,11 @@ def submit_project():
 
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
-                 'min_workers, secret_key, hash_id, owner_id) VALUES '
-                 '(?, ?, ?, ?, ?, ?, ?);'),
+                 'min_workers, secret_key, hash_id, deployment_subdomain, '
+                 'deployment_url, owner_id) VALUES '
+                 '(?, ?, ?, ?, ?, ?, ?, ?, ?);'),
                 (name, source_url, description, min_workers, secret_key,
-                 hash_id, g.user['id'])
+                 hash_id, deployment_subdomain, deployment_url, g.user['id'])
             )
             db.commit()
 
@@ -236,3 +260,45 @@ def serve_file(project_id, filename):
     
     # serve the requested file
     return send_from_directory(project_folder_path, filename)
+
+@bp.route('/<int:project_id>/node-0-communicate', methods=('POST',))
+def node_0_communicate(project_id):
+    """An endpoint for the node 0 to send information to the master server.
+    Required values in POST json:
+        secret_key : secret key for project
+    Optional values in POST json:
+        deployment_url : the url the server is deployed at
+        worker_count : the number of workers currently working on the project
+
+    """
+    if request.method != 'POST':
+        abort(405)
+
+    # get the project to pull information from
+    db = get_db()
+    project = db.execute('SELECT * FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    if ('secret_key' not in request.json or
+        request.json['secret_key'] != project['secret_key']):
+        abort(403, 'Bad secret key.')
+
+    # build the information that this can accept
+    deployment_url = project['deployment_url']
+    worker_count = project['worker_count']
+
+    if 'deployment_url' in request.json:
+        deployment_url = request.json['deployment_url']
+
+    if 'worker_count' in request.json:
+        worker_count = project['worker_count']
+
+    # update the database
+    db.execute(('UPDATE projects SET deployment_url=(?), '
+                'worker_count=(?) WHERE id=(?);'),
+                (deployment_url, worker_count, project_id,))
+    db.commit()
+
+    return '', 200
+
+    

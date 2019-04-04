@@ -3,7 +3,8 @@ import os
 import random
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for,
+    abort, current_app
 )
 
 from flock_server.db import get_db
@@ -34,11 +35,8 @@ def get_work_page():
 
     project = random.choice(projects)
 
-    code_file = url_for('host.serve_file', project_id=project['id'],
-                        filename=CODE_FILENAME)
-
-    
-    return render_template('work/index.html', code_file=code_file, secret=False)
+    return redirect(url_for('work.get_work_page_for_project',
+                    project_id=project['id']))
 
 @bp.route('/<int:project_id>')
 def get_work_page_for_project(project_id):
@@ -67,6 +65,11 @@ def get_work_page_for_project(project_id):
     code_file = url_for('host.serve_file', project_id=project_id,
                         filename=CODE_FILENAME)
 
-    return render_template('work/index.html', code_file=code_file,
-                           secret=secret, secrets_file=secrets_file)
+    deployment_url = project['deployment_url']
+
+    return render_template('work/index.html',
+                           code_file=code_file,
+                           secret=secret,
+                           secrets_file=secrets_file,
+                           deployment_url=deployment_url)
     

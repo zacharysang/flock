@@ -494,6 +494,8 @@ flock.consumeFromInbox = function(tag=null) {
 flock.join = async function() {
     
     flock.updateStatus({state: 'joining'});
+
+    easyrtc.setSocketUrl(window.SOCKET_URL);
     
     easyrtc.enableDataChannels(true);
     
@@ -575,17 +577,13 @@ flock.callPeer = function(peerId) {
         easyrtc.call(peerId,
                 (caller, media) => {callAck()},
                 (errorCode, errorText) => {
-<<<<<<< HEAD
-                    let errMsg = `Error during p2p call (${errorCode}): ${errorText}`;
-                    console.warn(errMsg);
-=======
+
                     
                     let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
                     
                     console.warn(errMsg);
                     
                     // continue to acknowledge since the fallback is in place
->>>>>>> master
                     callAck(errMsg);
                 }
         );
