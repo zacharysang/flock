@@ -89,8 +89,6 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
         cookie: {httpOnly: false}
     }));
     
-    let url = process.env['FLOCK_URL'];
-    
     if (IS_DEV) {
         
         easyrtc.setOption('logLevel', 'debug');
@@ -118,10 +116,13 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     
     let tunnel = new Promise((resolve, reject) => {
-        let opts = {
-          domain: LOCALTUNNEL_URL,
-          host: `https://${LOCALTUNNEL_URL}`
-        };
+        let opts = {};
+        
+        // override the default host and domain options if using a custom localtunnel server
+        if (LOCALTUNNEL_URL) {
+            opts.domain = LOCALTUNNEL_URL;
+            opts.host = `https://${LOCALTUNNEL_URL}`;
+        }
         
         // if DEPLOY_SUBDOMAIN env is present, add to localtunnel options
         if (DEPLOY_SUBDOMAIN) {
@@ -141,8 +142,10 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
         }); 
     });
     
+    
+    let project_service_url;
     try {
-        url = (await tunnel).url;
+        project_service_url = (await tunnel).url;
     } catch (err) {
         console.log(`Error when initializing localtunnel: ${err}`);    
     }
@@ -353,13 +356,22 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     // Bind webServer to listening on PORT
     webServer.listen(PORT, function () { console.log(`listening on http://localhost:${PORT}`); });
     
-    await initializeNode0(url)
+    let flock_url;
+    if (IS_DEV) {
+        flock_url = project_service_url;
+    } else {
+        flock_url = process.env['FLOCK_URL'];
+    }
+    await initializeNode0(flock_url);
     
-    return url;
+    return project_service_url;
     
-})().then((url) => console.log(`project url: ${url}`));
+})().then((project_url) => console.log(`project service url: ${project_url}`));
 
 async function initializeNode0(url) {
+    if (!url) {
+        throw 'flock url undefined - Is the FLOCK_URL environment variable specified?';
+    }
     // Launch headless chrome
     // TODO Create a dedicated user to run headless chrome so that sandbox args can be removed and security improved (see here: https://github.com/GoogleChromeLabs/lighthousebot/blob/master/builder/Dockerfile#L35-L40)
     let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: true});
