@@ -36,11 +36,13 @@ apt-get update \
 * Set up environment variables by creating a `.env` file in `flock/project_service` with the following variables:
 
 ```
-FLOCK_MIN_SIZE # Specified by user, minimum number of nodes to wait for before starting
-FLOCK_PORT # port for node app to listen on
-FLOCK_URL # url to reach flock project at (only used in production)
-FLOCK_SESSION_SECRET # used to generate session ids, should be crypto-ey
-FLOCK_DEV=true
+FLOCK_DEV=true # Whether or not flock is running in a development environment
+FLOCK_PORT # Port for node app to listen on
+FLOCK_SESSION_SECRET # Used to generate session ids, should be crypto-ey
+FLOCK_URL # (only used in production) Url to reach the flock project page
+FLOCK_MIN_SIZE # Minimum number of nodes to wait for before starting
+LOCALTUNNEL_URL # (required only in production) Url for a localtunnel server. If ommitted in dev environment, will default to localtunnel.me
+DEPLOY_SUBDOMAIN # Subdomain to be requested from the localtunnel server
 ```
 
 Once you have the environment setup, you will be able to run the project using the command `npm run dev`. This will get a public url from [ngrok](https://ngrok.com/) that will be printed in the console.
