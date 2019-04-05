@@ -122,6 +122,8 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
         if (LOCALTUNNEL_URL) {
             opts.domain = LOCALTUNNEL_URL;
             opts.host = `https://${LOCALTUNNEL_URL}`;
+        } else if (!IS_DEV) {
+            throw 'LOCALTUNNEL_URL is required outside of the development environment';
         }
         
         // if DEPLOY_SUBDOMAIN env is present, add to localtunnel options
@@ -129,7 +131,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             opts.subdomain = DEPLOY_SUBDOMAIN;
         } else if (!IS_DEV) {
             // subdomain should be required to start project ourside of the dev env
-            throw 'DEPLOY_SUBDOMAIN is required outside of dev environment';
+            throw 'DEPLOY_SUBDOMAIN is required outside of the development environment';
         }
         
         localtunnel(PORT, opts,
