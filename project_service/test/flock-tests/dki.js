@@ -8,16 +8,8 @@ class Scrape {
         //this.collection = collection;
         this.num_discovered_links = 0;
 
-        // readFileSync('stop-words.txt', { encoding: 'utf-8' }, function (err, data) {
-        //     if (!err) {
-        //         this.stopWords = new Set();
-        //         for (var idx = 0; idx < keywords.length; idx++) {
-        //             this.stopWords.add(keywords[idx]);
-        //         }
-        //     } else {
-        //         console.log('failed to open stop-words.txt')
-        //     }
-        // });
+        // stopwords courtesy of Alireza Savand
+        this.stopWords = new Set(["a","about","above","after","again","against","all","am","an","and","any","are","aren't","as","at","be","because","been","before","being","below","between","both","but","by","can't","cannot","could","couldn't","did","didn't","do","does","doesn't","doing","don't","down","during","each","few","for","from","further","had","hadn't","has","hasn't","have","haven't","having","he","he'd","he'll","he's","her","here","here's","hers","herself","him","himself","his","how","how's","i","i'd","i'll","i'm","i've","if","in","into","is","isn't","it","it's","its","itself","let's","me","more","most","mustn't","my","myself","no","nor","not","of","off","on","once","only","or","other","ought","our","ours","ourselves","out","over","own","same","shan't","she","she'd","she'll","she's","should","shouldn't","so","some","such","than","that","that's","the","their","theirs","them","themselves","then","there","there's","these","they","they'd","they'll","they're","they've","this","those","through","to","too","under","until","up","very","was","wasn't","we","we'd","we'll","we're","we've","were","weren't","what","what's","when","when's","where","where's","which","while","who","who's","whom","why","why's","with","won't","would","wouldn't","you","you'd","you'll","you're","you've","your","yours","yourself","yourselves","new","will","also","can","may","like","said","make","just","many","get","now","since","including","last","made","around","one","two","three","four","five","six","seven","eight","nine","ten","well","even","way","much","across","says","back","among","next","said","could","in","else","maybe","tells","got","gotten","huge","seem","others","per","instead","either","uses","use","via","yet"])
     }
 
     setUrl(url) {
@@ -42,7 +34,7 @@ class Scrape {
         // let links = doc.getElementsByTagName("a")
 
         // for (let i=0; i<links.length; i++) {
-        //     all_links.push(links[i].getAttribute("href"));
+        // all_links.push(links[i].getAttribute("href"));
         // }
 
         for (let idx = 0; idx < all_links.length; idx++) {
@@ -78,17 +70,40 @@ class Scrape {
         }
     }
 
-    /*keywordClean(word) {
-        let word = word.replace(/\W/g, '');
+    keywordClean(word) {
+        word = word.replace(/\W/g, '');
         word = word.replace(/\d/g, '');
         if (word == '') {
             return null;
         }
         return word
-    }*/
+    }
 
-    /*findKeywords(html) {
-        let ps = [];
+    findKeywords(html) {
+        let keywords = set();
+
+        let doc = document.createElement("html");
+        doc.innerHTML = html;
+        let ps = doc.getElementsByTagName("p");
+
+        for (let i = 0; i < ps.length; i++) {
+            let paragraph = ps[i].innerText;
+            paragraph = paragraph.toLowerCase();
+
+            let words = paragraph.split(/\s/);
+            words = words.map(keywordClean);
+
+            if (words.length < 10) continue;
+
+            for(let idx=0; idx < words.length; idx++){
+                let word = words[idx];
+                if (word && !this.stopWords.has(word)) {
+                    keywords.add(word);
+                }
+            }
+        }
+
+        /*let ps = [];
         let endps = [];
 
         let re = /<p>/g;
@@ -112,8 +127,8 @@ class Scrape {
         for (var idx=0; idx<ps.length; idx++){
             curr_p = ps[idx];
             
-        }
-    }*/
+        }*/
+    }
 
     async scrape() {
         let r = null;
@@ -129,7 +144,8 @@ class Scrape {
         }
         //console.log('value of r after makeRequest: '+r);
         let links = this.findLinks(r);
-        return [null, links];
+        let keywords = this.findKeywords(r);
+        return [keywords, links];
     }
 }
 
@@ -155,12 +171,11 @@ async function main() {
     console.log(`got size: ${size}`);
 
     let sources = ['https://bbc.com', 'https://cincinnati.com', 'https://foxnews.com', 'https://npr.org/sections/news/', 'https://nytimes.com', 'https://forbes.com', 'https://wsj.com', 'https://www.cnn.com/', 'https://www.nbcnews.com/', 'https://abcnews.go.com/', 'https://www.yahoo.com/news/', 'https://www.washingtonpost.com/', 'https://www.theguardian.com/us', 'https://www.latimes.com/', 'https://www.apnews.com/', 'https://www.economist.com/', 'https://www.ap.org/en-us/', 'https://www.reuters.com/', 'https://www.bloomberg.com/', 'https://www.foreignaffairs.com/', 'https://www.theatlantic.com/', 'https://www.politico.com/', 'https://time.com/', 'https://www.cbsnews.com/'];
-    //politico, cnn
-    //let sources = ['https://www.cnn.com/', 'https://www.politico.com/']
+
     let outstandingReqs = 0;
     let receiveMessages = [];
     let explored = new Set();
-    //let uniqueKeywords = new Set();
+    let uniqueKeywords = new Set();
     let stopTime = -1;
     let total = 0;
     let flag = false;
@@ -173,7 +188,7 @@ async function main() {
     if (rank === 0) {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
-            mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+            mpi.updateStatus({progress: Math.floor(explored.size / sources.length * 100)});
             mpi.updateStatus({'lengthSources': sources.length});
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
@@ -193,7 +208,7 @@ async function main() {
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (let idx = 0; idx < receiveMessages.length; idx++) {
-                mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+                mpi.updateStatus({progress: Math.floor(explored.size / sources.length * 100)});
                 mpi.updateStatus({'lengthSources': sources.length});
                 let res = await receiveMessages[idx][1];
                 //let res = req[1];
@@ -221,9 +236,9 @@ async function main() {
 
                     receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
 
-                    // for (var jdx = 0; jdx < keywords.length; jdx++) {
-                    //     uniqueKeywords.add(keywords[jdx]);
-                    // }
+                     for (var jdx = 0; jdx < keywords.length; jdx++) {
+                        uniqueKeywords.add(keywords[jdx]);
+                    }
 
                     for (let jdx = 0; jdx < links_arr.length; jdx++) {
 
