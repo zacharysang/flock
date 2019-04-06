@@ -9,7 +9,7 @@ class Scrape {
         this.num_discovered_links = 0;
 
         // stopwords courtesy of Alireza Savand
-        this.stopWords = new Set(["a","about","above","after","again","against","all","am","an","and","any","are","aren't","as","at","be","because","been","before","being","below","between","both","but","by","can't","cannot","could","couldn't","did","didn't","do","does","doesn't","doing","don't","down","during","each","few","for","from","further","had","hadn't","has","hasn't","have","haven't","having","he","he'd","he'll","he's","her","here","here's","hers","herself","him","himself","his","how","how's","i","i'd","i'll","i'm","i've","if","in","into","is","isn't","it","it's","its","itself","let's","me","more","most","mustn't","my","myself","no","nor","not","of","off","on","once","only","or","other","ought","our","ours","ourselves","out","over","own","same","shan't","she","she'd","she'll","she's","should","shouldn't","so","some","such","than","that","that's","the","their","theirs","them","themselves","then","there","there's","these","they","they'd","they'll","they're","they've","this","those","through","to","too","under","until","up","very","was","wasn't","we","we'd","we'll","we're","we've","were","weren't","what","what's","when","when's","where","where's","which","while","who","who's","whom","why","why's","with","won't","would","wouldn't","you","you'd","you'll","you're","you've","your","yours","yourself","yourselves","new","will","also","can","may","like","said","make","just","many","get","now","since","including","last","made","around","one","two","three","four","five","six","seven","eight","nine","ten","well","even","way","much","across","says","back","among","next","said","could","in","else","maybe","tells","got","gotten","huge","seem","others","per","instead","either","uses","use","via","yet"])
+        this.stopWords = new Set(["a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't", "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself", "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is", "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so", "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then", "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd", "we'll", "we're", "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "where's", "which", "while", "who", "who's", "whom", "why", "why's", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves", "new", "will", "also", "can", "may", "like", "said", "make", "just", "many", "get", "now", "since", "including", "last", "made", "around", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "well", "even", "way", "much", "across", "says", "back", "among", "next", "said", "could", "in", "else", "maybe", "tells", "got", "gotten", "huge", "seem", "others", "per", "instead", "either", "uses", "use", "via", "yet"])
     }
 
     setUrl(url) {
@@ -29,14 +29,6 @@ class Scrape {
             }
         } while (m);
 
-        // let doc = document.createElement("html");
-        // doc.innerHTML = html;
-        // let links = doc.getElementsByTagName("a")
-
-        // for (let i=0; i<links.length; i++) {
-        // all_links.push(links[i].getAttribute("href"));
-        // }
-
         for (let idx = 0; idx < all_links.length; idx++) {
             let l = all_links[idx];
             if (l != null && !l.includes('video.') && !l.includes('/video/') && !l.includes('/video?')) {
@@ -54,8 +46,7 @@ class Scrape {
 
         this.num_discovered_links += ret_links.length;
         let tmp = this.num_discovered_links;
-        mpi.updateStatus({'numParsedLinks': tmp});
-        //console.log('retlinks: ' + ret_links)
+        mpi.updateStatus({'numDiscoveredLinks': tmp});
         return ret_links;
     }
 
@@ -80,54 +71,46 @@ class Scrape {
     }
 
     findKeywords(html) {
-        let keywords = set();
+        let keywords = new Set();
+        let ps = [];
 
-        let doc = document.createElement("html");
-        doc.innerHTML = html;
-        let ps = doc.getElementsByTagName("p");
+
+        function rec(html) {
+            let re = /<p.*>(.*)<\/p>/g;
+
+            let m = null;
+
+            do {
+                m = re.exec(html);
+                if (m) {
+                    if (m[1]) {
+                        ps.push(m[1]);
+                        rec(m[1])
+                    }
+                }
+            } while (m)
+        }
+
+        rec(html);
 
         for (let i = 0; i < ps.length; i++) {
-            let paragraph = ps[i].innerText;
+            let paragraph = ps[i];
             paragraph = paragraph.toLowerCase();
 
             let words = paragraph.split(/\s/);
-            words = words.map(keywordClean);
+            words = words.map(this.keywordClean);
 
             if (words.length < 10) continue;
 
-            for(let idx=0; idx < words.length; idx++){
+            for (let idx = 0; idx < words.length; idx++) {
                 let word = words[idx];
                 if (word && !this.stopWords.has(word)) {
                     keywords.add(word);
                 }
             }
         }
+        return Array.from(keywords);
 
-        /*let ps = [];
-        let endps = [];
-
-        let re = /<p>/g;
-        let re2 = /<\/p>/g;
-
-        do {
-            m = re.exec(html);
-            if (m) {
-                ps.push(m);
-            }
-        } while (m);
-
-        do {
-            m = re2.exec(html);
-            if (m) {
-                endps.push(m);
-            }
-        } while (m);
-
-        // TODO: nested <p>s 
-        for (var idx=0; idx<ps.length; idx++){
-            curr_p = ps[idx];
-            
-        }*/
     }
 
     async scrape() {
@@ -145,6 +128,7 @@ class Scrape {
         //console.log('value of r after makeRequest: '+r);
         let links = this.findLinks(r);
         let keywords = this.findKeywords(r);
+        console.log("in scrape, keywords= " + keywords);
         return [keywords, links];
     }
 }
@@ -188,7 +172,7 @@ async function main() {
     if (rank === 0) {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
-            mpi.updateStatus({progress: Math.floor(explored.size / sources.length * 100)});
+            mpi.updateStatus({progress: Math.floor(uniqueKeywords.size / 2000 * 100)});
             mpi.updateStatus({'lengthSources': sources.length});
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
@@ -213,15 +197,14 @@ async function main() {
                 let res = await receiveMessages[idx][1];
                 //let res = req[1];
                 let rec_rank = receiveMessages[idx][0];
-                console.log('rank 0 recieved from child: ' + receiveMessages[idx]);
+                console.log('rank 0 received from child: ' + res[0]);
                 if (res) {
                     outstandingReqs--;
-                    //keywords = res[0];
-                    let links_arr = res;
+                    let keywords = res[0];
+                    let links_arr = res[1];
 
 
                     if (sources.length > 0) {
-                        //console.log('sources: '+sources);
                         let batch = sources.slice(0, batchsize);
                         console.log('sending to child: ' + batch);
                         mpi.isend(batch, rec_rank, 'default');
@@ -233,12 +216,18 @@ async function main() {
                     } else {
                         mpi.isend([''], rec_rank, 'default');
                     }
+                    mpi.updateStatus({'lengthSources': sources.length});
+
 
                     receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
 
-                     for (var jdx = 0; jdx < keywords.length; jdx++) {
-                        uniqueKeywords.add(keywords[jdx]);
+                    if(keywords) {
+                        for (let jdx = 0; jdx < keywords.length; jdx++) {
+                            uniqueKeywords.add(keywords[jdx]);
+                        }
                     }
+
+                    mpi.updateStatus({'numUniqueKeywords': uniqueKeywords.size});
 
                     for (let jdx = 0; jdx < links_arr.length; jdx++) {
 
@@ -269,6 +258,7 @@ async function main() {
                             } else {
                                 console.log('repeated link');
                             }
+                            mpi.updateStatus({'numDiscoveredUniqueLinks':explored.size});
                         }
                     }
                 }
@@ -296,12 +286,12 @@ async function main() {
                     let tmp = [];
                     console.log('received link from root ' + source);
                     source = source.trim();
-                    let parts = source.split('/');
+                    //let parts = source.split('/');
                     //let baseurl = parts.join('/');
                     s.setUrl(source);
                     let retval = await s.scrape();
-                    //console.log('result of scrape: ' + retval)
-                    keywords.push(retval[0]);
+                    console.log('result of scrape: ' + retval)
+                    keywords = keywords.concat(retval[0]);
                     let all_links = retval[1];
                     if (all_links) {
                         for (let jdx = 0; jdx < all_links.length; jdx++) {
@@ -317,7 +307,8 @@ async function main() {
                     links.push(tmp)
                 }
                 console.log('sending discovered links to root ' + len.toString());
-                mpi.isend((keywords, links), 0, 'default');
+                console.log('sending data to root ' + keywords);
+                mpi.isend([keywords, links], 0, 'default');
                 await sleep(1);
             }
         }
