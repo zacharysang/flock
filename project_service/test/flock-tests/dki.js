@@ -174,6 +174,7 @@ async function main() {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
             mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+            mpi.updateStatus({'lengthSources': sources.length});
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
@@ -191,8 +192,9 @@ async function main() {
 
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
             for (let idx = 0; idx < receiveMessages.length; idx++) {
+                mpi.updateStatus({progress: Math.floor(explored.size/sources.length * 100)});
+                mpi.updateStatus({'lengthSources': sources.length});
                 let res = await receiveMessages[idx][1];
                 //let res = req[1];
                 let rec_rank = receiveMessages[idx][0];
@@ -217,7 +219,7 @@ async function main() {
                         mpi.isend([''], rec_rank, 'default');
                     }
 
-                    receiveMessages.push(mpi.irecv(rec_rank, 'default'));
+                    receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
 
                     // for (var jdx = 0; jdx < keywords.length; jdx++) {
                     //     uniqueKeywords.add(keywords[jdx]);
