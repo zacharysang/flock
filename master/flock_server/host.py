@@ -112,6 +112,18 @@ def submit_project():
         elif 'code-file' not in request.files:
             error = 'Code file must be uploaded.'
 
+        if (error is None and
+            'code-file' in request.files and
+            request.files['code-file'].filename.rsplit('.', 1)[1].lower()
+                != 'js'):
+            error = 'Code file must be a javascript file.'
+
+        if (error is None and
+            'secrets-file' in request.files and
+            request.files['secrets-file'].filename.rsplit('.', 1)[1].lower()
+                != 'js'):
+            error = 'Secrests file must be a javascript file.'
+
         if error is None:
             # good to go forward with input
             # generate hash_id from owner id and name
