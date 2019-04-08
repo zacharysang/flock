@@ -305,7 +305,7 @@ def node_0_communicate(project_id):
         deployment_url = request.json['deployment_url']
 
     if 'worker_count' in request.json:
-        worker_count = project['worker_count']
+        worker_count = request.json['worker_count']
 
     # update the database
     db.execute(('UPDATE projects SET deployment_url=(?), '
