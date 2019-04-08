@@ -64,6 +64,8 @@ const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
 const LOCALTUNNEL_URL = process.env['LOCALTUNNEL_URL'];
 const DEPLOY_SUBDOMAIN = process.env['DEPLOY_SUBDOMAIN'];
+const MASTER_COMM_URL = process.env['FLOCK_COMM_URL'];
+const PROJECT_SECRET = process.env['FLOCK_PROJECT_SECRET'];
 
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
@@ -230,6 +232,9 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
 
                 }
                 
+                // since this node has been added to the cluster, update the master's worker count
+                sendMasterSizeUpdate();
+                
                 console.log(`Updated cluster size counter to: ${getSize()}`);
                 
                 // publish go-ahead signal if we have reached the minSize
@@ -347,6 +352,10 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
             if (rank) {
                 commMap[rank].id = null;  
+                
+                // since this node has been added to the cluster, update the master's worker count
+                sendMasterSizeUpdate();
+                
             }
             
             // run the default behavior
@@ -406,4 +415,25 @@ function isInCluster(id) {
     let rank = Object.keys(worldMap).find((rank) => worldMap[rank].id === id);
     
     return rank !== undefined;
+}
+
+function sendMasterSizeUpdate() {
+    let data = {
+        secret_key: PROJECT_SECRET,
+        worker_count: getSize()
+    };
+        
+    let dataEncoded = JSON.stringify(data);
+    
+    try {
+        let req = http.request(MASTER_COMM_URL, {method: 'POST'},
+            (res) => {
+                console.log(`Successfully updated master worker count to ${data['worker_count']}`);
+            });
+        
+        req.write(dataEncoded);
+        req.end();
+    } catch (err) {
+        console.error(`Error while updating master worker count: ${err}`);
+    }
 }
