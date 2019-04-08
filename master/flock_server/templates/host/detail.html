@@ -101,14 +101,18 @@
         </div>
       </div>
 
-      <!--<h3>Warning: I haven't implemented confirm on this yet!</h3>-->
       <div class="vertical-line"></div>
       <div id="danger-zone">
         <h2>Project Options</h2>
         <div class="box">
           <div class="item">
-            <a href="/host/{{ project['id'] }}/delete" appearance="button"
-                class="danger-button"
+            <a href={{ url_for('work.get_work_page_for_project', project_id=project['id']) }}>
+              Click here to volunteer for this project.
+            </a>
+          </div>
+          <div class="item">
+            <a href={{ url_for('host.delete', project_id=project['id']) }}
+                appearance="button" class="danger-button"
                 onClick="return confirm('This action is not reversable. Proceed?')">
              Delete this project
             </a>
