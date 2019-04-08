@@ -143,7 +143,7 @@ def submit_project():
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
                  'min_workers, secret_key, hash_id, deployment_subdomain, '
-                 'deployment_url, current_workers, owner_id) VALUES '
+                 'deployment_url, worker_count, owner_id) VALUES '
                  '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'),
                 (name, source_url, description, min_workers, secret_key,
                  hash_id, deployment_subdomain, deployment_url, 0, g.user['id'])
