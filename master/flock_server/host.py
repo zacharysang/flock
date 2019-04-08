@@ -293,6 +293,9 @@ def node_0_communicate(project_id):
     project = db.execute('SELECT * FROM projects WHERE id=(?);',
                          (project_id,)).fetchone()
 
+    if project is None:
+        abort(404)
+
     if ('secret_key' not in request.json or
         request.json['secret_key'] != project['secret_key']):
         abort(403, 'Bad secret key.')
