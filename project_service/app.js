@@ -53,6 +53,7 @@ const MSG_TYPE_GET_RANK = 'get_rank';
 const MSG_TYPE_GET_ID = 'get_easyrtcid';
 const MSG_TYPE_PUB_STORE = 'publish_store';
 const MSG_TYPE_GET_STORE = 'get_store';
+const MSG_TYPE_REDIRECT_RANK = 'redirect_node_rank';
 
 // initialize dotenv variables
 dotenv.config();
@@ -83,13 +84,14 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     // TODO for production, use a real session store (default is a naive in-memory store) (see the 'store' option)
     // Note: easyrtc requires 'httpOnly = false' so that cookies are visible to easyrtc via JS
     // this is a security risk, because it means the session id can be accessed during an XSS attack
-    expressApp.use(session({
+    /*expressApp.use(session({
         name: 'easyrtcsid',
         resave: false,
         saveUninitialized: true,
         secret: SESSION_SECRET,
         cookie: {httpOnly: false}
     }));
+    */
     
     if (IS_DEV) {
         
@@ -254,7 +256,8 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                                             pub.events.emit('emitEasyrtcMsg', 
                                                         connection,
                                                         MSG_TYPE_SIZE_CHECK,
-                                                        {msgData: true}, (msg) => {},
+                                                        {msgData: true},
+                                                        (msg) => {},
                                                         (err) => {
                                                             if (err) {
                                                                 console.error(`Sending size check had errors: ${JSON.stringify(err)}`);
@@ -351,11 +354,39 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             // find if the disconnect id corresponds to a rank and if so, nullify
             let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
             if (rank) {
-                commMap[rank].id = null;  
+
+                // get the size and last id before disconnect
+                let oldSize = getSize();
+                let lastId = getLastId();
+                
+                // mark this easyrtcid as inactive
+                commMap[rank].id = null;
                 
                 // since this node has been added to the cluster, update the master's worker count
                 sendMasterSizeUpdate();
                 
+                // if disconnecting node is not the last rank and not rank 0, send node redirect message
+                if (id !== lastId - 1 && rank > 0) {
+                    
+                    // send the redirect message to the last id
+                    pub.getConnectionWithEasyrtcid(lastId, (err, connection) => {
+                        
+                        if (err) {
+                            console.error(`Error getting connection for easyrtcid: ${lastId}`);
+                        }
+                        
+                        pub.events.emit('emitEasyrtcMsg', 
+                            connection,
+                            MSG_TYPE_REDIRECT_RANK,
+                            {},
+                            (msg) => {},
+                            (err) => {
+                                if (err) {
+                                    console.error(`Sending rank redirect had errors: ${JSON.stringify(err)}`);
+                                }
+                        });
+                    });
+                }
             }
             
             // run the default behavior
@@ -398,11 +429,27 @@ function getSize() {
     return activeIds.length;
 }
 
+// return the easyrtcid of the last active node
+function getLastId() {
+    let activeIds = getActiveIds();
+    
+    let lastId = activeIds[activeIds.length - 1];
+
+    return lastId;
+}
+
+// return a list of easyrtcids sorted by rank
 function getIds() {
-    let ids = Object.values(idsByRank[MPI_COMM_WORLD]).map((el) => el.id);
+    // get sorted entries
+    let sortedEntries = Object.entries(idsByRank[MPI_COMM_WORLD]).sort((a, b) => {
+        let rank = parseInt(a[0]) - parseInt(b[0]);
+    });
+    
+    let ids = sortedEntries.map((el) => el[1].id);
     return ids;
 }
 
+// return a list of active easyrtcids sorted by rank
 function getActiveIds() {
     let ids = getIds();
     return ids.filter((id) => id !== undefined && id !== null);
