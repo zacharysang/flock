@@ -20,7 +20,7 @@ def get_work_page():
     db = get_db()
     cursor = db.cursor()
     cursor.execute(('SELECT * FROM projects WHERE approval_status=(?) AND '
-                    'health_status="RUNNING";'),
+                    'health_status LIKE "RUNNING";'),
                    (ApprovalStatus.APPROVED.value,));
     
 
@@ -32,6 +32,14 @@ def get_work_page():
     if len(projects) == 0:
         flash('There are no projects to work on.')
         return redirect(url_for('index'))
+
+    in_need_projects = list()
+    for project in projects:
+        if project['worker_count'] < project['min_workers']:
+            in_need_projects.append(project)
+
+    if len(in_need_projects) > 0:
+        projects = in_need_projects
 
     project = random.choice(projects)
 
