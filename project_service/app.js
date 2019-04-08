@@ -33,6 +33,7 @@ process.title = 'node-easyrtc';
 
 const dotenv = require('dotenv');
 const http    = require('http');              // http server core module
+const https   = require('https');
 const express = require('express');           // web framework external module
 const session = require('express-session');   // used for session management
 const serveStatic = require('serve-static');  // serve static files
@@ -65,6 +66,9 @@ const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
 const LOCALTUNNEL_URL = process.env['LOCALTUNNEL_URL'];
 const DEPLOY_SUBDOMAIN = process.env['DEPLOY_SUBDOMAIN'];
+const MASTER_COMM_URL = process.env['FLOCK_COMM_URL'];
+const PROJECT_SECRET = process.env['FLOCK_PROJECT_SECRET'];
+const RANK_0_DEBUG = process.env['FLOCK_RANK_0_DEBUG'] === 'true';
 
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
@@ -232,6 +236,9 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
 
                 }
                 
+                // since this node has been added to the cluster, update the master's worker count
+                sendMasterSizeUpdate();
+                
                 console.log(`Updated cluster size counter to: ${getSize()}`);
                 
                 // publish go-ahead signal if we have reached the minSize
@@ -349,13 +356,16 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             // find if the disconnect id corresponds to a rank and if so, nullify
             let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
             if (rank) {
-                
+
                 // get the size and last id before disconnect
                 let oldSize = getSize();
                 let lastId = getLastId();
                 
                 // mark this easyrtcid as inactive
                 commMap[rank].id = null;
+                
+                // since this node has been added to the cluster, update the master's worker count
+                sendMasterSizeUpdate();
                 
                 // if disconnecting node is not the last rank and not rank 0, send node redirect message
                 if (id !== lastId - 1 && rank > 0) {
@@ -408,7 +418,7 @@ async function initializeNode0(url) {
     }
     // Launch headless chrome
     // TODO Create a dedicated user to run headless chrome so that sandbox args can be removed and security improved (see here: https://github.com/GoogleChromeLabs/lighthousebot/blob/master/builder/Dockerfile#L35-L40)
-    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: true});
+    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: RANK_0_DEBUG});
     let page = await browser.newPage();
     await page.goto(url);
     console.log(`browser node 0 launched on url: ${url}`);
@@ -454,4 +464,38 @@ function isInCluster(id) {
     let rank = Object.keys(worldMap).find((rank) => worldMap[rank].id === id);
     
     return rank !== undefined;
+}
+
+function sendMasterSizeUpdate() {
+    let data = {
+        secret_key: PROJECT_SECRET,
+        worker_count: getSize()
+    };
+        
+    let dataEncoded = JSON.stringify(data);
+    
+    try {
+        let commUrl = new URL(MASTER_COMM_URL);
+        let options = {
+            protocol: commUrl.protocol,
+            hostname: commUrl.hostname,
+            pathname: commUrl.pathname,
+            path: commUrl.pathname,
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(dataEncoded)
+            }
+        };
+        
+        let req = https.request(options,
+            (res) => {
+                console.log(`Successfully updated master worker count to ${data['worker_count']}`);
+            });
+        
+        req.write(dataEncoded);
+        req.end();
+    } catch (err) {
+        console.error(`Error while updating master worker count: ${err}`);
+    }
 }
