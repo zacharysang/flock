@@ -555,7 +555,11 @@ flock.join = async function() {
         joinFailure = function(errorCode, message) {
             reject(message);
             flock.updateStatus({state: 'not connected'});
-            easyrtc.showError(errorCode, message);
+            if (errorCode === 'NOVIABLEICE') {
+                console.warn(`Issue while connecting to application: ${message} (${errorCode})`);
+            } else {
+                console.error(`Error while connecting to application: ${message} (${errorCode})`);
+            }
         };
         
     });
