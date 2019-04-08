@@ -114,12 +114,14 @@ def submit_project():
 
         if (error is None and
             'code-file' in request.files and
+            request.files['secrets-file'].filename != '' and
             request.files['code-file'].filename.rsplit('.', 1)[1].lower()
                 != 'js'):
             error = 'Code file must be a javascript file.'
 
         if (error is None and
             'secrets-file' in request.files and
+            request.files['secrets-file'].filename != '' and
             request.files['secrets-file'].filename.rsplit('.', 1)[1].lower()
                 != 'js'):
             error = 'Secrests file must be a javascript file.'
