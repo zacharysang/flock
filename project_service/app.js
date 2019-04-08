@@ -480,8 +480,7 @@ function sendMasterSizeUpdate() {
             protocol: commUrl.protocol,
             hostname: commUrl.hostname,
             pathname: commUrl.pathname,
-            path: commUrl.path,
-            port: commUrl.port || 443,
+            path: commUrl.pathname,
             method: 'POST',
             headers: {
                 "Content-Type": "application/json",
@@ -489,16 +488,9 @@ function sendMasterSizeUpdate() {
             }
         };
         
-        console.log(`options for worker_count update: ${JSON.stringify(options)}`);
-        
         let req = https.request(options,
             (res) => {
                 console.log(`Successfully updated master worker count to ${data['worker_count']}`);
-                console.log(`Response data:\n
-                \tstatusCode: ${JSON.stringify(res.statusCode)}\n
-                \tstatusMessage: ${JSON.stringify(res.statusMessage)}\n
-                \tdumped: ${JSON.stringify(res._dumped)}
-                `);
             });
         
         req.write(dataEncoded);
