@@ -33,6 +33,7 @@ process.title = 'node-easyrtc';
 
 const dotenv = require('dotenv');
 const http    = require('http');              // http server core module
+const https   = require('https');
 const express = require('express');           // web framework external module
 const session = require('express-session');   // used for session management
 const serveStatic = require('serve-static');  // serve static files
@@ -474,7 +475,20 @@ function sendMasterSizeUpdate() {
     let dataEncoded = JSON.stringify(data);
     
     try {
-        let req = http.request(MASTER_COMM_URL, {method: 'POST'},
+        let commUrl = new URL(MASTER_COMM_URL);
+        let req = https.request(
+            {
+                protocol: commUrl.protocol,
+                hostname: commUrl.hostname,
+                pathname: commUrl.pathname,
+                path: commUrl.path,
+                port: commUrl.port || 443,
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(dataEncoded)
+                }
+            },
             (res) => {
                 console.log(`Successfully updated master worker count to ${data['worker_count']}`);
             });
