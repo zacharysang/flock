@@ -356,4 +356,8 @@ def update_status(project_id):
                        (status, message, project_id,))
             db.commit()
 
-    
+def restart_container(hash_id):
+    """Wrapper for calling stop container followed by start container.
+    """
+    stop_container(hash_id)
+    start_container(hash_id)
