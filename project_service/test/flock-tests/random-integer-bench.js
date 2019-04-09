@@ -35,19 +35,21 @@ async function main() {
         console.log(reqs);
         Promise.all(reqs).then(async () => {await mpi.isend(Date.now() - start, 1, 'default')});*/
         for (let i = 1; i < size; i++) {
-            await mpi.irecv(1, 'default');
+            await mpi.irecv(i, 'default');
         }
         let stop = Date.now()
         await mpi.isend(stop - time, 1, 'default');
 
     } else {
         let count = await mpi.ibcast(0, 0, 'default');
-        console.log("Received Count: " + count);
+        //console.log("Received Count: " + count);
+        let time = Date.now();
         for (i = 0; i < count; i++) {
             let x = Math.random();
         }
+        console.log(Date.now() - time);
         await mpi.isend(0, 0, 'default');
-        console.log("Finished.");
+        //console.log("Finished.");
         let final_time = await mpi.irecv(0, 'default');
         console.log(final_time);
     }

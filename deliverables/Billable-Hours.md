@@ -36,15 +36,25 @@
 | 01/15/19 | Proof of concept CLI Container Deploy | 1 | 0 | 0 | 0 |
 | 01/22/19 | Proof of concept CLI container deploy | 1 | 0 | 0 | 0 |
 | 01/24/19 | Code review, proof of concept CLI container deploy | 2 | 0 | 0 | 0 |
+| 01/25/19 | Proof of concept of MPI functions using easyrtc | 0 | 16 | 0 | 0 |
+| 01/29/19 | Add documentation for flock MPI functions | 0 | 4 | 0 | 0 |
 | 01/30/19 | Development of Flask server | 3 | 0 | 0 | 0 |
 | 01/31/19 | Continued Flask development | 2 | 0 | 0 | 0 |
 | 02/01/19 | Build tutorials for server | 2 | 0 | 0 | 0 |
 | 02/02/19 | Build server dev environment | 1 | 0 | 0 | 0 |
 | 02/10/19 | Build out server basic functionality (summation of work in PR #15) | 6 | 0 | 0 | 0 |
+| 02/11/19 | Worker nodes collectively wait for minimum cluster size | 0 | 3 | 0 | 0 |
+| 02/11/19 | Worker node ranks are assigned based on cluster need | 0 | 4 | 0 | 0 |
 | 02/18/19 | Flock server project endpoints and database writes (summation of work in PR #18) | 7 | 0 | 0 | 0 |
 | 02/27/19 | Implement master server unit testing (summation of work in PR #19) | 5 | 0 | 0 | 0 |
+| 03/05/19 | Worker nodes can recover on page refresh | 0 | 6 | 0 | 0 |
+| 03/05/19 | Developer can output data to volunteer ui | 0 | 2 | 0 | 0 |
+| 03/16/19 | Worker node rank 0 runs on headless chrome | 0 | 3 | 0 | 0 |
+| 03/16/19 | Add docs for setting up the development environment | 0 | 1 | 0 | 0 |
 | 03/20/19 | Dockerize project service (summation of work in PR #22) | 3 | 0 | 0 | 0 |
 | 03/24/19 | Build out automatic cloud deployment functionality (summation of work in PR #23) | 16 | 0 | 0 | 0 |
-| SUM | SUM | 102 | 52 | 48 | 41 |
+| 03/25/19 | Add api for rendering worker ui | 0 | 2 | 0 | 0 |
+| 03/30/19 | Worker nodes are able to taker over for each other | 0 | 10 | 0 | 0 |
+| SUM | SUM | 102 | 103 | 48 | 41 |
 
 
