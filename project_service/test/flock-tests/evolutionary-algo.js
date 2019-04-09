@@ -66,6 +66,12 @@ function clone(individual) {
     return {fitness: fitness, genome: genome};
 }
 
+function measure_fitnesses(population) {
+    for (let i = 0; i < population.length; i++) {
+        population[i].fitness = fitness_eval(population[i]);
+    }
+}
+
 async function main() {
     
     // initialize volunteer's page
@@ -95,6 +101,9 @@ async function main() {
             });
         }
         
+        measure_fitnesses(population);
+        
+
     }
 }
 
