@@ -6,6 +6,10 @@
 # `venv/var/flock_server-instance/config.py
 SECRET_KEY = '' # Secret Key value
 DO_DEPLOY = True # True or false value instructing the tool to run deploys
+# Nothing under this point is needed if DO_DEPLOY = False
+LOCALTUNNEL_URL = '' # local tunnel url with no leading http:// or https://, i.e. `subdomain.example.com` or `example.com`
+ECS_CLI_PATH = '/usr/local/bin/ecs-cli' # full path to ecs-cli
+FLOCK_URL = '' # URL flock is at - should have 'https' in it
 FLOCK_VPC_ID = '' # Flock VPC ID
 FLOCK_SECURITY_GROUP_ID = '' # Flock Security Group ID
 FLOCK_SUBNET_1_ID = '' # flock subnet 1 id

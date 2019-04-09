@@ -3,7 +3,8 @@ import os
 import random
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for,
+    abort, current_app
 )
 
 from flock_server.db import get_db
@@ -19,7 +20,7 @@ def get_work_page():
     db = get_db()
     cursor = db.cursor()
     cursor.execute(('SELECT * FROM projects WHERE approval_status=(?) AND '
-                    'health_status="RUNNING";'),
+                    'health_status LIKE "RUNNING";'),
                    (ApprovalStatus.APPROVED.value,));
     
 
@@ -32,13 +33,18 @@ def get_work_page():
         flash('There are no projects to work on.')
         return redirect(url_for('index'))
 
+    in_need_projects = list()
+    for project in projects:
+        if project['worker_count'] < project['min_workers']:
+            in_need_projects.append(project)
+
+    if len(in_need_projects) > 0:
+        projects = in_need_projects
+
     project = random.choice(projects)
 
-    code_file = url_for('host.serve_file', project_id=project['id'],
-                        filename=CODE_FILENAME)
-
-    
-    return render_template('work/index.html', code_file=code_file, secret=False)
+    return redirect(url_for('work.get_work_page_for_project',
+                    project_id=project['id']))
 
 @bp.route('/<int:project_id>')
 def get_work_page_for_project(project_id):
@@ -67,6 +73,11 @@ def get_work_page_for_project(project_id):
     code_file = url_for('host.serve_file', project_id=project_id,
                         filename=CODE_FILENAME)
 
-    return render_template('work/index.html', code_file=code_file,
-                           secret=secret, secrets_file=secrets_file)
+    deployment_url = project['deployment_url']
+
+    return render_template('work/index.html',
+                           code_file=code_file,
+                           secret=secret,
+                           secrets_file=secrets_file,
+                           deployment_url=deployment_url)
     

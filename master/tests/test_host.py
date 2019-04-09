@@ -1,4 +1,5 @@
 import pytest
+import json
 from io import BytesIO
 from flock_server.db import get_db
 
@@ -36,12 +37,12 @@ def test_owner_required(client, auth, path):
 
 @pytest.mark.parametrize(('name', 'source_url', 'min_workers', 'code_file',
                           'message'), (
-    ('', 'https://kurtjlewis.com', '1', (BytesIO(b'CODE FILE'), 'flock.js'),
+    ('', 'https://kurtjlewis.com', '1', (BytesIO(b'CODE FILE'), 'user-code.js'),
      b'Name is required.'),
-    ('test proj', '', '1', (BytesIO(b'CODE FILE'), 'flock.js'),
+    ('test proj', '', '1', (BytesIO(b'CODE FILE'), 'user-code.js'),
      b'Source URL is required'),
     ('test proj2', 'https://kurtjlewis.com', '',
-     (BytesIO(b'CODE FILE'), 'flock.js'),
+     (BytesIO(b'CODE FILE'), 'user-code.js'),
      b'Minimum number of workers is required.'),
     ('test proj', 'https://kurtjlewis.com', '1', '',
      b'Code file must be uploaded.')
@@ -64,7 +65,8 @@ def test_submit_validation(client, auth, name, source_url, min_workers,
     '/9',
     '/9/approve',
     '/9/delete',
-    '/9/file/flock.js'
+    '/9/file/user-code.js',
+    '/9/file/note-real.js'
 ))
 def test_404(client, auth, path):
     """Test that all project urls show a 404 when the project doesn't exist.
@@ -87,7 +89,7 @@ def test_submit(client, auth, app):
                  'source-url': 'https://zacharysang.com',
                  'min-workers': '1',
                  'description': 'Creation description',
-                 'code-file': (BytesIO(b'CODE_FILE'), 'flock.js'),
+                 'code-file': (BytesIO(b'CODE_FILE'), 'user-code.js'),
                  'secrets-file': (BytesIO(b'SECRETS'), 'secrets.js')
         }
     )
@@ -145,7 +147,7 @@ def test_serve_file(client, auth, app):
                  'source-url': 'https://zacharysang.com',
                  'min-workers': '1',
                  'description': 'Creation description',
-                 'code-file': (BytesIO(code_file_content), 'flock.js'),
+                 'code-file': (BytesIO(code_file_content), 'user-code.js'),
                  'secrets-file': (BytesIO(secrets_file_content), 'secrets.js')
         }
     )
@@ -162,8 +164,8 @@ def test_serve_file(client, auth, app):
 
         # check a couple of different urls to make sure they return content
 
-        # check for flock.js
-        response = client.get('/host/{}/file/flock.js'.format(project['id']))
+        # check for user-code.js
+        response = client.get('/host/{}/file/user-code.js'.format(project['id']))
         assert response.status_code == 200
         assert code_file_content in response.data
 
@@ -180,3 +182,25 @@ def test_serve_file(client, auth, app):
         # check for file that doesn't exist
         response = client.get('/host/{}/file/not-real.js'.format(project['id']))
         assert response.status_code == 404
+
+def test_node_0_communicate(client, app):
+    """Test that node-0-communicate can update the worker_count of a project."""
+    with app.app_context():
+        db = get_db()
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
+        response = client.post(
+            '/host/{}/node-0-communicate'.format(project['id']),
+            content_type='application/json',
+            data = json.dumps({ 'secret_key': project['secret_key'],
+                     'worker_count': '100'
+            })
+        )
+
+        assert response.status_code == 200
+        project = db.execute('SELECT * FROM projects WHERE id=1;').fetchone()
+        assert project['worker_count'] == 100
+
+def test_node_0_communicate_404(client):
+    """Tests that node-0-communicate 404s for a non-existent project"""
+    # test that it 404s
+    assert client.post('/host/10/node-0-communicate').status_code == 404

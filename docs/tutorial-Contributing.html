@@ -91,11 +91,13 @@ apt-get update \
 </code></pre><ul>
 <li>Set up environment variables by creating a <code>.env</code> file in <code>flock/project_service</code> with the following variables:</li>
 </ul>
-<pre class="prettyprint source"><code>FLOCK_MIN_SIZE # Specified by user, minimum number of nodes to wait for before starting
-FLOCK_PORT # port for node app to listen on
-FLOCK_URL # url to reach flock project at (only used in production)
-FLOCK_SESSION_SECRET # used to generate session ids, should be crypto-ey
-FLOCK_DEV=true</code></pre><p>Once you have the environment setup, you will be able to run the project using the command <code>npm run dev</code>. This will get a public url from <a href="https://ngrok.com/">ngrok</a> that will be printed in the console.
+<pre class="prettyprint source"><code>FLOCK_DEV=true # Whether or not flock is running in a development environment
+FLOCK_PORT # Port for node app to listen on
+FLOCK_SESSION_SECRET # Used to generate session ids, should be crypto-ey
+FLOCK_URL # (only used in production) Url to reach the flock project page
+FLOCK_MIN_SIZE # Minimum number of nodes to wait for before starting
+LOCALTUNNEL_URL # (required only in production) Url for a localtunnel server. If ommitted in dev environment, will default to localtunnel.me
+DEPLOY_SUBDOMAIN # Subdomain to be requested from the localtunnel server</code></pre><p>Once you have the environment setup, you will be able to run the project using the command <code>npm run dev</code>. This will get a public url from <a href="https://ngrok.com/">ngrok</a> that will be printed in the console.
 The project running will host the page <code>flock/project_service/test/flock-tests/index.html</code>, which specifies the application that is running.
 Referring to the <code>package.json</code> file in this directory will show you some other commands you can run during development. These include <code>npm run test</code> (to runs unit tests), and <code>npm run docs</code> (to generate updated jsdocs)</p>
         </article>
