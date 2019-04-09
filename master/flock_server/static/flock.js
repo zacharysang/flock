@@ -13,6 +13,7 @@ const MSG_TYPE_GET_RANK = "get_rank";
 const MSG_TYPE_GET_ID = "get_easyrtcid";
 const MSG_TYPE_PUB_STORE = "publish_store";
 const MSG_TYPE_GET_STORE = 'get_store';
+const MSG_TYPE_REDIRECT_RANK = 'redirect_node_rank';
 
 const EV_RCV_MSG = "receivedMessage";
 const EV_RCV_ACK = "receivedAck";
@@ -48,6 +49,37 @@ flock.easyrtcIdByRank = {[MPI_COMM_WORLD]: {}};
 
 // stores incoming messages by tag
 let inbox = {};
+
+let rankRedirectServerListener = async function(msgType, msgData, targeting) {
+    if (MSG_TYPE_REDIRECT_RANK === msgType) {
+        
+        // remove listener for beacon
+        window.onvisibilitychange = window.onpagehide = window.onunload = window.onbeforeunload = null;
+        
+        // perform backup
+        await publishStore();
+        
+        window.location.reload(false);
+    }
+};
+
+let saveBeacon = function(ev) {
+            
+    // make sure ev is not visibility change to visible
+    if (ev.type === 'visibilitychange' && !document.hidden) {
+        return;
+    }
+
+    ev.preventDefault();
+
+    publishStore();
+    
+    let leaveMsg = 'Thank you for contributing to flock!';
+    
+    ev.returnValue = leaveMsg;
+    
+    return leaveMsg;  
+};
 
 let storeDump = function() {
     
@@ -133,6 +165,9 @@ flock.isConnected = false;
  */
 flock.initWorker = function(appPath) {
     
+    // listen for redirect message if we need to take over for a lower rank
+    easyrtc.setServerListener(rankRedirectServerListener);
+    
     flock.updateStatus({state: 'starting application'});
     
     /* Code for talking to the WebWorker */
@@ -184,25 +219,7 @@ flock.storeSet = function(name, value) {
     // set up store 'beacon' on first store
     if (!window.onbeforeunload) {
         
-        let save = (ev) => {
-            
-            // make sure ev is not visibility change to visible
-            if (ev.type === 'visibilitychange' && !document.hidden) {
-                return;
-            }
-        
-            ev.preventDefault();
-        
-            publishStore();
-            
-            let leaveMsg = 'Thank you for contributing to flock!';
-            
-            ev.returnValue = leaveMsg;
-            
-            return leaveMsg;  
-        };
-        
-        window.onvisibilitychange = window.onpagehide = window.onunload = window.onbeforeunload = save;
+        window.onvisibilitychange = window.onpagehide = window.onunload = window.onbeforeunload = saveBeacon;
         
     }
     
@@ -538,7 +555,11 @@ flock.join = async function() {
         joinFailure = function(errorCode, message) {
             reject(message);
             flock.updateStatus({state: 'not connected'});
-            easyrtc.showError(errorCode, message);
+            if (errorCode === 'NOVIABLEICE') {
+                console.warn(`Issue while connecting to application: ${message} (${errorCode})`);
+            } else {
+                console.error(`Error while connecting to application: ${message} (${errorCode})`);
+            }
         };
         
     });
@@ -638,13 +659,16 @@ flock.awaitClusterSize = async function(size) {
                 if (msgType == MSG_TYPE_SIZE_CHECK && msgData === true) {
                     resolve();
                 }
+                
+                // still redirect if receiving message of that type
+                rankRedirectServerListener(msgType, msgData, targeting);
             });
             
             
         })
         .then(() => {
-            // remove the listener
-            easyrtc.setServerListener(undefined);
+            // reset the listener to listen for redirect requests
+            easyrtc.setServerListener(rankRedirectServerListener);
         });
         
     }

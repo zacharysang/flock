@@ -33,6 +33,7 @@ process.title = 'node-easyrtc';
 
 const dotenv = require('dotenv');
 const http    = require('http');              // http server core module
+const https   = require('https');
 const express = require('express');           // web framework external module
 const session = require('express-session');   // used for session management
 const serveStatic = require('serve-static');  // serve static files
@@ -53,6 +54,7 @@ const MSG_TYPE_GET_RANK = 'get_rank';
 const MSG_TYPE_GET_ID = 'get_easyrtcid';
 const MSG_TYPE_PUB_STORE = 'publish_store';
 const MSG_TYPE_GET_STORE = 'get_store';
+const MSG_TYPE_REDIRECT_RANK = 'redirect_node_rank';
 
 // initialize dotenv variables
 dotenv.config();
@@ -64,6 +66,9 @@ const MIN_SIZE = parseInt(process.env['FLOCK_MIN_SIZE']);
 const SESSION_SECRET = process.env['FLOCK_SESSION_SECRET'];
 const LOCALTUNNEL_URL = process.env['LOCALTUNNEL_URL'];
 const DEPLOY_SUBDOMAIN = process.env['DEPLOY_SUBDOMAIN'];
+const MASTER_COMM_URL = process.env['FLOCK_COMM_URL'];
+const PROJECT_SECRET = process.env['FLOCK_PROJECT_SECRET'];
+const RANK_0_DEBUG = process.env['FLOCK_RANK_0_DEBUG'] === 'true';
 
 
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
@@ -82,15 +87,14 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     // TODO for production, use a real session store (default is a naive in-memory store) (see the 'store' option)
     // Note: easyrtc requires 'httpOnly = false' so that cookies are visible to easyrtc via JS
     // this is a security risk, because it means the session id can be accessed during an XSS attack
-    expressApp.use(session({
+    /*expressApp.use(session({
         name: 'easyrtcsid',
         resave: false,
         saveUninitialized: true,
         secret: SESSION_SECRET,
         cookie: {httpOnly: false}
     }));
-    
-    let url = process.env['FLOCK_URL'];
+    */
     
     if (IS_DEV) {
         
@@ -119,17 +123,22 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     
     
     let tunnel = new Promise((resolve, reject) => {
-        let opts = {
-          domain: LOCALTUNNEL_URL,
-          host: `https://${LOCALTUNNEL_URL}`
-        };
+        let opts = {};
+        
+        // override the default host and domain options if using a custom localtunnel server
+        if (LOCALTUNNEL_URL) {
+            opts.domain = LOCALTUNNEL_URL;
+            opts.host = `https://${LOCALTUNNEL_URL}`;
+        } else if (!IS_DEV) {
+            throw 'LOCALTUNNEL_URL is required outside of the development environment';
+        }
         
         // if DEPLOY_SUBDOMAIN env is present, add to localtunnel options
         if (DEPLOY_SUBDOMAIN) {
             opts.subdomain = DEPLOY_SUBDOMAIN;
         } else if (!IS_DEV) {
             // subdomain should be required to start project ourside of the dev env
-            throw 'DEPLOY_SUBDOMAIN is required outside of dev environment';
+            throw 'DEPLOY_SUBDOMAIN is required outside of the development environment';
         }
         
         localtunnel(PORT, opts,
@@ -142,8 +151,10 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
         }); 
     });
     
+    
+    let project_service_url;
     try {
-        url = (await tunnel).url;
+        project_service_url = (await tunnel).url;
     } catch (err) {
         console.log(`Error when initializing localtunnel: ${err}`);    
     }
@@ -226,6 +237,11 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
 
                 }
                 
+                // since this node has been added to the cluster, update the master's worker count
+                if (!IS_DEV) {
+                    sendMasterSizeUpdate(PROJECT_SECRET, MASTER_COMM_URL);
+                }
+                
                 console.log(`Updated cluster size counter to: ${getSize()}`);
                 
                 // publish go-ahead signal if we have reached the minSize
@@ -245,7 +261,8 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                                             pub.events.emit('emitEasyrtcMsg', 
                                                         connection,
                                                         MSG_TYPE_SIZE_CHECK,
-                                                        {msgData: true}, (msg) => {},
+                                                        {msgData: true},
+                                                        (msg) => {},
                                                         (err) => {
                                                             if (err) {
                                                                 console.error(`Sending size check had errors: ${JSON.stringify(err)}`);
@@ -342,7 +359,42 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             // find if the disconnect id corresponds to a rank and if so, nullify
             let rank = Object.keys(commMap).find((rank) => commMap[rank].id === id);
             if (rank) {
-                commMap[rank].id = null;  
+
+                // get the size and last id before disconnect
+                let oldSize = getSize();
+                let lastId = getLastId();
+                
+                // mark this easyrtcid as inactive
+                commMap[rank].id = null;
+                
+                // since this node has been added to the cluster, update the master's worker count
+                if (!IS_DEV) {
+                    sendMasterSizeUpdate(PROJECT_SECRET, MASTER_COMM_URL);
+                }
+                
+                // if disconnecting node is not the last rank and not rank 0 (don't send redirection if rank 0 disconnects)
+                // then send node redirect message
+                if (id !== lastId && rank > 0) {
+                    
+                    // send the redirect message to the last id
+                    pub.getConnectionWithEasyrtcid(lastId, (err, connection) => {
+                        
+                        if (err) {
+                            console.error(`Error getting connection for easyrtcid: ${lastId}`);
+                        }
+                        
+                        pub.events.emit('emitEasyrtcMsg', 
+                            connection,
+                            MSG_TYPE_REDIRECT_RANK,
+                            {},
+                            (msg) => {},
+                            (err) => {
+                                if (err) {
+                                    console.error(`Sending rank redirect had errors: ${JSON.stringify(err)}`);
+                                }
+                        });
+                    });
+                }
             }
             
             // run the default behavior
@@ -356,17 +408,26 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     console.log(PORT);
     webServer.listen(PORT, function () { console.log(`listening on http://localhost:${PORT}`); });
     
-    await initializeNode0(url)
+    let flock_url;
+    if (IS_DEV) {
+        flock_url = project_service_url;
+    } else {
+        flock_url = process.env['FLOCK_URL'];
+    }
+    await initializeNode0(flock_url);
     
-    return url;
+    return project_service_url;
     
-})().then((url) => console.log(`project url: ${url}`));
+})().then((project_url) => console.log(`project service url: ${project_url}`));
 
 async function initializeNode0(url) {
+    if (!url) {
+        throw 'flock url undefined - Is the FLOCK_URL environment variable specified?';
+    }
     // Launch headless chrome
     // TODO Create a dedicated user to run headless chrome so that sandbox args can be removed and security improved (see here: https://github.com/GoogleChromeLabs/lighthousebot/blob/master/builder/Dockerfile#L35-L40)
 
-    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox', '--dumpio true','--remote-debugging-port=9222']});
+    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox','--remote-debugging-port=9222'], dumpio: RANK_0_DEBUG});
 
     let page = await browser.newPage();
     await page.goto(url);
@@ -380,11 +441,27 @@ function getSize() {
     return activeIds.length;
 }
 
+// return the easyrtcid of the last active node
+function getLastId() {
+    let activeIds = getActiveIds();
+    
+    let lastId = activeIds[activeIds.length - 1];
+
+    return lastId;
+}
+
+// return a list of easyrtcids sorted by rank
 function getIds() {
-    let ids = Object.values(idsByRank[MPI_COMM_WORLD]).map((el) => el.id);
+    // get sorted entries
+    let sortedEntries = Object.entries(idsByRank[MPI_COMM_WORLD]).sort((a, b) => {
+        let rank = parseInt(a[0]) - parseInt(b[0]);
+    });
+    
+    let ids = sortedEntries.map((el) => el[1].id);
     return ids;
 }
 
+// return a list of active easyrtcids sorted by rank
 function getActiveIds() {
     let ids = getIds();
     return ids.filter((id) => id !== undefined && id !== null);
@@ -397,4 +474,49 @@ function isInCluster(id) {
     let rank = Object.keys(worldMap).find((rank) => worldMap[rank].id === id);
     
     return rank !== undefined;
+}
+
+function sendMasterSizeUpdate(secret, masterCommUrl) {
+    
+    if (!secret) {
+        console.log(`sendMasterSizeUpdate: secret undefined. Will not update worker_count in master`);
+        return;
+    }
+    
+    if (!masterCommUrl) {
+        console.log(`sendMasterSizeUpdate: masterCommUrl undefined. Will not update worker_count in master`);
+        return;
+    }
+    
+    let data = {
+        secret_key: secret,
+        worker_count: getSize()
+    };
+        
+    let dataEncoded = JSON.stringify(data);
+    
+    try {
+        let commUrl = new URL(masterCommUrl);
+        let options = {
+            protocol: commUrl.protocol,
+            hostname: commUrl.hostname,
+            pathname: commUrl.pathname,
+            path: commUrl.pathname,
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json",
+                "Content-Length": Buffer.byteLength(dataEncoded)
+            }
+        };
+        
+        let req = https.request(options,
+            (res) => {
+                console.log(`Successfully updated master worker count to ${data['worker_count']}`);
+            });
+        
+        req.write(dataEncoded);
+        req.end();
+    } catch (err) {
+        console.error(`Error while updating master worker count: ${err}`);
+    }
 }

@@ -112,6 +112,20 @@ def submit_project():
         elif 'code-file' not in request.files:
             error = 'Code file must be uploaded.'
 
+        if (error is None and
+            'code-file' in request.files and
+            request.files['code-file'].filename != '' and
+            request.files['code-file'].filename.rsplit('.', 1)[1].lower()
+                != 'js'):
+            error = 'Code file must be a javascript file.'
+
+        if (error is None and
+            'secrets-file' in request.files and
+            request.files['secrets-file'].filename != '' and
+            request.files['secrets-file'].filename.rsplit('.', 1)[1].lower()
+                != 'js'):
+            error = 'Secrests file must be a javascript file.'
+
         if error is None:
             # good to go forward with input
             # generate hash_id from owner id and name
@@ -129,10 +143,10 @@ def submit_project():
             cursor.execute(
                 ('INSERT INTO projects (name, source_url, description, '
                  'min_workers, secret_key, hash_id, deployment_subdomain, '
-                 'deployment_url, owner_id) VALUES '
-                 '(?, ?, ?, ?, ?, ?, ?, ?, ?);'),
+                 'deployment_url, worker_count, owner_id) VALUES '
+                 '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);'),
                 (name, source_url, description, min_workers, secret_key,
-                 hash_id, deployment_subdomain, deployment_url, g.user['id'])
+                 hash_id, deployment_subdomain, deployment_url, 0, g.user['id'])
             )
             db.commit()
 
@@ -279,6 +293,9 @@ def node_0_communicate(project_id):
     project = db.execute('SELECT * FROM projects WHERE id=(?);',
                          (project_id,)).fetchone()
 
+    if project is None:
+        abort(404)
+
     if ('secret_key' not in request.json or
         request.json['secret_key'] != project['secret_key']):
         abort(403, 'Bad secret key.')
@@ -291,7 +308,7 @@ def node_0_communicate(project_id):
         deployment_url = request.json['deployment_url']
 
     if 'worker_count' in request.json:
-        worker_count = project['worker_count']
+        worker_count = request.json['worker_count']
 
     # update the database
     db.execute(('UPDATE projects SET deployment_url=(?), '
