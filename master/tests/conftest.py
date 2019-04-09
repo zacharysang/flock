@@ -15,6 +15,8 @@ def app():
     app = create_app({
         'TESTING': True,
         'DATABASE': db_path,
+        'DO_DEPLOY': False,
+        'LOCALTUNNEL_URL': 'localtunnel.me'
     })
 
     with app.app_context():

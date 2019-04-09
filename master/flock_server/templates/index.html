@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}Index{% endblock %}
 {% block content %}
-  <h1> Welcome! </h1>
+  <h1>Flock</h1>
   <div id="welcome">
     <p>
       Welcome to Flock. From this homepage you can volunteer your computing resources
@@ -21,7 +21,11 @@
   </div>
   <p/>
   <div id="host-button">
-    <a href="/login">Sign up or log in!</a>
+    {% if g.user %}
+      <a href="/host/submit">Submit a new project</a>
+    {% else %}
+      <a href="/login">Sign up or log in!</a>
+    {% endif %}
   </div>
   <p/>
 {% endblock %}

@@ -10,6 +10,7 @@ from flask import (
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
+    app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 # max upload size, 5MB
     app.config.from_mapping(
         SECRET_KEY='dev',
         DATABASE=os.path.join(app.instance_path, 'flock_server.sqlite'),
@@ -37,7 +38,9 @@ def create_app(test_config=None):
     def index():
         return render_template('index.html')
 
-
+    @app.route('/about')
+    def about():
+        return render_template('about.html')
     #
     # load blueprints
     #

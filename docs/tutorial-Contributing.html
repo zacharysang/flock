@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Tutorial: Contributing | Tutorial: Contributing</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-jsdoc.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/tui-doc.css">
+
+    
+</head>
+<body>
+<nav class="lnb" id="lnb">
+    <div class="logo" style="">
+        
+            <img src="img/toast-ui.png" width="100%" height="100%">
+        
+    </div>
+    <div class="title">
+        <h1><a href="index.html" class="link">Tutorial: Contributing</a></h1>
+        
+    </div>
+    <div class="search-container" id="search-container">
+        <input type="text" placeholder="Search">
+        <ul></ul>
+    </div>
+    
+        <ol class="lnb-tab">
+            <li id="api-tab">
+                <a href="#"><h4>API</h4></a>
+            </li>
+            <li id="examples-tab">
+                <a href="#"><h4>Tutorials</h4></a>
+            </li>
+        </ol>
+    
+    <div class="lnb-examples hidden"><h3>Tutorials</h3><ul><li><a href="tutorial-Contributing.html">Contributing</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Contributing_sub"></div></li><li><a href="tutorial-Hosting.html">Hosting</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Hosting_sub"></div></li><li><a href="tutorial-Volunteering.html">Volunteering</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Volunteering_sub"></div></li></ul></div><div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li><li><a href="mpi.html#.storeGet">storeGet</a></li><li><a href="mpi.html#.storeSet">storeSet</a></li><li><a href="mpi.html#.updateStatus">updateStatus</a></li></ul></div></li></ul></div>
+</nav>
+<div id="resizer"></div>
+
+<div class="main" id="main">
+    
+
+<section>
+    <header>
+        
+
+        <h2>Contributing</h2>
+    </header>
+
+    
+        <article class="readme">
+            <h1>Setting up the dev environment</h1><p>To contribute to flock, you're going to need to be able to run the project locally. You can do this with the following steps:</p>
+<ul>
+<li>Clone flock from github at: <code>https://github.com/zacharysang/flock.git</code></li>
+<li>Follow the instructions for setting up a development environment in the specific component you're interested in working with</li>
+</ul>
+<h1>Setting up for project_service</h1><p>Within the flock codebase, the <code>flock/project_service</code> directory contains an npm project that contains the code used to run each individual flock project.</p>
+<p>This project runs an express server which includes the following:</p>
+<ul>
+<li>easyrtc server : Used for P2P communication between browsers</li>
+<li>socketio serer : Used by easyrtc server as a fallback when WebRTC isn't available in a node's browsers</li>
+<li>puppeteer instance : A chrome browser instance which hosts the project cluster's rank 0 node</li>
+</ul>
+<p>To set up the development environment in this directory, do the following:</p>
+<ul>
+<li>Change the directory to <code>flock/project_service</code></li>
+<li>Ensure that NodeJS version 10 is installed (<code>node --version</code>)</li>
+<li>Run <code>npm install</code> (to get install the dependencies used by this project)</li>
+<li>Ngrok may fail to install during the above step due to <a href="https://github.com/bubenshchykov/ngrok/issues/115#issuecomment-380927124">this issue</a>. If this happens run <code>npm install --unsafe-perm ngrok</code>.</li>
+<li>Install headless chrome by running the following commands (assumes you're running linux. If you aren't refer to the inline comments for an idea of what you'll need to setup):</li>
+</ul>
+<pre class="prettyprint source"><code># Installs dependency missing for chrome-unstable (See: https://crbug.com/795759)
+apt install libgconf-2-4
+
+# Install the chrome apt repo so we can download chrome-unstable from them
+apt update && apt install -y wget --no-install-recommends \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo &quot;deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main&quot; >> /etc/apt/sources.list.d/google.list'
+
+# Update packages source and then install chrome-unstable (headless chrome is used for testing chrome and so it coupled to chrome-unstable)
+apt-get update \
+    && apt-get install -y google-chrome-unstable --no-install-recommends
+</code></pre><ul>
+<li>Set up environment variables by creating a <code>.env</code> file in <code>flock/project_service</code> with the following variables:</li>
+</ul>
+<pre class="prettyprint source"><code>FLOCK_DEV=true # Whether or not flock is running in a development environment
+FLOCK_PORT # Port for node app to listen on
+FLOCK_SESSION_SECRET # Used to generate session ids, should be crypto-ey
+FLOCK_URL # (only used in production) Url to reach the flock project page
+FLOCK_MIN_SIZE # Minimum number of nodes to wait for before starting
+LOCALTUNNEL_URL # (required only in production) Url for a localtunnel server. If ommitted in dev environment, will default to localtunnel.me
+DEPLOY_SUBDOMAIN # Subdomain to be requested from the localtunnel server</code></pre><p>Once you have the environment setup, you will be able to run the project using the command <code>npm run dev</code>. This will get a public url from <a href="https://ngrok.com/">ngrok</a> that will be printed in the console.
+The project running will host the page <code>flock/project_service/test/flock-tests/index.html</code>, which specifies the application that is running.
+Referring to the <code>package.json</code> file in this directory will show you some other commands you can run during development. These include <code>npm run test</code> (to runs unit tests), and <code>npm run docs</code> (to generate updated jsdocs)</p>
+        </article>
+    
+</section>
+
+
+
+</div>
+
+<footer>
+    <img class="logo" src="img/toast-ui.png" style="">
+    <div class="footer-text">NHN Entertainment. Frontend Development Lab</div>
+</footer>
+<script>prettyPrint();</script>
+<script src="scripts/jquery.min.js"></script>
+<script src="scripts/tui-doc.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+    <script>
+        showLnbExamples();
+    </script>
+
+</body>
+</html>

@@ -2,14 +2,124 @@
 {% extends "layout.html" %}
 {% block title %}{{ project['name'] }}{% endblock %}
 {% block content %}
-  <h1>Project Details</h1>
+  <h1>About this project</h1>
+  <p>
+    This page tells you detailed information about the project, including
+    deployment and health monitoring.
+  </p>
   <div id="project-detail">
-    <h2>Name: {{ project['name'] }}</h2>
-    <h3>Source URL: <a href={{ project['source_url']}}>
-        {{ project['source_url'] }}</a></h3>
-    <h3>Description:</h3>
-    <p> {{ project['description'] }}</p>
-    <h4>Status: {{ project_status }}</h4>
+    <div id="left">
+      <div class="vertical-line"></div>
+      <div id="basic-info">
+        <h2>Project Information</h2>
+        <div class="box">
+          <div class="item">
+            <div class="item-name">Name</div>
+            <div class="item-desc">{{ project['name'] }}</div>
+          </div>
+          <div class="item">
+            <div class="item-name">Source URL</div>
+            <div class="item-desc">
+              <a href={{ project['source_url'] }}>
+                {{ project['source_url'] }}
+              </a>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-name">Description</div>
+            <div class="item-desc">{{ project['description'] }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vertical-line"></div>
+      <div id="worker-info">
+        <h2>Worker Information</h2>
+        <div class="box">
+          <div class="item">
+            <div class="item-name">Min Workers</div>
+            <div class="item-desc">{{ project['min_workers'] }}</div>
+          </div>
+          <div class="item">
+            <div class="item-name">Current Workers</div>
+            <div class="item-desc">{{ project['worker_count'] }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="right">
+      <div class="vertical-line"></div>
+      <div id="status">
+        <h2>Project Status</h2>
+        <div class="box">
+          <div class="item">
+            <div class="item-name">Approval Status</div>
+            {% if project_approved %}
+              <div class="item-desc" style="color:green">
+                {{ project_approval_status }}
+              </div>
+            {% else %}
+              <div class="item-desc" style="color:red">
+                {{ project_approval_status }}
+              </div>
+            {% endif %}
+          </div>
+          {% if project_approved %}
+            <div class="item">
+              <div class="item-name">Health Status</div>
+              {% if (project['health_status'] == 'RUNNING') %}
+                <div class="item-desc" style="color:green">
+                  {{ project['health_status'] }}
+                </div>
+              {% elif (project['health_status'] == 'PENDING') %}
+                <div class="item-desc" style="color:orange">
+                  {{ project['health_status'] }}
+                </div>
+              {% else %}
+                <div class="item-desc" style="color:red">
+                  {{ project['health_status'] }}
+                </div>
+              {% endif %}
+            </div>
+            {% if (project['health_message'] != None and
+                project['health_message'] != '') %}
+              <div class="item">
+                <div class="item-name">Health Message</div>
+                <div class="item-desc">{{ project['name'] }}</div>
+              </div>
+            {% endif %}
+            <div class="item">
+              <div class="item-name">Node-0 Deployment</div>
+              <div class="item-desc">{{ project['deployment_url'] }}</div>
+            </div>
+            <div class="item">
+              <div class="item-name">Node-0 IP</div>
+              <div class="item-desc">{{ project['deployment_ip'] }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="vertical-line"></div>
+      <div id="danger-zone">
+        <h2>Project Options</h2>
+        <div class="box">
+          <div class="item">
+            <a href={{ url_for('work.get_work_page_for_project', project_id=project['id']) }}>
+              Click here to volunteer for this project.
+            </a>
+          </div>
+          <div class="item">
+            <a href={{ url_for('host.delete', project_id=project['id']) }}
+                appearance="button" class="danger-button"
+                onClick="return confirm('This action is not reversable. Proceed?')">
+             Delete this project
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}
 
