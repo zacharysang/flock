@@ -237,7 +237,9 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 }
                 
                 // since this node has been added to the cluster, update the master's worker count
-                sendMasterSizeUpdate();
+                if (!IS_DEV) {
+                    sendMasterSizeUpdate(PROJECT_SECRET, MASTER_COMM_URL);
+                }
                 
                 console.log(`Updated cluster size counter to: ${getSize()}`);
                 
@@ -365,10 +367,13 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 commMap[rank].id = null;
                 
                 // since this node has been added to the cluster, update the master's worker count
-                sendMasterSizeUpdate();
+                if (!IS_DEV) {
+                    sendMasterSizeUpdate(PROJECT_SECRET, MASTER_COMM_URL);
+                }
                 
-                // if disconnecting node is not the last rank and not rank 0, send node redirect message
-                if (id !== lastId - 1 && rank > 0) {
+                // if disconnecting node is not the last rank and not rank 0 (don't send redirection if rank 0 disconnects)
+                // then send node redirect message
+                if (id !== lastId && rank > 0) {
                     
                     // send the redirect message to the last id
                     pub.getConnectionWithEasyrtcid(lastId, (err, connection) => {
@@ -466,16 +471,27 @@ function isInCluster(id) {
     return rank !== undefined;
 }
 
-function sendMasterSizeUpdate() {
+function sendMasterSizeUpdate(secret, masterCommUrl) {
+    
+    if (!secret) {
+        console.log(`sendMasterSizeUpdate: secret undefined. Will not update worker_count in master`);
+        return;
+    }
+    
+    if (!masterCommUrl) {
+        console.log(`sendMasterSizeUpdate: masterCommUrl undefined. Will not update worker_count in master`);
+        return;
+    }
+    
     let data = {
-        secret_key: PROJECT_SECRET,
+        secret_key: secret,
         worker_count: getSize()
     };
         
     let dataEncoded = JSON.stringify(data);
     
     try {
-        let commUrl = new URL(MASTER_COMM_URL);
+        let commUrl = new URL(masterCommUrl);
         let options = {
             protocol: commUrl.protocol,
             hostname: commUrl.hostname,
