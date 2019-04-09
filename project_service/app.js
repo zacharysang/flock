@@ -427,6 +427,16 @@ async function initializeNode0(url) {
     let page = await browser.newPage();
     await page.goto(url);
     console.log(`browser node 0 launched on url: ${url}`);
+    
+    // add browser 0 error reporting
+    browser.on('disconnected', (ev) => {
+        console.error(`Rank 0 (headless chrome) has been disconnected: ${JSON.stringify(ev)}`);
+    });
+    
+    browser.on('targetchanged', (ev) => {
+       console.log(`Rank 0 (headless chrome) changed target url: ${JSON.stringify(ev)}`); 
+    });
+    
 }
 
 // return the number of active nodes in the cluster
