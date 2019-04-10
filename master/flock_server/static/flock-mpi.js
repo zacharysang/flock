@@ -368,7 +368,6 @@ mpi.ibcast = async function (data, root, comm) {
 }
  
 
-// TODO this shouldn't have a tag param (can add it as an internal value. See ibarrier which also has an internal variant that includes a tag)
 /**
  * Scatter an array from a root node to all nodes in a group
  * 
@@ -513,17 +512,17 @@ mpi.ireduce = async function (sendArr, op, comm) {
 
 
 /**
- * Each process sends the contents of its sendbuffer to the root process. The root process
+ * Each process sends the contents of its sendArray to the root process. The root process
  * receives the messages and stores them in rank order.
  * 
  * @async
  * @function mpi.igather
  * 
- * @param {array} sendArr - Array to 
- * @param {function} root - The rank of the root node for the gather operation
+ * @param {array} sendArr - Array to send to root / for root to gather into
+ * @param {number} root - The rank of the root node for the gather operation
  * @param {string} comm - Name of the communication group to operate under
  * 
- * @returns {serializable} - Result of the gather is given to the node with rank === 0, other nodes will receive error codes
+ * @returns {serializable} - Result of the gather is given to the node with rank === 0, other nodes will receive status codes
  * 
  */
 mpi.igather = async function (sendArr, root, comm) {
@@ -534,18 +533,20 @@ mpi.igather = async function (sendArr, root, comm) {
     let rank = await mpi.getRank(comm);
     
     if (rank === root) {
+        let nodes = [...Array(size).keys()].filter((val) => val !== root);
+        let reqs = [];
+        for (let i = 0; i < nodes.length; i++) {
+            let received = _irecv(nodes[i], comm, TAG);
+            reqs.push(received);
+        }
 
-        if (!Array.isArray(sendArr)) {
-            console.error("Argument sendArr in scatter must be an array");
-            return;
-        }
-        
-        for (let i = 1; i < size; i++) {
-            let req = await _irecv(i, comm, TAG);
-            sendArr = sendArr.concat(req);
-        }
         // return the complete gathered result
-        return sendArr;
+        return Promise.all(reqs).then(function(values) {
+            for (let i = 0; i < values.length; i++) {
+                sendArr = sendArr.concat(values[i]);
+            }
+            return sendArr;
+        });
 
     } else {
 
@@ -553,7 +554,8 @@ mpi.igather = async function (sendArr, root, comm) {
             console.error("Argument sendArr in gather must be an array");
             return;
         }
-        
-        return _isend(sendArr, root, comm, TAG);
+        console.log("Sending from " + rank);
+        let req = _isend(sendArr, root, comm, TAG);
+        return req.then((res) => {return res});
     }
 }
