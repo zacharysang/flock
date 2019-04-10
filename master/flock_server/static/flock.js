@@ -165,9 +165,6 @@ flock.isConnected = false;
  */
 flock.initWorker = function(appPath) {
     
-    // listen for redirect message if we need to take over for a lower rank
-    easyrtc.setServerListener(rankRedirectServerListener);
-    
     flock.updateStatus({state: 'starting application'});
     
     /* Code for talking to the WebWorker */
@@ -532,6 +529,9 @@ flock.join = async function() {
     let joinStatus = new Promise((resolve, reject) => {
         joinSuccess = function(rtcId) {
             console.log(`Successfully joined application, ${APP_NAME} with rtcId: ${rtcId}`);
+            
+            // listen for redirect message if we need to take over for a lower rank
+            easyrtc.setServerListener(rankRedirectServerListener);
             
             flock.updateStatus({state: 'connecting'});
             
