@@ -73,6 +73,7 @@ const RANK_0_DEBUG = process.env['FLOCK_RANK_0_DEBUG'] === 'true';
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
 
+
 (async () => {
     
     let expressApp = express();
@@ -292,6 +293,12 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             
             if (msg.msgType === MSG_TYPE_GET_RANK) {
                 
+                if (!msg.msgData.comm) {
+                    console.error(`${MSG_TYPE_GET_RANK}: Error - comm not specified. Sending back null`);
+                    socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: null});
+                    return;
+                }
+                
                 // get the rank -> ids mapping specific to the given communication group
                 let commMap = idsByRank[msg.msgData.comm];
                 
@@ -310,6 +317,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             }
             
             if (msg.msgType === MSG_TYPE_GET_ID) {
+                
                 let result;
                 if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
                     result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
@@ -439,6 +447,7 @@ async function initializeNode0(url) {
     
 }
 
+// TODO below functions should take a communication group argument
 // return the number of active nodes in the cluster
 function getSize() {
     let activeIds = getActiveIds();
