@@ -115,7 +115,7 @@ mpi.storeGet = async function (name) {
  *      * projectTitle : The title of the current project <br/>
  *      * projectDescription : An overview of the motivation and purpose of this project <br/>
  *      * taskDescription : A specific explanation of what work is being done on the volunteer's browser <br/>
- *      * progress : An incrementing percentage value indicating how much work the volunteer has completed. The given value will be added to the current total. When 100 is reached, the total will wrap around. <br/>
+ *      * progress : An object containing a boolean "reset" and an integer "increment" that control the progress bar. if reset is false, the progress is incremented by increment, wrapping around once it reaches 100. If reset is true, progress is set to increment.<br/>
  * <br/>
  * Data Types: <br/>
  * By default, each key's value will be treated as a string and displayed as text on the volunteer's page. In the case that the given value is an object, the `type` attribute will be checked to match the following. If a match is found, the value will be presented according to the given type: <br/>
@@ -555,11 +555,6 @@ mpi.igather = async function (sendArr, root, comm) {
 
     } else {
 
-        if (!Array.isArray(sendArr)) {
-            console.error("Argument sendArr in gather must be an array");
-            return;
-        }
-        console.log("Sending from " + rank);
         let req = _isend(sendArr, root, comm, TAG);
         return req.then((res) => {return res});
     }

@@ -145,10 +145,7 @@ let storeSetBatch = function(store) {
 };
 
 let fetchPubStore = async function() {
-    let store = await getPubStore();
-    
-    flock.updateStatus({fetchedData: store});
-    
+    let store = await getPubStore();    
     storeSetBatch(store);
 } 
 
@@ -411,10 +408,16 @@ let renderStats = function(data) {
                     break;
                 default:
                     console.warn(`Unexpected type: ${value.type}. Rendering as string`);
-                    value.innerText = JSON.stringify(value);
+                    if (!(typeof value === 'string' || value instanceof String)) {
+                        value.innerText = JSON.stringify(value);
+                    }
             }
         } else {
-            valueEl.innerText = JSON.stringify(value);
+            if (!(typeof value === 'string' || value instanceof String)) {
+                valueEl.innerText = JSON.stringify(value);
+            } else {
+                valueEl.innerText = value;
+            }
         }
         
         // append label and value to statEl
@@ -430,7 +433,11 @@ flock.updateStatus = function(data) {
     
     // modify the progress attribute to be merged in correctly to current status
     if (data.progress) {
-        let inc = parseInt(data.progress);
+        let reset = data.progress.reset;
+        let inc = parseInt(data.progress.increment);
+        if (reset) {
+            flock.status.progress = 0;
+        }
         if (!isNaN(inc)) {
             data.progress = (flock.status.progress + inc) % 100;
         }
