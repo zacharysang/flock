@@ -162,9 +162,6 @@ flock.isConnected = false;
  */
 flock.initWorker = function(appPath) {
     
-    // listen for redirect message if we need to take over for a lower rank
-    easyrtc.setServerListener(rankRedirectServerListener);
-    
     flock.updateStatus({state: 'starting application'});
     
     /* Code for talking to the WebWorker */
@@ -540,6 +537,9 @@ flock.join = async function() {
         joinSuccess = function(rtcId) {
             console.log(`Successfully joined application, ${APP_NAME} with rtcId: ${rtcId}`);
             
+            // listen for redirect message if we need to take over for a lower rank
+            easyrtc.setServerListener(rankRedirectServerListener);
+            
             flock.updateStatus({state: 'connecting'});
             
             window.rtcId = rtcId;
@@ -602,14 +602,15 @@ flock.callPeer = function(peerId) {
     });
     
     try {
+        console.log(`Calling peer with id: ${peerId}`);
         easyrtc.call(peerId,
                 (caller, media) => {
-                    console.log('Called peer with id:')
+                    console.log(`Called peer with id: ${peerId}`);
                     callAck();
                 },
                 (errorCode, errorText) => {
                     
-                    let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
+                    let errMsg = `Error during p2p call to peer with id: ${peerId} (${errorCode}: ${errorText})`;
                     
                     console.warn(errMsg);
                     

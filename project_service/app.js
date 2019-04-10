@@ -73,6 +73,7 @@ const RANK_0_DEBUG = process.env['FLOCK_RANK_0_DEBUG'] === 'true';
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
 
+
 (async () => {
     
     let expressApp = express();
@@ -292,6 +293,12 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             
             if (msg.msgType === MSG_TYPE_GET_RANK) {
                 
+                if (!idsByRank[msg.msgData.comm]) {
+                    let err = `${MSG_TYPE_GET_RANK}: Error - Invalid communication group '${JSON.stringify(msg.msgData.comm)}'`;
+                    socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: {err: err}});
+                    return;
+                }
+                
                 // get the rank -> ids mapping specific to the given communication group
                 let commMap = idsByRank[msg.msgData.comm];
                 
@@ -310,11 +317,14 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             }
             
             if (msg.msgType === MSG_TYPE_GET_ID) {
+                
                 let result;
-                if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
-                    result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
-                } else {
+                if (!idsByRank[msg.msgData.comm]) {
+                    result = {err: `Invalid communication group '${JSON.stringify(msg.msgData.comm)}'`};
+                } else if (!idsByRank[msg.msgData.comm][msg.msgData.rank]) {
                     result = {err: `Invalid rank: ${msg.msgData.rank}`};
+                } else {
+                    result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
                 }
                 
                 socketCallback({msgType: MSG_TYPE_GET_ID, msgData: result});
@@ -331,7 +341,6 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 } else {
                     socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
                 }
-                
             }
             
             if (msg.msgType === MSG_TYPE_GET_STORE) {
@@ -439,6 +448,7 @@ async function initializeNode0(url) {
     
 }
 
+// TODO below functions should take a communication group argument
 // return the number of active nodes in the cluster
 function getSize() {
     let activeIds = getActiveIds();
