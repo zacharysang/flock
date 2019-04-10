@@ -527,6 +527,11 @@ mpi.ireduce = async function (sendArr, op, comm) {
  */
 mpi.igather = async function (sendArr, root, comm) {
 
+    if (!Array.isArray(sendArr)) {
+        console.error("Argument sendArr in gather must be an array.");
+        return;
+    }
+
     const TAG = 'internal_igather';
         
     let size = await mpi.getSize(comm);
