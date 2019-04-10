@@ -555,11 +555,6 @@ mpi.igather = async function (sendArr, root, comm) {
 
     } else {
 
-        if (!Array.isArray(sendArr)) {
-            console.error("Argument sendArr in gather must be an array");
-            return;
-        }
-        console.log("Sending from " + rank);
         let req = _isend(sendArr, root, comm, TAG);
         return req.then((res) => {return res});
     }

@@ -74,6 +74,24 @@ function measure_fitnesses(population) {
     }
 }
 
+async function distributed_measure_fitnesses(population) {
+    let res = await mpi.iscatter(population, 0, 'default');
+
+    measure_fitnesses(res);
+    await sleep(1000);
+    statistics = stats(res);
+    mpi.updateStatus({
+        "Local Fitness Statistics\n(smaller is better)": "Best: " + statistics[0] +
+            ", Worst: " + statistics[1] + ", Average: " + statistics[2]
+    });
+
+    return await mpi.igather(res, 0, 'default');
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function stats(population) {
     let best = Number.MAX_SAFE_INTEGER;
     let worst = 0;
@@ -95,9 +113,9 @@ async function main() {
     
     // initialize volunteer's page
     mpi.updateStatus({
-        projectTitle: 'Random Integer Benchmark',
-        projectDescription: 'A CPU heavy benchmark used to demonstrate parallelization speedup using Flock. The application generates 10,000,000 random integers.',
-        taskDescription: 'This node is generating a large amount of random integers and notifying Node 0 when it is done with its work.'
+        projectTitle: 'Bitstream Evolution',
+        projectDescription: 'An evolutionary algorithm to evolve a BitStream to meet a certain target.',
+        taskDescription: 'This node is performing fitness evaluations.'
     });
     
     let rank = await mpi.getRank('default');
@@ -107,54 +125,65 @@ async function main() {
     console.log(`got size: ${size}`);
     
     if (rank === 0) {
+        while (true) {
+            let population = [];
+            let popSize = 1000;
+            let genomeLength = 128;
+            
+            let MUTPB = 0.8;
 
-        await mpi.irecv(1, 'default');
-
-    } else {
-        let population = [];
-        let popSize = 100;
-        let genomeLength = 16;
-        
-        let MUTPB = 0.8;
-
-        for (let i = 0; i < popSize; i++) {
-            let gen = Array.from({length: genomeLength}, () => getRandomInt(0, 1));
-            population.push({
-                fitness: Number.MAX_SAFE_INTEGER,
-                genome: gen
-            });
-        }
-        
-        measure_fitnesses(population);
-        console.log("Initial population statistics...");
-        let statistics = stats(population);
-        console.log("Best:    " + statistics[0]);
-        console.log("Worst:   " + statistics[1]);
-        console.log("Average: " + statistics[2]);
-        let n_gen = 0;
-        while (bestFitnessInPopulation(population) > 0) {
-            let next_population = [];
-
-            while (next_population.length < popSize) {
-                let new_ind = clone(tournamentSelect(population, 6));
-                if (Math.random() < MUTPB) {
-                    new_ind = mutate(new_ind);
-                }
-                next_population.push(new_ind);
+            for (let i = 0; i < popSize; i++) {
+                let gen = Array.from({length: genomeLength}, () => getRandomInt(0, 1));
+                population.push({
+                    fitness: Number.MAX_SAFE_INTEGER,
+                    genome: gen
+                });
             }
+            
+            population = await distributed_measure_fitnesses(population);
+            console.log("Population: ");
+            console.log(population);
 
-            population = next_population;
-            measure_fitnesses(population);
-            n_gen++;
-            console.log("Statistics after generation " + n_gen + "...");
-            statistics = stats(population);
+            console.log("Initial population statistics...");
+            let statistics = stats(population);
             console.log("Best:    " + statistics[0]);
             console.log("Worst:   " + statistics[1]);
             console.log("Average: " + statistics[2]);
+
+            let n_gen = 0;
+            while (bestFitnessInPopulation(population) > 0) {
+                let next_population = [];
+
+                while (next_population.length < popSize) {
+                    let new_ind = clone(tournamentSelect(population, 6));
+                    if (Math.random() < MUTPB) {
+                        new_ind = mutate(new_ind);
+                    }
+                    next_population.push(new_ind);
+                }
+
+                population = await distributed_measure_fitnesses(next_population);
+
+                n_gen++;
+
+                console.log("Statistics after generation " + n_gen + "...");
+                statistics = stats(population);
+                console.log("Best:    " + statistics[0]);
+                console.log("Worst:   " + statistics[1]);
+                console.log("Average: " + statistics[2]);
+            }
+
+            console.log("Finished!");
+            console.log("Number of generations: " + n_gen);
+            console.log("Best individual: " + bestIndInPopulation(population));
         }
 
-        console.log("Finished!");
-        console.log("Best individual: " + bestIndInPopulation(population));
+    } else {
+
+        while (true) {
+            await distributed_measure_fitnesses([]);
+        }
+
     }
 }
 
