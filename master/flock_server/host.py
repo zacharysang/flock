@@ -12,7 +12,7 @@ from flask import (
 from flock_server.db import get_db
 from flock_server.deploy import (
     deploy_project, generate_hash_id, update_status, destroy_project,
-    get_project_folder
+    get_project_folder, restart_container
 )
 from flock_server.auth import auth_required, super_user_permissions_required
 
@@ -318,4 +318,24 @@ def node_0_communicate(project_id):
 
     return '', 200
 
-    
+@bp.route('/<int:project_id>/restart')
+@auth_required
+def restart(project_id):
+    """Endpoint that restarts the container and redirects back to project
+    details.
+    """
+    db = get_db()
+    # verify that the project exists
+    project = db.execute('SELECT * FROM projects WHERE id=(?);',
+                         (project_id,)).fetchone()
+
+    if project is None:
+        abort(404)
+
+    # verify user is owner or an admin
+    if project['owner_id'] != g.user['id'] and g.user['super_user'] == 'false':
+        abort(403)
+
+    restart_container(project['hash_id'])
+
+    return redirect(url_for('host.detail', project_id=project_id))
