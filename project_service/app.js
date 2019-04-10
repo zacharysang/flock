@@ -293,9 +293,9 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             
             if (msg.msgType === MSG_TYPE_GET_RANK) {
                 
-                if (!msg.msgData.comm) {
-                    console.error(`${MSG_TYPE_GET_RANK}: Error - comm not specified. Sending back null`);
-                    socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: null});
+                if (!idsByRank[msg.msgData.comm]) {
+                    let err = `${MSG_TYPE_GET_RANK}: Error - Invalid communication group '${JSON.stringify(msg.msgData.comm)}'`;
+                    socketCallback({msgType: MSG_TYPE_GET_RANK, msgData: {err: err}});
                     return;
                 }
                 
@@ -319,10 +319,12 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
             if (msg.msgType === MSG_TYPE_GET_ID) {
                 
                 let result;
-                if (idsByRank[msg.msgData.comm] && idsByRank[msg.msgData.comm][msg.msgData.rank]) {
-                    result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
-                } else {
+                if (!idsByRank[msg.msgData.comm]) {
+                    result = {err: `Invalid communication group '${JSON.stringify(msg.msgData.comm)}'`};
+                } else if (!idsByRank[msg.msgData.comm][msg.msgData.rank]) {
                     result = {err: `Invalid rank: ${msg.msgData.rank}`};
+                } else {
+                    result = idsByRank[msg.msgData.comm][msg.msgData.rank].id;
                 }
                 
                 socketCallback({msgType: MSG_TYPE_GET_ID, msgData: result});
@@ -339,7 +341,6 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
                 } else {
                     socketCallback({msgType: MSG_TYPE_PUB_STORE, msgData: {err: `Invalid rank: ${msg.msgData.rank}`}});
                 }
-                
             }
             
             if (msg.msgType === MSG_TYPE_GET_STORE) {

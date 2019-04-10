@@ -595,6 +595,7 @@ flock.callPeer = function(peerId) {
     });
     
     try {
+        console.log(`Calling peer with id: ${peerId}`);
         easyrtc.call(peerId,
                 (caller, media) => {
                     console.log(`Called peer with id: ${peerId}`);
