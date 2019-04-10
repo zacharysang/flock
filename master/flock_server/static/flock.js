@@ -597,12 +597,12 @@ flock.callPeer = function(peerId) {
     try {
         easyrtc.call(peerId,
                 (caller, media) => {
-                    console.log('Called peer with id:')
+                    console.log(`Called peer with id: ${peerId}`);
                     callAck();
                 },
                 (errorCode, errorText) => {
                     
-                    let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
+                    let errMsg = `Error during p2p call to peer with id: ${peerId} (${errorCode}: ${errorText})`;
                     
                     console.warn(errMsg);
                     
