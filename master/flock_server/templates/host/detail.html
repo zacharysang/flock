@@ -111,6 +111,13 @@
             </a>
           </div>
           <div class="item">
+            <a href={{ url_for('host.restart', project_id=project['id']) }}>
+              Click here to restart the container.
+            </a>
+            This should be done sparingly - you will orphan all current
+            volunteers. But, this can be useful if there is a problem.
+          </div>
+          <div class="item">
             <a href={{ url_for('host.delete', project_id=project['id']) }}
                 appearance="button" class="danger-button"
                 onClick="return confirm('This action is not reversable. Proceed?')">

@@ -10,6 +10,7 @@ import re
 import shutil
 import string
 import subprocess
+import threading
 from datetime import datetime
 
 from flask import current_app
@@ -216,9 +217,30 @@ def build_config_files(hash_id, project_id, min_workers, secret_key,
     with open(ecs_params_path, 'w') as file:
         file.write(ecs_params)
     
-
 def start_container(hash_id):
+    """Wraps the actual start_container in a second thread safe call.
+    The start_container call can take a while which allows this to wrap quickly.
+    """
     (docker_compose_path, ecs_params_path) = get_config_file_paths(hash_id) 
+
+    thread = threading.Thread(target=start_container_thread_target,
+                    args=(hash_id,
+                          docker_compose_path,
+                          ecs_params_path,
+                          current_app.config['ECS_CLI_PATH'],
+                          current_app.config['FLOCK_CLUSTER_CONFIG'],
+                          current_app.config['FLOCK_ECS_PROFILE']))
+    thread.start()
+
+def start_container_thread_target(hash_id,
+                                  docker_compose_path,
+                                  ecs_params_path,
+                                  ecs_cli_path,
+                                  cluster_config,
+                                  ecs_profile):
+    """Starts the container, and because it only references itself is safe to
+    call via a second thread, intended to be used by start_container()
+    """
 
     # build the start command
     # TODO - i'm not sure if project name means something different
@@ -229,12 +251,12 @@ def start_container(hash_id):
                  'up '
                  '--cluster-config {cluster_config} '
                  '--ecs-profile {ecs_profile} ')
-    start_cmd = start_cmd.format(ecs_cli_path=current_app.config['ECS_CLI_PATH'],
+    start_cmd = start_cmd.format(ecs_cli_path=ecs_cli_path,
                                  hash_id=hash_id,
-                                 cluster_config=current_app.config['FLOCK_CLUSTER_CONFIG'],
+                                 cluster_config=cluster_config,
                                  ecs_params=ecs_params_path,
                                  docker_compose=docker_compose_path,
-                                 ecs_profile=current_app.config['FLOCK_ECS_PROFILE'])
+                                 ecs_profile=ecs_profile)
 
     # Run the start command
     logging.info('start command: ' + start_cmd)
@@ -334,4 +356,8 @@ def update_status(project_id):
                        (status, message, project_id,))
             db.commit()
 
-    
+def restart_container(hash_id):
+    """Wrapper for calling stop container followed by start container.
+    """
+    stop_container(hash_id)
+    start_container(hash_id)
