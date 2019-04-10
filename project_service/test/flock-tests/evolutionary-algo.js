@@ -28,7 +28,7 @@ function tournamentSelect(population, tournSize) {
     for (let i = 0; i < tournSize; i++) {
         participants.push(population[getRandomInt(0, max)]);
     }
-    return idxOfBestIndInPopulation(participants);
+    return bestIndInPopulation(participants);
 }
 
 function idxOfBestIndInPopulation(population) {
@@ -52,24 +52,43 @@ function bestFitnessInPopulation(population) {
 }
 
 function mutate(individual) {
-    let genome = individual.genome.slice()
+    let m_genome = individual.genome.slice()
     let num_mutations = getRandomInt(0, 10);
-    for (let i = 0;  i < num_mutations; i++) {
-        let mut_idx = getRandomInt(0, genome.length);
-        genome[mut_idx] = getRandomInt(0, 1);
+    for (let i = 0; i < num_mutations; i++) {
+        let mut_idx = getRandomInt(0, m_genome.length);
+        m_genome[mut_idx] = getRandomInt(0, 1);
     }
+    return {fitness: Number.MAX_SAFE_INTEGER, genome: m_genome};
 }
 
 function clone(individual) {
-    fitness = individual.fitness;
-    genome = individual.genome.slice()
-    return {fitness: fitness, genome: genome};
+    n_fitness = individual.fitness;
+    n_genome = individual.genome.slice()
+    new_ind = {fitness: n_fitness, genome: n_genome};
+    return new_ind;
 }
 
 function measure_fitnesses(population) {
     for (let i = 0; i < population.length; i++) {
         population[i].fitness = fitness_eval(population[i]);
     }
+}
+
+function stats(population) {
+    let best = Number.MAX_SAFE_INTEGER;
+    let worst = 0;
+    let avg = 0;
+    population.forEach((individual) => {
+        if (individual.fitness < best) {
+            best = individual.fitness;
+        }
+        if (individual.fitness > worst) {
+            worst = individual.fitness;
+        }
+        avg += individual.fitness;
+    });
+    avg = avg / population.length;
+    return [best, worst, avg];
 }
 
 async function main() {
@@ -89,10 +108,15 @@ async function main() {
     
     if (rank === 0) {
 
+        await mpi.irecv(1, 'default');
+
     } else {
         let population = [];
-        let popSize = 1000;
-        let genomeLength = 128;
+        let popSize = 100;
+        let genomeLength = 16;
+        
+        let MUTPB = 0.8;
+
         for (let i = 0; i < popSize; i++) {
             let gen = Array.from({length: genomeLength}, () => getRandomInt(0, 1));
             population.push({
@@ -102,8 +126,35 @@ async function main() {
         }
         
         measure_fitnesses(population);
-        
+        console.log("Initial population statistics...");
+        let statistics = stats(population);
+        console.log("Best:    " + statistics[0]);
+        console.log("Worst:   " + statistics[1]);
+        console.log("Average: " + statistics[2]);
+        let n_gen = 0;
+        while (bestFitnessInPopulation(population) > 0) {
+            let next_population = [];
 
+            while (next_population.length < popSize) {
+                let new_ind = clone(tournamentSelect(population, 6));
+                if (Math.random() < MUTPB) {
+                    new_ind = mutate(new_ind);
+                }
+                next_population.push(new_ind);
+            }
+
+            population = next_population;
+            measure_fitnesses(population);
+            n_gen++;
+            console.log("Statistics after generation " + n_gen + "...");
+            statistics = stats(population);
+            console.log("Best:    " + statistics[0]);
+            console.log("Worst:   " + statistics[1]);
+            console.log("Average: " + statistics[2]);
+        }
+
+        console.log("Finished!");
+        console.log("Best individual: " + bestIndInPopulation(population));
     }
 }
 
