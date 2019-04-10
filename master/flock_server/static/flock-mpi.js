@@ -368,7 +368,6 @@ mpi.ibcast = async function (data, root, comm) {
 }
  
 
-// TODO this shouldn't have a tag param (can add it as an internal value. See ibarrier which also has an internal variant that includes a tag)
 /**
  * Scatter an array from a root node to all nodes in a group
  * 
@@ -382,7 +381,9 @@ mpi.ibcast = async function (data, root, comm) {
  * @returns {array} A slice of the given array to each node
  * 
 */
-mpi.iscatter = async function (sendArr, root, comm, tag=null) {
+mpi.iscatter = async function (sendArr, root, comm) {
+
+    const TAG = 'internal_iscatter';
     
     let rank = await mpi.getRank(comm);
     let commSize = await mpi.getSize(comm);
@@ -414,7 +415,7 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
             // update numEls
             numEls = Math.max(1, Math.floor((sendArr.length - currIdx) / nodes.length));
 
-            let req = mpi.isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm, tag);
+            let req = _isend(sendArr.slice(currIdx, currIdx + numEls), nodes[0], comm, TAG);
             reqs.push(req);
             
             // after sending to a new node, update the index and remove this node from the nodes list
@@ -422,12 +423,12 @@ mpi.iscatter = async function (sendArr, root, comm, tag=null) {
             nodes.shift();
         }
         
-        // return this node's local result when all sends have been acked (irgnore statuses)
+        // return this node's local result when all sends have been acked (ignore statuses)
         return Promise.all(reqs).then(() => res); 
         
     } else {
         // receive from root
-        let res = await mpi.irecv(root, comm, tag);
+        let res = await _irecv(root, comm, TAG);
         
         return res;
     }
@@ -506,5 +507,60 @@ mpi.ireduce = async function (sendArr, op, comm) {
     
     if (rank === 0) {
         return local;
+    }
+}
+
+
+/**
+ * Each process sends the contents of its sendArray to the root process. The root process
+ * receives the messages and stores them in rank order.
+ * 
+ * @async
+ * @function mpi.igather
+ * 
+ * @param {array} sendArr - Array to send to root / for root to gather into
+ * @param {number} root - The rank of the root node for the gather operation
+ * @param {string} comm - Name of the communication group to operate under
+ * 
+ * @returns {serializable} - Result of the gather is given to the node with rank === 0, other nodes will receive status codes
+ * 
+ */
+mpi.igather = async function (sendArr, root, comm) {
+
+    if (!Array.isArray(sendArr)) {
+        console.error("Argument sendArr in gather must be an array.");
+        return;
+    }
+
+    const TAG = 'internal_igather';
+        
+    let size = await mpi.getSize(comm);
+    let rank = await mpi.getRank(comm);
+    
+    if (rank === root) {
+        let nodes = [...Array(size).keys()].filter((val) => val !== root);
+        let reqs = [];
+        for (let i = 0; i < nodes.length; i++) {
+            let received = _irecv(nodes[i], comm, TAG);
+            reqs.push(received);
+        }
+
+        // return the complete gathered result
+        return Promise.all(reqs).then(function(values) {
+            for (let i = 0; i < values.length; i++) {
+                sendArr = sendArr.concat(values[i]);
+            }
+            return sendArr;
+        });
+
+    } else {
+
+        if (!Array.isArray(sendArr)) {
+            console.error("Argument sendArr in gather must be an array");
+            return;
+        }
+        console.log("Sending from " + rank);
+        let req = _isend(sendArr, root, comm, TAG);
+        return req.then((res) => {return res});
     }
 }
