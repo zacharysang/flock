@@ -74,7 +74,7 @@
 | 04/05/19 | Add keyword scraping | 0 | 0 | 5 | 0 |
 | 04/06/19 | Debug and test keyword scraping | 0 | 0 | 6 | 1 |
 | 04/07/19 | Investigate database options | 0 | 0 | 2 | 1 |
-| 04/11/19 | Create D3 graph to visualize sample project | 0 | 0 | 4 | 0 |
+| 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
 | SUM | SUM | 133 | 112 | 111 | 41 |
 
 

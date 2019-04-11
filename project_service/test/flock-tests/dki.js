@@ -46,7 +46,7 @@ class Scrape {
 
         this.num_discovered_links += ret_links.length;
         let tmp = this.num_discovered_links;
-        mpi.updateStatus({'numDiscoveredLinks': tmp});
+        mpi.updateStatus({'Total number of links discovered by this node': tmp});
         return ret_links;
     }
 
@@ -172,8 +172,10 @@ async function main() {
     if (rank === 0) {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
-            mpi.updateStatus({progress: Math.floor(uniqueKeywords.size / 2000 * 100)});
-            mpi.updateStatus({'lengthSources': sources.length});
+            mpi.updateStatus({
+                progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100) },
+                'Number of sources to scrape': sources.length
+                });
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
@@ -181,7 +183,7 @@ async function main() {
                 console.log('sending to child: ' + batch, explored.size);
                 mpi.isend([uniqueKeywords.size, explored.size, batch], idx + 1, 'default');
                 count += batchsize;
-                mpi.updateStatus({'numExploredLinks': count});
+                mpi.updateStatus({'Number of links explored': count});
                 sources = sources.slice(batchsize, sources.length - 1);
                 outstandingReqs++;
             } else {
@@ -193,8 +195,10 @@ async function main() {
         console.log('root sending and receiving more links');
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (let idx = 0; idx < receiveMessages.length; idx++) {
-                mpi.updateStatus({progress: Math.floor(uniqueKeywords.size / 2000 * 100)});
-                mpi.updateStatus({'lengthSources': sources.length});
+                mpi.updateStatus({
+                    progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100) },
+                    'Number of sources to scrape': sources.length
+                });
                 let res = await receiveMessages[idx][1];
                 //let res = req[1];
                 let rec_rank = receiveMessages[idx][0];
@@ -210,14 +214,14 @@ async function main() {
                         console.log('sending to child: ' + batch, explored.size);
                         mpi.isend([uniqueKeywords.size, explored.size, batch], rec_rank, 'default');
                         count += batchsize;
-                        mpi.updateStatus({'numExploredLinks': count});
+                        mpi.updateStatus({'Number of links explored': count});
                         sources = sources.slice(batchsize, sources.length - 1);
 
                         outstandingReqs++;
                     } else {
                         mpi.isend([uniqueKeywords.size, explored.size, ['']], rec_rank, 'default');
                     }
-                    mpi.updateStatus({'lengthSources': sources.length});
+                    mpi.updateStatus({'Number of sources to scrape': sources.length});
 
 
                     receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
@@ -228,7 +232,7 @@ async function main() {
                         }
                     }
 
-                    mpi.updateStatus({'numUniqueKeywords': uniqueKeywords.size});
+                    mpi.updateStatus({'Number of unique keywords discovered': uniqueKeywords.size});
 
                     for (let jdx = 0; jdx < links_arr.length; jdx++) {
 
@@ -240,7 +244,7 @@ async function main() {
                         if (total >= 5000 && !flag) {
                             flag = true;
                             let t = Date.now() - starttime;
-                            mpi.updateStatus({'timeto5k': t});
+                            mpi.updateStatus({'Time to reach 5k unique links discovered': t});
                             console.log({'timeto5k': t});
                         }
 
@@ -259,7 +263,7 @@ async function main() {
                             } else {
                                 console.log('repeated link');
                             }
-                            mpi.updateStatus({'numDiscoveredUniqueLinks':explored.size});
+                            mpi.updateStatus({'Number of unique links discovered':explored.size});
                         }
                     }
                 }
@@ -278,7 +282,8 @@ async function main() {
             console.log('received from 0: ', global_keywords, global_explored)
             mpi.updateStatus({
                 progress: {reset: true, increment: Math.floor(global_keywords / 2000 * 100)},
-                'globalExplored': global_explored
+                'Global number of unique links discovered': global_explored,
+                'Global number of unique keywords discovered': global_keywords
             });
 
             let links = [];
