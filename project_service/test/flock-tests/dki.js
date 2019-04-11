@@ -276,8 +276,11 @@ async function main() {
             it++;
             let [global_keywords, global_explored, source_arr] = await mpi.irecv(0, 'default');
             console.log('received from 0: ', global_keywords, global_explored)
-            mpi.updateStatus({progress: Math.floor(global_keywords / 2000 * 100)});
-            mpi.updateStatus({'globalExplored': global_explored});
+            mpi.updateStatus({
+                progress: {reset: true, increment: Math.floor(global_keywords / 2000 * 100)},
+                'globalExplored': global_explored
+            });
+
             let links = [];
             let keywords = [];
             let len = 0;
