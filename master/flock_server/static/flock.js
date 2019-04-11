@@ -145,10 +145,7 @@ let storeSetBatch = function(store) {
 };
 
 let fetchPubStore = async function() {
-    let store = await getPubStore();
-    
-    flock.updateStatus({fetchedData: store});
-    
+    let store = await getPubStore();    
     storeSetBatch(store);
 } 
 
@@ -164,9 +161,6 @@ flock.isConnected = false;
  * 
  */
 flock.initWorker = function(appPath) {
-    
-    // listen for redirect message if we need to take over for a lower rank
-    easyrtc.setServerListener(rankRedirectServerListener);
     
     flock.updateStatus({state: 'starting application'});
     
@@ -411,10 +405,16 @@ let renderStats = function(data) {
                     break;
                 default:
                     console.warn(`Unexpected type: ${value.type}. Rendering as string`);
-                    value.innerText = JSON.stringify(value);
+                    if (!(typeof value === 'string' || value instanceof String)) {
+                        value.innerText = JSON.stringify(value);
+                    }
             }
         } else {
-            valueEl.innerText = JSON.stringify(value);
+            if (!(typeof value === 'string' || value instanceof String)) {
+                valueEl.innerText = JSON.stringify(value);
+            } else {
+                valueEl.innerText = value;
+            }
         }
         
         // append label and value to statEl
@@ -430,7 +430,11 @@ flock.updateStatus = function(data) {
     
     // modify the progress attribute to be merged in correctly to current status
     if (data.progress) {
-        let inc = parseInt(data.progress);
+        let reset = data.progress.reset;
+        let inc = parseInt(data.progress.increment);
+        if (reset) {
+            flock.status.progress = 0;
+        }
         if (!isNaN(inc)) {
             data.progress = (flock.status.progress + inc) % 100;
         }
@@ -533,6 +537,9 @@ flock.join = async function() {
         joinSuccess = function(rtcId) {
             console.log(`Successfully joined application, ${APP_NAME} with rtcId: ${rtcId}`);
             
+            // listen for redirect message if we need to take over for a lower rank
+            easyrtc.setServerListener(rankRedirectServerListener);
+            
             flock.updateStatus({state: 'connecting'});
             
             window.rtcId = rtcId;
@@ -595,12 +602,16 @@ flock.callPeer = function(peerId) {
     });
     
     try {
+        console.log(`Calling peer with id: ${peerId}`);
         easyrtc.call(peerId,
-                (caller, media) => {callAck()},
+                (caller, media) => {
+                    console.log(`Called peer with id: ${peerId}`);
+                    callAck();
+                },
                 (errorCode, errorText) => {
 
                     
-                    let errMsg = `Error during p2p call (${errorCode}: ${errorText})`;
+                    let errMsg = `Error during p2p call to peer with id: ${peerId} (${errorCode}: ${errorText})`;
                     
                     console.warn(errMsg);
                     
