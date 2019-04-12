@@ -1,5 +1,4 @@
 importScripts('/static/flock-mpi.js');
-importScripts('https://ajax.googleapis.com/ajax/libs/d3js/5.7.0/d3.min.js')
 
 console.log('init dki.js');
 
@@ -59,10 +58,10 @@ class Scrape {
             if(response.status!==200)
             {
                 console.log(response.status, 'not 200');
-                if (response.status === 429){
+                /*if (response.status === 429){
                     console.log(response.status, 'waiting 5 seconds');
                     await sleep(5);
-                }
+                }*/
             }
             return response.text();
         } catch (error) {
@@ -347,7 +346,7 @@ async function main() {
                 await sleep(1);
             } else {
                 for (let idx = 0; idx < source_arr.length; idx++) {
-                    await sleep(1);
+                    //await sleep(1);
                     let source = source_arr[idx];
                     let tmp = [];
                     console.log('received link from root ' + source);
