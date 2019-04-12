@@ -41,7 +41,7 @@
             </li>
         </ol>
     
-    <div class="lnb-examples hidden"><h3>Tutorials</h3><ul><li><a href="tutorial-Contributing.html">Contributing</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Contributing_sub"></div></li><li><a href="tutorial-Hosting.html">Hosting</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Hosting_sub"></div></li><li><a href="tutorial-Volunteering.html">Volunteering</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Volunteering_sub"></div></li></ul></div><div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li><li><a href="mpi.html#.storeGet">storeGet</a></li><li><a href="mpi.html#.storeSet">storeSet</a></li><li><a href="mpi.html#.updateStatus">updateStatus</a></li></ul></div></li></ul></div>
+    <div class="lnb-examples hidden"><h3>Tutorials</h3><ul><li><a href="tutorial-Contributing.html">Contributing</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Contributing_sub"></div></li><li><a href="tutorial-Developing.html">Developing</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Developing_sub"></div></li><li><a href="tutorial-Hosting.html">Hosting</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Hosting_sub"></div></li><li><a href="tutorial-Volunteering.html">Volunteering</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="Volunteering_sub"></div></li></ul></div><div class="lnb-api hidden"><h3>Namespaces</h3><ul><li><a href="mpi.html">mpi</a><button type="button" class="hidden toggle-subnav btn btn-link">  <span class="glyphicon glyphicon-plus"></span></button><div class="hidden" id="mpi_sub"><div class="member-type">Methods</div><ul class="inner"><li><a href="mpi.html#.getRank">getRank</a></li><li><a href="mpi.html#.getSize">getSize</a></li><li><a href="mpi.html#.ibarrier">ibarrier</a></li><li><a href="mpi.html#.ibcast">ibcast</a></li><li><a href="mpi.html#.igather">igather</a></li><li><a href="mpi.html#.irecv">irecv</a></li><li><a href="mpi.html#.ireduce">ireduce</a></li><li><a href="mpi.html#.iscatter">iscatter</a></li><li><a href="mpi.html#.isend">isend</a></li><li><a href="mpi.html#.storeGet">storeGet</a></li><li><a href="mpi.html#.storeSet">storeSet</a></li><li><a href="mpi.html#.updateStatus">updateStatus</a></li></ul></div></li></ul></div>
 </nav>
 <div id="resizer"></div>
 
@@ -801,6 +801,213 @@ On the other hand, if imported by a worker-thread, it will be imported using nod
 
 <dt>
     
+        <h4 class="name" id=".igather">
+            
+                <span class="type-signature"><span class="icon green">async</span>, <span class="icon green">static</span> </span>igather<span class="signature">(sendArr, root, comm)</span><span class="type-signature"> &rarr; {serializable}</span>
+                
+            
+            <div class="container-source members">
+                <code><a href="flock-mpi.js.html">flock-mpi.js</a></code>,
+                <code><a href="flock-mpi.js.html#line514">line 514</a></code>
+            </div>
+            
+        </h4>
+
+        
+    
+</dt>
+<dd>
+
+    
+    <div class="description">
+        Each process sends the contents of its sendArray to the root process. The root process
+receives the messages and stores them in rank order.
+    </div>
+    
+
+    
+
+    
+
+    
+
+    
+    <div class="container-params">
+        <h5>Parameters:</h5>
+        
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sendArr</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">array</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Array to send to root / for root to gather into</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>root</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">The rank of the root node for the gather operation</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>comm</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">Name of the communication group to operate under</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+    </div>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <div class="container-returns">
+        <h5>Returns:</h5>
+        
+                
+
+
+
+<span class="param-type">serializable</span>
+
+
+
+
+
+- - Result of the gather is given to the node with rank === 0, other nodes will receive status codes
+
+
+
+
+            
+    </div>
+    
+
+    
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+    
+
+</dd>
+
+            
+                
+
+<dt>
+    
         <h4 class="name" id=".irecv">
             
                 <span class="type-signature"><span class="icon green">async</span>, <span class="icon green">static</span> </span>irecv<span class="signature">(source, comm, tag)</span><span class="type-signature"> &rarr; {serializable}</span>
@@ -1014,7 +1221,7 @@ On the other hand, if imported by a worker-thread, it will be imported using nod
             
             <div class="container-source members">
                 <code><a href="flock-mpi.js.html">flock-mpi.js</a></code>,
-                <code><a href="flock-mpi.js.html#line438">line 438</a></code>
+                <code><a href="flock-mpi.js.html#line439">line 439</a></code>
             </div>
             
         </h4>
@@ -1220,7 +1427,7 @@ On the other hand, if imported by a worker-thread, it will be imported using nod
             
             <div class="container-source members">
                 <code><a href="flock-mpi.js.html">flock-mpi.js</a></code>,
-                <code><a href="flock-mpi.js.html#line372">line 372</a></code>
+                <code><a href="flock-mpi.js.html#line371">line 371</a></code>
             </div>
             
         </h4>
@@ -1977,7 +2184,7 @@ Some labels are reserved and display specific information to the volunteer such 
      * projectTitle : The title of the current project <br/>
      * projectDescription : An overview of the motivation and purpose of this project <br/>
      * taskDescription : A specific explanation of what work is being done on the volunteer's browser <br/>
-     * progress : An incrementing percentage value indicating how much work the volunteer has completed. The given value will be added to the current total. When 100 is reached, the total will wrap around. <br/>
+     * progress : An object containing a boolean "reset" and an integer "increment" that control the progress bar. if reset is false, the progress is incremented by increment, wrapping around once it reaches 100. If reset is true, progress is set to increment.<br/>
 <br/>
 Data Types: <br/>
 By default, each key's value will be treated as a string and displayed as text on the volunteer's page. In the case that the given value is an object, the `type` attribute will be checked to match the following. If a match is found, the value will be presented according to the given type: <br/>
