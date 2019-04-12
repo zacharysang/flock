@@ -75,6 +75,7 @@
 | 04/06/19 | Debug and test keyword scraping | 0 | 0 | 6 | 1 |
 | 04/07/19 | Investigate database options | 0 | 0 | 2 | 1 |
 | 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
-| SUM | SUM | 133 | 112 | 111 | 41 |
+| 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
+| SUM | SUM | 133 | 112 | 117 | 41 |
 
 

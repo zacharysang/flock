@@ -1,4 +1,5 @@
 importScripts('/static/flock-mpi.js');
+importScripts('https://ajax.googleapis.com/ajax/libs/d3js/5.7.0/d3.min.js')
 
 console.log('init dki.js');
 
@@ -54,8 +55,16 @@ class Scrape {
         try {
             let cors_api_url = 'https://cors-anywhere.herokuapp.com/';
             const res = await fetch(cors_api_url + url);
-            const response = await res.text();
-            return response;
+            const response = await res;
+            if(response.status!==200)
+            {
+                console.log(response.status, 'not 200');
+                if (response.status === 429){
+                    console.log(response.status, 'waiting 5 seconds');
+                    await sleep(5);
+                }
+            }
+            return response.text();
         } catch (error) {
             return console.log('Error:', error);
         }
@@ -137,6 +146,11 @@ function sleep(s) {
     return new Promise(resolve => setTimeout(resolve, s * 1000));
 }
 
+function timeSince(starttime) {
+    let diff = Date.now() - starttime;
+    return Math.round(diff/1000);
+}
+
 console.log('starting scraper...');
 
 async function main() {
@@ -173,9 +187,9 @@ async function main() {
         console.log('root sending and receiving links');
         for (let idx = 0; idx < size - 1; idx++) {
             mpi.updateStatus({
-                progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100) },
+                progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100)},
                 'Number of sources to scrape': sources.length
-                });
+            });
             receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
             console.log('received from worker: ' + receiveMessages);
             if (sources.length > 0) {
@@ -196,7 +210,7 @@ async function main() {
         while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
             for (let idx = 0; idx < receiveMessages.length; idx++) {
                 mpi.updateStatus({
-                    progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100) },
+                    progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100)},
                     'Number of sources to scrape': sources.length
                 });
                 let res = await receiveMessages[idx][1];
@@ -226,7 +240,7 @@ async function main() {
 
                     receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
 
-                    if(keywords) {
+                    if (keywords) {
                         for (let jdx = 0; jdx < keywords.length; jdx++) {
                             uniqueKeywords.add(keywords[jdx]);
                         }
@@ -263,7 +277,7 @@ async function main() {
                             } else {
                                 console.log('repeated link');
                             }
-                            mpi.updateStatus({'Number of unique links discovered':explored.size});
+                            mpi.updateStatus({'Number of unique links discovered': explored.size});
                         }
                     }
                 }
@@ -275,16 +289,55 @@ async function main() {
 
         let local_unique = new Set();
 
+        let time = [0];
+        let global_links = [0];
+        let global_kws = [0];
+        let local_links = [0];
+        let [global_keywords, global_explored] = [0,0];
+
         let it = 0;
         while (stopTime < 0 || Date() < stopTime) {
+
             it++;
-            let [global_keywords, global_explored, source_arr] = await mpi.irecv(0, 'default');
-            console.log('received from 0: ', global_keywords, global_explored)
+            let [prev_global_keywords, prev_global_explored] = [global_keywords, global_explored];
+            
+            [global_keywords, global_explored, source_arr] = await mpi.irecv(0, 'default');
+
+            console.log('received from 0: ', global_keywords, global_explored);
+
+            let last_time = time[time.length-1];
+            let this_time = timeSince(starttime);
+
+            // If the data has changed or it's been more than 10 seconds, update the graph
+            let change = prev_global_keywords!=global_keywords || prev_global_explored!=global_explored || this_time-last_time > 10 ;
+            if (change) {
+                time.push(this_time);
+                global_links.push(global_explored);
+                global_kws.push(global_keywords);
+                local_links.push(s.num_discovered_links);
+            }
+            let graph = {
+                type:'line', data:
+                {
+                    labels: time,
+                    datasets:
+                    [ {label: 'Global Unique Links', data: global_links }, {label: 'Links discovered by this node', data: local_links }, {label: 'Global Unique Keywords', data: global_kws } ]
+                }
+            };
+
+
             mpi.updateStatus({
                 progress: {reset: true, increment: Math.floor(global_keywords / 2000 * 100)},
                 'Global number of unique links discovered': global_explored,
-                'Global number of unique keywords discovered': global_keywords
+                'Global number of unique keywords discovered': global_keywords,
+                image: {
+                    type: 'img',
+                    src: 'https://quickchart.io/chart?width=1000&height=600&c='+JSON.stringify(graph),
+                    width: 500,
+                    height: 300
+                }
             });
+
 
             let links = [];
             let keywords = [];
@@ -294,6 +347,7 @@ async function main() {
                 await sleep(1);
             } else {
                 for (let idx = 0; idx < source_arr.length; idx++) {
+                    await sleep(1);
                     let source = source_arr[idx];
                     let tmp = [];
                     console.log('received link from root ' + source);
@@ -327,5 +381,5 @@ async function main() {
     }
 }
 
-let starttime = 0;
+let starttime = Date.now();
 main();
