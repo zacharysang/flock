@@ -116,3 +116,77 @@ fetch('https://images.pexels.com/photos/755385/pexels-photo-755385.jpeg?cs=srgb&
     mpi.updateStatus({image: {type: 'img', src: url, width: 150, height: 150}});
 });
 ```
+
+
+# Saving state between nodes
+
+Because flock uses computation power that is provided by volunteers, throughout 
+the lifetime of a flock application nodes may connect, disconnect, and rejoin.
+As a result of this, flock provides various tools to ensure reliability to 
+minimize your application's downtime. These include the following:
+* When a node disconnects, the last node will be directed to fill its place
+* When new nodes join the cluster, they will be assigned ranks to fill gaps in the cluster
+* When messages are sent, they will be retried until they receive an acknowledgement from a corresponding call to `irecv`
+* Message retries will adaptively target new volunteer nodes as ranks are taken over by different nodes
+* Developer is able to set and get values in a store that is associated with a given rank
+
+The last item on the list is the one we will discuss in this section. The flock 
+store is a key-value store where the developer can store state related to the 
+progress of the application.
+
+Data can be put into the flock store using `mpi.storeSet(<name>, <value>)`. An
+example of this is shown below. In this example a random number is generated and
+embedded into a string which is then put into the store.
+
+```
+let dummyVal = `dummy val: ${Math.random()}`;
+mpi.storeSet('test', dummyVal);
+```
+
+Conversely, data can be retrieved from the store using the function 
+`mpi.storeGet(<name>)`. This is useful when a node is starting up to load values
+and skip through execution to synchronize with the rest of the cluster.
+Below is an example of an application attempting to load a value and starting 
+execution based on the success of this load:
+
+```
+// start of application
+let num = mpi.storeGet('myNum');
+
+// only participate in cluster-wide communication if no stored value is prsent
+if (!num) {
+
+    // get the value from cluster-wide communication
+    num = await mpi.iscatter(arr, 0, mpi.MPI_COMM_WORLD);
+    
+    // store the value so it can be used by other nodes if this one fails
+    mpi.storeSet('myNum', num);
+}
+
+// continue exection (cluster-wide communication is skipped if it has already occured)
+```
+
+One purpose for this includes saving checkpoints so that a 
+newcomer node can start in the middle of the application where the previous node left off.
+By doing this, barriers and other cluster-wide communications can be skipped in nodes
+that are behind in the execution of the overall program. For example, if an application 
+successfully executes a broadcast (involving the whole cluster), but afterwards a node fails,
+the node that is later assigned to the failed rank will attempt to participate in a broadcast 
+which has come and gone. Using the flock store, the developer can store the result of 
+the broadcast and the future node can load this and pick up execution from the 
+same point the previous node failed.
+
+Another similar use for the flock store is to cache valeus that were 
+computationally intensive to obtain. After computing this value, a given node 
+can simply deposit this into the store so that if it fails and is taken over
+by another node, this value does not need to be recomputed.
+
+**Note**: The flock store accumulates these values locally and then attempts to perform a
+backup when a node is disconnecting or at risk of disconnecting. While this 
+process is quite reliable in desktop browsers, mobile browsers are less predicable.
+
+**Note**: If the store is not used, your application may enter a deadlock state when
+a node taking over for a failed node tries to participate in cluster-wide communication
+which has already happened. This can block the execution of your application if 
+the rest of the cluster is waiting for the newcomer node to perform other actions
+after the cluster-wide communication.
