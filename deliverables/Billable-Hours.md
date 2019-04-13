@@ -64,8 +64,12 @@
 | 03/31/19 | Bring up localtunnel server for proxying | 4 | 2 | 0 | 0 |
 | 04/02/19 | Add project listing page (summation of work in PR #34) | 3 | 0 | 0 | 0 |
 | 04/04/19 | Get production enviornment up and running (summation of work in PR #32) | 18 | 6 | 0 | 0 |
+| 04/07/19 | Master file upload restrictions | 3 | 0 | 0 | 0 |
+| 04/08/19 | Work on project service to master communication | 4 | 0 | 0 | 0 |
+| 04/09/19 | Second thread project deploys | 2 | 0 | 0 | 0 |
 | 04/08/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 04/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
-| SUM | SUM | 139 | 117 | 54 | 47 |
+| 04/13/19 | Work on Master Docs | 1 | 0 | 0 | 0 |
+| SUM | SUM | 149 | 117 | 54 | 47 |
 
 
