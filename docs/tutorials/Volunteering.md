@@ -16,3 +16,6 @@ volunteers safe.
 ## Can I run flock in multiple tabs at once?
 Yes! You can run flock in as many tabs as you'd like, and for as long as you'd
 like. 
+## Can I pick which project I volunteer for?
+Yes! Visit the project listing page to choose which project you're working for
+instead of being randomly assigned.

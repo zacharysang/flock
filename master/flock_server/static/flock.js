@@ -699,7 +699,7 @@ flock.awaitClusterSize = async function(size) {
 flock.getRank = async function(comm, ignoreCache=false) {
     
     // check the cache
-    if (!ignoreCache && flock.rank[comm]) {
+    if (!ignoreCache && typeof flock.rank[comm] === 'number') {
         return flock.rank[comm];
     }
     
@@ -739,7 +739,7 @@ flock.getSize = function(comm) {
 flock.getId = async function(comm, rank, ignoreCache=false) {
     
     // check the cache
-    if (!ignoreCache && flock.easyrtcIdByRank[comm][rank]) {
+    if (!ignoreCache && typeof flock.easyrtcIdByRank[comm][rank] === 'string') {
         return flock.easyrtcIdByRank[comm][rank];
     }
     
@@ -748,8 +748,10 @@ flock.getId = async function(comm, rank, ignoreCache=false) {
         (msgType, msgData) => {
             if (MSG_TYPE_GET_ID === msgType) {
                 
-                // cache the id for this rank in this comm
-                flock.easyrtcIdByRank[comm][rank] = msgData;
+                // cache the id for this rank in this comm if lookup was successful
+                if (typeof msgData === 'string') {
+                    flock.easyrtcIdByRank[comm][rank] = msgData;
+                }
                 
                 resolve(msgData);
             } 

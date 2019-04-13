@@ -41,7 +41,9 @@
 | 01/30/19 | Development of Flask server | 3 | 0 | 0 | 0 |
 | 01/31/19 | Continued Flask development | 2 | 0 | 0 | 0 |
 | 02/01/19 | Build tutorials for server | 2 | 0 | 0 | 0 |
+| 02/02/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 02/02/19 | Build server dev environment | 1 | 0 | 0 | 0 |
+| 02/04/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 02/10/19 | Build out server basic functionality (summation of work in PR #15) | 6 | 0 | 0 | 0 |
 | 02/11/19 | Worker nodes collectively wait for minimum cluster size | 0 | 3 | 0 | 0 |
 | 02/11/19 | Worker node ranks are assigned based on cluster need | 0 | 4 | 0 | 0 |
@@ -50,6 +52,7 @@
 | 03/05/19 | Worker nodes can recover on page refresh | 0 | 6 | 0 | 0 |
 | 03/05/19 | Developer can output data to volunteer ui | 0 | 2 | 0 | 0 |
 | 03/12/19 | Initial creation of keyword scraper | 0 | 0 | 2 | 0 |
+| 03/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/16/19 | Worker node rank 0 runs on headless chrome | 0 | 3 | 0 | 0 |
 | 03/16/19 | Add docs for setting up the development environment | 0 | 1 | 0 | 0 |
 | 03/16/19 | Debug link scraping for sample project | 0 | 0 | 5 | 0 |
@@ -59,6 +62,7 @@
 | 03/25/19 | Debug link scraping for sample project | 0 | 0 | 5 | 0 | 
 | 03/25/19 | Benchmark sample project for poster graph | 0 | 1 | 4 | 1 |
 | 03/26/19 | Attempt to make sample project more async | 0 | 0 | 8 | 0 |
+| 03/25/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/27/19 | Add JS Hosting to Master (summation of work in PR #28) | 4 | 0 | 0 | 0 |
 | 03/27/19 | Continue to attempt to make sample project non-blocking | 0 | 1 | 6 | 0 |
 | 03/29/19 | Add work page to master (summation of work in PR #30) | 2 | 0 | 0 | 0 |
@@ -76,6 +80,14 @@
 | 04/07/19 | Investigate database options | 0 | 0 | 2 | 1 |
 | 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
 | 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
-| SUM | SUM | 133 | 112 | 117 | 41 |
+| 04/07/19 | Master file upload restrictions | 3 | 0 | 0 | 0 |
+| 04/08/19 | Work on project service to master communication | 4 | 0 | 0 | 0 |
+| 04/09/19 | Second thread project deploys | 2 | 0 | 0 | 0 |
+| 04/08/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| 04/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| 04/12/19 | Refactor code, allow new workers to join | 0 | 0 | 8 | 0 |
+| 04/13/19 | Work on Master Docs | 1 | 0 | 0 | 0 |
+| 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 0 |
+| SUM | SUM | 149 | 117 | 117 | 47 |
 
 

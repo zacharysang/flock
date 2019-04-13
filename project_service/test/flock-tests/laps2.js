@@ -15,16 +15,17 @@ async function main() {
     });
     
     // pull down a test image to display
-    let testImg = fetch('https://images.pexels.com/photos/755385/pexels-photo-755385.jpeg?cs=srgb&dl=backlit-bird-clouds-755385.jpg&fm=jpg')
-                    .then((res) => {
-                       if (res.ok) {
-                           return res.blob();
-                       } 
-                    })
-                    .then((imgBlob) => {
-                        let url = URL.createObjectURL(imgBlob);
-                        mpi.updateStatus({image: {type: 'img', src: url, width: 150, height: 150}});
-                    });
+    // This could be passed directly, but is being fetched for the purpose of demonstrating use of URL.createObjectURL
+    fetch('https://images.pexels.com/photos/755385/pexels-photo-755385.jpeg?cs=srgb&dl=backlit-bird-clouds-755385.jpg&fm=jpg')
+    .then((res) => {
+       if (res.ok) {
+           return res.blob();
+       } 
+    })
+    .then((imgBlob) => {
+        let url = URL.createObjectURL(imgBlob);
+        mpi.updateStatus({image: {type: 'img', src: url, width: 150, height: 150}});
+    });
     
     // display test svg                
     let testSvg = getSvgDiagram();
@@ -40,7 +41,7 @@ async function main() {
         console.log('going into barrier');
         await mpi.ibarrier('default');
         console.log('exited barrier');
-        mpi.updateStatus({progress: 1});
+        mpi.updateStatus({progress: {increment: 1}});
     }
     
 }
