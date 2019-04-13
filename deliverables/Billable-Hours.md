@@ -41,7 +41,9 @@
 | 01/30/19 | Development of Flask server | 3 | 0 | 0 | 0 |
 | 01/31/19 | Continued Flask development | 2 | 0 | 0 | 0 |
 | 02/01/19 | Build tutorials for server | 2 | 0 | 0 | 0 |
+| 02/02/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 02/02/19 | Build server dev environment | 1 | 0 | 0 | 0 |
+| 02/04/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 02/10/19 | Build out server basic functionality (summation of work in PR #15) | 6 | 0 | 0 | 0 |
 | 02/11/19 | Worker nodes collectively wait for minimum cluster size | 0 | 3 | 0 | 0 |
 | 02/11/19 | Worker node ranks are assigned based on cluster need | 0 | 4 | 0 | 0 |
@@ -49,17 +51,21 @@
 | 02/27/19 | Implement master server unit testing (summation of work in PR #19) | 5 | 0 | 0 | 0 |
 | 03/05/19 | Worker nodes can recover on page refresh | 0 | 6 | 0 | 0 |
 | 03/05/19 | Developer can output data to volunteer ui | 0 | 2 | 0 | 0 |
+| 03/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/16/19 | Worker node rank 0 runs on headless chrome | 0 | 3 | 0 | 0 |
 | 03/16/19 | Add docs for setting up the development environment | 0 | 1 | 0 | 0 |
 | 03/20/19 | Dockerize project service (summation of work in PR #22) | 3 | 0 | 0 | 0 |
 | 03/24/19 | Build out automatic cloud deployment functionality (summation of work in PR #23) | 16 | 0 | 0 | 0 |
 | 03/25/19 | Add api for rendering worker ui | 0 | 2 | 0 | 0 |
+| 03/25/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/27/19 | Add JS Hosting to Master (summation of work in PR #28) | 4 | 0 | 0 | 0 |
 | 03/29/19 | Add work page to master (summation of work in PR #30) | 2 | 0 | 0 | 0 |
 | 03/30/19 | Worker nodes are able to taker over for each other | 0 | 10 | 0 | 0 |
 | 03/31/19 | Bring up localtunnel server for proxying | 4 | 2 | 0 | 0 |
 | 04/02/19 | Add project listing page (summation of work in PR #34) | 3 | 0 | 0 | 0 |
 | 04/04/19 | Get production enviornment up and running (summation of work in PR #32) | 18 | 6 | 0 | 0 |
-| SUM | SUM | 133 | 111 | 48 | 41 |
+| 04/08/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| 04/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| SUM | SUM | 139 | 117 | 54 | 47 |
 
 
