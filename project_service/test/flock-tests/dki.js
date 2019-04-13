@@ -58,10 +58,10 @@ class Scrape {
             const response = await res;
             if (response.status !== 200) {
                 console.log(response.status, 'not 200');
-                if (response.status === 429) {
+                /*if (response.status === 429) {
                     console.log(response.status, 'waiting 5 seconds');
                     await sleep(5);
-                }
+                }*/
             }
             return response.text();
         } catch (error) {
@@ -225,8 +225,10 @@ async function main() {
                 delta = tmp - size;
                 for (idx = 0; idx < delta; idx++) {
                     dest = (tmp - 1) + idx;
-                    sendBatch(dest);
-                    receiveMessages.push([idx + 1, mpi.irecv(dest, 'default')]);
+                    if (sources.length > 0) {
+                        sendBatch(dest);
+                        receiveMessages.push([dest, mpi.irecv(dest, 'default')]);
+                    }
                 }
             }
             size = tmp;
@@ -235,8 +237,22 @@ async function main() {
             rankToSendTo = ++rankToSendTo % size;
             if (rankToSendTo === 0) rankToSendTo++;
 
+            // If the promise array is empty, send out some batches
+            if (receiveMessages.length <= 0) {
+                for (idx = 1; idx < size-1; idx++) {
+                    if (sources.length > 0) {
+                        sendBatch(idx);
+                        receiveMessages.push([dest, mpi.irecv(dest, 'default')]);
+                    }
+                }
+                continue;
+            }
             // Grab first promise
             let receivedMessage = receiveMessages.shift();
+
+            // If receivedMessages is empty, send batches out and start again
+            if (!receiveMessages) continue;
+
             let rec_rank = receivedMessage[0];
 
             // If that promise takes more than 60 seconds to resolve, move on
@@ -253,7 +269,7 @@ async function main() {
             if (failed || !res) continue;
 
             console.log('rank 0 received from child: ' + res[0]);
-            
+
             // Set values from resolved promise
             let keywords = res[0];
             let links_arr = res[1];
