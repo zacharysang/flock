@@ -55,8 +55,7 @@ class Scrape {
             let cors_api_url = 'https://cors-anywhere.herokuapp.com/';
             const res = await fetch(cors_api_url + url);
             const response = await res;
-            if(response.status!==200)
-            {
+            if (response.status !== 200) {
                 console.log(response.status, 'not 200');
                 /*if (response.status === 429){
                     console.log(response.status, 'waiting 5 seconds');
@@ -147,7 +146,7 @@ function sleep(s) {
 
 function timeSince(starttime) {
     let diff = Date.now() - starttime;
-    return Math.round(diff/1000);
+    return Math.round(diff / 1000);
 }
 
 console.log('starting scraper...');
@@ -176,113 +175,107 @@ async function main() {
     let stopTime = -1;
     let total = 0;
     let flag = false;
-    let batchsize = 10;
+    let batchsize = 5;
     let count = 0;
+    let rankToSendTo = 1;
 
     let s = new Scrape();
 
 
     if (rank === 0) {
         console.log('root sending and receiving links');
-        for (let idx = 0; idx < size - 1; idx++) {
-            mpi.updateStatus({
-                progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100)},
-                'Number of sources to scrape': sources.length
-            });
-            receiveMessages.push([idx + 1, mpi.irecv(idx + 1, 'default')]);
-            console.log('received from worker: ' + receiveMessages);
-            if (sources.length > 0) {
-                let batch = sources.slice(0, batchsize);
-                console.log('sending to child: ' + batch, explored.size);
-                mpi.isend([uniqueKeywords.size, explored.size, batch], idx + 1, 'default');
-                count += batchsize;
-                mpi.updateStatus({'Number of links explored': count});
-                sources = sources.slice(batchsize, sources.length - 1);
-                outstandingReqs++;
-            } else {
-                mpi.isend([uniqueKeywords.size, explored.size, ['']], idx + 1, 'default');
-            }
+        while (sources.length > 0) {
+
+            console.log(rankToSendTo);
+            // Batch data to avoid overloading rank 0
+            let batch = sources.slice(0, batchsize);
+
+            console.log('sending to child: ' + batch, explored.size);
+            mpi.isend([uniqueKeywords.size, explored.size, batch], rankToSendTo, 'default');
+            receiveMessages.push(mpi.irecv(rankToSendTo, 'default'));
+
+            rankToSendTo = ++rankToSendTo % size;
+            if (rankToSendTo === 0) rankToSendTo++;
+
+            count += batchsize;
+            mpi.updateStatus({'Number of links explored': count});
+            sources = sources.slice(batchsize, sources.length - 1);
+
         }
-        starttime = Date.now();
 
-        console.log('root sending and receiving more links');
-        while (outstandingReqs > 0 && (stopTime < 0 || Date() < stopTime)) {
-            for (let idx = 0; idx < receiveMessages.length; idx++) {
-                mpi.updateStatus({
-                    progress: {reset: true, increment: Math.floor(uniqueKeywords.size / 2000 * 100)},
-                    'Number of sources to scrape': sources.length
-                });
-                let res = await receiveMessages[idx][1];
-                //let res = req[1];
-                let rec_rank = receiveMessages[idx][0];
-                console.log('rank 0 received from child: ' + res[0]);
-                if (res) {
-                    outstandingReqs--;
-                    let keywords = res[0];
-                    let links_arr = res[1];
+        batchsize *= 2;
+
+        while (true) {
+
+            let [resolved] = await Promise.race(receiveMessages.map(p => p.then(res => [p])));
+            receiveMessages.splice(receiveMessages.indexOf(resolved), 1);
+
+            console.log(resolved);
+
+            resolved.then(function (completed) {
+                console.log(completed);
+                if (!completed) return;
+
+                let [rec_rank, keywords, links_arr] = completed;
+                console.log(`rank 0 received from child: ${keywords}`);
+
+                if (sources.length > 0) {
+                    let batch = sources.slice(0, batchsize);
+                    console.log(`sending to child: ${batch}\n${explored.size} `);
+
+                    mpi.isend([uniqueKeywords.size, explored.size, batch], rankToSendTo, 'default');
+                    receiveMessages.push(mpi.irecv(rankToSendTo, 'default'));
+
+                    mpi.getSize('default').then(function (size) {
+                        console.log(`got size: ${size}`);
+
+                        rankToSendTo = ++rankToSendTo % size;
+                        if (rankToSendTo === 0) rankToSendTo++;
 
 
-                    if (sources.length > 0) {
-                        let batch = sources.slice(0, batchsize);
-                        console.log('sending to child: ' + batch, explored.size);
-                        mpi.isend([uniqueKeywords.size, explored.size, batch], rec_rank, 'default');
-                        count += batchsize;
-                        mpi.updateStatus({'Number of links explored': count});
                         sources = sources.slice(batchsize, sources.length - 1);
 
-                        outstandingReqs++;
-                    } else {
-                        mpi.isend([uniqueKeywords.size, explored.size, ['']], rec_rank, 'default');
-                    }
-                    mpi.updateStatus({'Number of sources to scrape': sources.length});
+                        count += batchsize;
+                    });
 
-
-                    receiveMessages.push([rec_rank, mpi.irecv(rec_rank, 'default')]);
-
-                    if (keywords) {
-                        for (let jdx = 0; jdx < keywords.length; jdx++) {
-                            uniqueKeywords.add(keywords[jdx]);
-                        }
-                    }
-
-                    mpi.updateStatus({'Number of unique keywords discovered': uniqueKeywords.size});
-
-                    for (let jdx = 0; jdx < links_arr.length; jdx++) {
-
-                        let links = links_arr[jdx];
-                        if (!links) {
-                            continue;
-                        }
-                        total += links.length;
-                        if (total >= 5000 && !flag) {
-                            flag = true;
-                            let t = Date.now() - starttime;
-                            mpi.updateStatus({'Time to reach 5k unique links discovered': t});
-                            console.log({'timeto5k': t});
-                        }
-
-                        for (let kdx = 0; kdx < links.length; kdx++) {
-                            let link = links[kdx];
-
-                            console.log('evaluating link: ' + link);
-                            console.log('length of explored: ' + explored.size);
-                            if (!explored.has(link)) {
-                                sources.push(link);
-                                explored.add(link);
-                                // if (explored.size >= 5000){
-                                //     mpi.updateStatus({'timeto5kUNIQUE': Date.now()-starttime});
-                                //     return;
-                                // }
-                            } else {
-                                console.log('repeated link');
-                            }
-                            mpi.updateStatus({'Number of unique links discovered': explored.size});
-                        }
+                }
+                if (keywords) {
+                    for (let jdx = 0; jdx < keywords.length; jdx++) {
+                        uniqueKeywords.add(keywords[jdx]);
                     }
                 }
-            }
-            // Clean up urls_collection ??? 
+
+                for (let jdx = 0; jdx < links_arr.length; jdx++) {
+
+                    let links = links_arr[jdx];
+                    if (!links) {
+                        continue;
+                    }
+                    total += links.length;
+
+                    for (let kdx = 0; kdx < links.length; kdx++) {
+                        let link = links[kdx];
+
+                        console.log('evaluating link: ' + link);
+                        console.log('length of explored: ' + explored.size);
+                        if (!explored.has(link)) {
+                            sources.push(link);
+                            explored.add(link);
+                        } else {
+                            console.log('repeated link');
+                        }
+
+                        mpi.updateStatus({
+                            'Number of links explored': count,
+                            'Number of sources to scrape': sources.length,
+                            'Number of unique keywords discovered': uniqueKeywords.size,
+                            'Number of unique links discovered': explored.size
+                        });
+                    }
+                }
+            });
         }
+
     } else {
         console.log('in worker node');
 
@@ -292,51 +285,57 @@ async function main() {
         let global_links = [0];
         let global_kws = [0];
         let local_links = [0];
-        let [global_keywords, global_explored] = [0,0];
+        let [global_keywords, global_explored] = [0, 0];
 
         let it = 0;
         while (stopTime < 0 || Date() < stopTime) {
 
             it++;
             let [prev_global_keywords, prev_global_explored] = [global_keywords, global_explored];
-            
+
             [global_keywords, global_explored, source_arr] = await mpi.irecv(0, 'default');
 
             console.log('received from 0: ', global_keywords, global_explored);
 
-            let last_time = time[time.length-1];
+            let last_time = time[time.length - 1];
             let this_time = timeSince(starttime);
 
             // If the data has changed or it's been more than 10 seconds, update the graph
-            let change = prev_global_keywords!=global_keywords || prev_global_explored!=global_explored || this_time-last_time > 10 ;
+            let change = prev_global_keywords != global_keywords || prev_global_explored != global_explored || this_time - last_time > 10;
             if (change) {
                 time.push(this_time);
                 global_links.push(global_explored);
                 global_kws.push(global_keywords);
                 local_links.push(s.num_discovered_links);
+
+                let graph = {
+                    type: 'line', data:
+                        {
+                            labels: time,
+                            datasets:
+                                [{
+                                    label: 'Global Unique Links',
+                                    data: global_links
+                                }, {
+                                    label: 'Links discovered by this node',
+                                    data: local_links
+                                }, {label: 'Global Unique Keywords', data: global_kws}]
+                        }
+                };
+
+
+                mpi.updateStatus({
+                    progress: {reset: true, increment: Math.floor(global_keywords / 2000 * 100)},
+                    'Global number of unique links discovered': global_explored,
+                    'Global number of unique keywords discovered': global_keywords,
+                    image: {
+                        type: 'img',
+                        src: 'https://quickchart.io/chart?width=1000&height=600&c=' + JSON.stringify(graph),
+                        width: 500,
+                        height: 300
+                    }
+                });
             }
-            let graph = {
-                type:'line', data:
-                {
-                    labels: time,
-                    datasets:
-                    [ {label: 'Global Unique Links', data: global_links }, {label: 'Links discovered by this node', data: local_links }, {label: 'Global Unique Keywords', data: global_kws } ]
-                }
-            };
-
-
-            mpi.updateStatus({
-                progress: {reset: true, increment: Math.floor(global_keywords / 2000 * 100)},
-                'Global number of unique links discovered': global_explored,
-                'Global number of unique keywords discovered': global_keywords,
-                image: {
-                    type: 'img',
-                    src: 'https://quickchart.io/chart?width=1000&height=600&c='+JSON.stringify(graph),
-                    width: 500,
-                    height: 300
-                }
-            });
-
 
             let links = [];
             let keywords = [];
@@ -351,8 +350,6 @@ async function main() {
                     let tmp = [];
                     console.log('received link from root ' + source);
                     source = source.trim();
-                    //let parts = source.split('/');
-                    //let baseurl = parts.join('/');
                     s.setUrl(source);
                     let retval = await s.scrape();
                     console.log('result of scrape: ' + retval)
@@ -373,7 +370,7 @@ async function main() {
                 }
                 console.log('sending discovered links to root ' + len.toString());
                 console.log('sending data to root ' + keywords);
-                mpi.isend([keywords, links], 0, 'default');
+                mpi.isend([rank, keywords, links], 0, 'default');
                 await sleep(1);
             }
         }
