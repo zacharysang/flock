@@ -207,18 +207,9 @@ async function main() {
 
         while (true) {
 
-            let [resolved] = await Promise.race(receiveMessages.map(p => p.then(res => [p])));
-            receiveMessages.splice(receiveMessages.indexOf(resolved), 1);
+            await sleep(5);
 
-            console.log(resolved);
-
-            resolved.then(function (completed) {
-                console.log(completed);
-                if (!completed) return;
-
-                let [rec_rank, keywords, links_arr] = completed;
-                console.log(`rank 0 received from child: ${keywords}`);
-
+            if (receiveMessages.length <= 0) {
                 if (sources.length > 0) {
                     let batch = sources.slice(0, batchsize);
                     console.log(`sending to child: ${batch}\n${explored.size} `);
@@ -239,40 +230,80 @@ async function main() {
                     });
 
                 }
-                if (keywords) {
-                    for (let jdx = 0; jdx < keywords.length; jdx++) {
-                        uniqueKeywords.add(keywords[jdx]);
-                    }
-                }
+            }
 
-                for (let jdx = 0; jdx < links_arr.length; jdx++) {
+            let [resolved] = await Promise.race(receiveMessages.map(p => p.then(res => [p])));
+            receiveMessages.splice(receiveMessages.indexOf(resolved), 1);
 
-                    let links = links_arr[jdx];
-                    if (!links) {
-                        continue;
-                    }
-                    total += links.length;
+            console.log(resolved);
 
-                    for (let kdx = 0; kdx < links.length; kdx++) {
-                        let link = links[kdx];
+            resolved.then(
+                function (completed) {
+                    console.log(completed);
+                    if (!completed) return;
 
-                        console.log('evaluating link: ' + link);
-                        console.log('length of explored: ' + explored.size);
-                        if (!explored.has(link)) {
-                            sources.push(link);
-                            explored.add(link);
-                        } else {
-                            console.log('repeated link');
-                        }
+                    let [rec_rank, keywords, links_arr] = completed;
+                    console.log(`rank 0 received from child: ${keywords}`);
 
-                        mpi.updateStatus({
-                            'Number of links explored': count,
-                            'Number of sources to scrape': sources.length,
-                            'Number of unique keywords discovered': uniqueKeywords.size,
-                            'Number of unique links discovered': explored.size
+                    if (sources.length > 0) {
+                        let batch = sources.slice(0, batchsize);
+                        console.log(`sending to child: ${batch}\n${explored.size} `);
+
+                        mpi.isend([uniqueKeywords.size, explored.size, batch], rankToSendTo, 'default');
+                        receiveMessages.push(mpi.irecv(rankToSendTo, 'default'));
+
+                        mpi.getSize('default').then(function (size) {
+                            console.log(`got size: ${size}`);
+
+                            rankToSendTo = ++rankToSendTo % size;
+                            if (rankToSendTo === 0) rankToSendTo++;
+
+
+                            sources = sources.slice(batchsize, sources.length - 1);
+
+                            count += batchsize;
                         });
+
                     }
-                }
+                    if (keywords) {
+                        for (let jdx = 0; jdx < keywords.length; jdx++) {
+                            uniqueKeywords.add(keywords[jdx]);
+                        }
+                    }
+
+                    for (let jdx = 0; jdx < links_arr.length; jdx++) {
+
+                        let links = links_arr[jdx];
+                        if (links.length <= 0) {
+                            continue;
+                        }
+                        total += links.length;
+
+                        for (let kdx = 0; kdx < links.length; kdx++) {
+                            let link = links[kdx];
+
+                            console.log('evaluating link: ' + link);
+                            console.log('length of explored: ' + explored.size);
+                            if (!explored.has(link)) {
+                                sources.push(link);
+                                explored.add(link);
+                            } else {
+                                console.log('repeated link');
+                            }
+
+                            mpi.updateStatus({
+                                'Number of links explored': count,
+                                'Number of sources to scrape': sources.length,
+                                'Number of unique keywords discovered': uniqueKeywords.size,
+                                'Number of unique links discovered': explored.size
+                            });
+                        }
+                    }
+                },
+                function (error) {
+                    console.log("ERROR "+error);
+                }).catch(function(error){
+                    console.log("ERROR " + error);
             });
         }
 

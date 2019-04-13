@@ -77,6 +77,6 @@
 | 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
 | 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
 | 04/12/19 | Refactor code, allow new workers to join | 0 | 0 | 8 | 0 |
-| SUM | SUM | 133 | 112 | 117 | 41 |
+| SUM | SUM | 133 | 112 | 125 | 41 |
 
 
