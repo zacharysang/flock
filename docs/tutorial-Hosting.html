@@ -58,17 +58,41 @@
     
         <article class="readme">
             <p>Hosting your project with Flock is almost as easy as volunteering!</p>
+<h1>Things to Know</h1><p>Flock hosts a persistent node-0 for all projects in a container in Amazon ECS,
+along with the handshake server for webRTC. This means you'll always have a
+node-0 online, and more than that, it's in a secure environment. Using a secrets
+file, you can safely do database or output operations on the node-0 without
+worrying about those secrets being exposed in the browser of your volunteers.</p>
 <h1>Getting Started</h1><ol>
 <li>If this is your first time hosting a project with Flock, you'll need to
 create an account. If you already have an account, you can login.</li>
-<li>Visit the hosting page, and click to submit a new project to flock.</li>
-<li>Enter the required details, including source repository, meta data, and
-contact information.</li>
-<li>Wait for the project to be approved through our moderator queue.</li>
-<li>Your project is running!</li>
+<li>If you haven't built your project, check out the developing tutorial for steps.</li>
 </ol>
-<h1>Ending a Flock Project</h1><p>To end a flock project, go to the hosting homepage and select to deactivate a
-running project.</p>
+<h1>Submitting your project</h1><ul>
+<li>Visit the hosting page, and click to submit a new project to flock.</li>
+<li>Enter the required details.<ul>
+<li>Project Name - What your project will appear as in the project listing.</li>
+<li>Source URL - A reference to where your source code is hosted, for moderationpurposes.</li>
+<li>Min Workers - The minimum number of workers your project needs (including node 0), to be able to work. With fewer than this number, workers will sit idle until the threshold is met.</li>
+<li>Description - A description of your project. Use this to interest users in working on your project!</li>
+<li>Code file : this is your actual code that runs for flock. It is loaded and excuted on all volunteers for your project. It is not possible to edit this file (because there's no way to tell your volunteer's its changed!), so it's a great idea to extensively test in development.</li>
+<li>Secrets file: This file is only given to your node-0. This allows you to safely use secrets on your node-0, such as database keys, without worring about them being exposed to project volunteers.</li>
+</ul>
+</li>
+<li>Wait for the project to be approved through our moderator queue. Moderators ensure the platform isn't being abused, and can help find common issues in projects.</li>
+<li>Your project is running!</li>
+</ul>
+<h1>The Project Detail Page</h1><p>You can find details on your project by clicking on its name from the project
+listing page. The detail page will give you information on status, current
+workers, and options for restarting and deleting the project.</p>
+<h1>Editing a Flock Project</h1><p>At time of writing, flock projects are immutable. It is not possible to update
+source code or details on existing browser tabs, so it is necessary to delete
+your project and create a new one if you have a change to make.</p>
+<h1>Restarting Your Project Service</h1><p>Project owners are able to restart their own project services if for instance,
+their node-0 hangs, crashes, or there's another problem. Project owners can do
+this by clicking the &quot;Restart&quot; button on their project detail page.</p>
+<h1>Ending a Flock Project</h1><p>To end your flock project, visit the project detail page and click on the
+delete proejct button to stop it.</p>
 <h1>FAQ</h1><p>Coming soon!</p>
         </article>
     
