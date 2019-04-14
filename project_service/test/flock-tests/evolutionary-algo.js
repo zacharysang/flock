@@ -159,6 +159,8 @@ function measureFitness(population) {
  * @returns {array} The population with fitnesses evaluated
  */
 async function distributedMeasureFitness(population) {
+    let commSize = await mpi.getSize('default');
+    console.log("Size: " + commSize);
     let res = await mpi.iscatter(population, 0, 'default');
     if (res === undefined) {
         res = [];
@@ -263,6 +265,7 @@ async function main() {
             }
             
             population = await distributedMeasureFitness(population);
+            console.log(population);
             await broadcastDisplay(population, n_gen, genomeLength);
 
             while (bestFitnessInPopulation(population) > 0) {
@@ -298,19 +301,24 @@ async function main() {
     } else {
 
         while (true) {
-            await Promise.race([distributedMeasureFitness([]), sleep(60000)])
+            let res = await Promise.race([distributedMeasureFitness([]), sleep(30000)])
                 .then(function(value) {
                     return value;
                 });
-            console.log("Measured fitness.");
-            let disp = await mpi.ibcast(0, 0, 'default');
-            console.log("Got broadcast.");
-            mpi.updateStatus({
-                "Fitness Statistics\n(smaller is better)": "Generations: " + disp.gen + "\nBest: " + disp.statistics[0] +
-                    "\nWorst: " + disp.statistics[1] + "\nAverage: " + disp.statistics[2],
-                progress: {reset: true, increment: disp.progress},
-                "Best Individual:": disp.best.genome.join("")
-            });
+            console.log("Measured fitness, got: " + res);
+            let disp = await Promise.race([mpi.ibcast(0, 0, 'default'), sleep(30000)])
+                .then(function(value) {
+                    if (value !== 'sleep') {
+                        mpi.updateStatus({
+                            "Fitness Statistics\n(smaller is better)": "Generations: " + value.gen + "\nBest: " + value.statistics[0] +
+                                "\nWorst: " + value.statistics[1] + "\nAverage: " + value.statistics[2],
+                            progress: {reset: true, increment: value.progress},
+                            "Best Individual:": value.best.genome.join("")
+                        });
+                    }
+                    return value;
+                });
+            console.log("Got broadcast: " + disp);
         }
 
     }
