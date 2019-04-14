@@ -60,6 +60,12 @@ def get_work_page_for_project(project_id):
     if project is None:
         abort(404, 'Project not found.')
 
+    # check that the project is running and approved
+    if (project['health_status'] != 'RUNNING' or
+        project['approval_status'] != ApprovalStatus.APPROVED.value):
+        abort(400, 'Project not yet running or approved.')
+
+
     # check for key, which allows us to send secret file
     secret=False
     secrets_file = ''
