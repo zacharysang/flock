@@ -167,7 +167,7 @@ def build_config_files(hash_id, project_id, min_workers, secret_key,
                   '  task_execution_role: ecsTaskExecutionRole\n'
                   '  ecs_network_mode: awsvpc\n'
                   '  task_size:\n'
-                  '    mem_limit: 0.5GB\n'
+                  '    mem_limit: 1GB\n'
                   '    cpu_limit: 256\n'
                   'run_params:\n'
                   '  network_configuration:\n'
