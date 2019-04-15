@@ -64,7 +64,7 @@ class Scrape {
         try {
             // Because we're making requests from a webpage, we need CORS headers at the destinations
             // But nobody has those, so instead we have to send all our requests through this proxy I am hosting
-            let cors_api_url = 'https://ec2-18-217-115-53.us-east-2.compute.amazonaws.com:8080/';
+            let cors_api_url = 'https://cors-anywhere.kurtjlewis.com/';
             const res = await fetch(cors_api_url + url);
 
             // Get the response, check status code, and return the page's text
@@ -355,7 +355,7 @@ async function main() {
         let global_links = [0];
         let global_kws = [0];
         let local_links = [0];
-        let [global_keywords, global_explored] = [-1, -1];
+        let [global_keywords, global_explored] = [0, 0];
 
         let it = 0;
 
