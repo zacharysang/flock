@@ -160,10 +160,12 @@ function measureFitness(population) {
  */
 async function distributedMeasureFitness(population) {
     let res = await mpi.iscatter(population, 0, 'default');
-
-    measureFitness(res);
+    if (res === undefined) {
+        res = [];
+    } else {
+        measureFitness(res);
+    }
     await sleep(1000);
-    statistics = stats(res);
 
     return await mpi.igather(res, 0, 'default');
 }
@@ -176,7 +178,7 @@ async function distributedMeasureFitness(population) {
  * @returns {promise} a promise that sleeps ms seconds
  */
 function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms, 'sleep'));
 }
 
 /**
@@ -274,10 +276,18 @@ async function main() {
                     next_population.push(new_ind);
                 }
 
-                population = await distributedMeasureFitness(next_population);
-                await broadcastDisplay(population, n_gen, genomeLength);
-
-                n_gen++;
+                next_population = await Promise.race([distributedMeasureFitness(next_population), sleep(60000)])
+                    .then(function(value) {
+                        return value;
+                    });
+                
+                if (next_population === 'sleep') {
+                    await broadcastDisplay(population, 'paused', genomeLength);
+                } else {
+                    population = next_population;
+                    await broadcastDisplay(population, n_gen, genomeLength);
+                    n_gen++;
+                }
             }
 
             console.log("Finished!");
@@ -288,7 +298,10 @@ async function main() {
     } else {
 
         while (true) {
-            await distributedMeasureFitness([]);
+            await Promise.race([distributedMeasureFitness([]), sleep(60000)])
+                .then(function(value) {
+                    return value;
+                });
             console.log("Measured fitness.");
             let disp = await mpi.ibcast(0, 0, 'default');
             console.log("Got broadcast.");
