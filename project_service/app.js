@@ -70,6 +70,7 @@ const MASTER_COMM_URL = process.env['FLOCK_COMM_URL'];
 const PROJECT_SECRET = process.env['FLOCK_PROJECT_SECRET'];
 const RANK_0_DEBUG = process.env['FLOCK_RANK_0_DEBUG'] === 'true';
 
+
 // maintain map of ids (easyrtcid and easyrtcsid) to ranks
 let idsByRank = {[MPI_COMM_WORLD]: {}};
 
@@ -412,6 +413,7 @@ let idsByRank = {[MPI_COMM_WORLD]: {}};
     });
     
     // Bind webServer to listening on PORT
+
     webServer.listen(PORT, function () { console.log(`listening on http://localhost:${PORT}`); });
     
     let flock_url;
@@ -432,7 +434,13 @@ async function initializeNode0(url) {
     }
     // Launch headless chrome
     // TODO Create a dedicated user to run headless chrome so that sandbox args can be removed and security improved (see here: https://github.com/GoogleChromeLabs/lighthousebot/blob/master/builder/Dockerfile#L35-L40)
-    let browser = await puppeteer.launch({args: ['--no-sandbox', '--disable-setuid-sandbox'], dumpio: RANK_0_DEBUG});
+
+    let args_arr = ['--no-sandbox', '--disable-setuid-sandbox'];
+    if (IS_DEV) {
+        args_arr.push('--remote-debugging-port=9222');
+    }
+    let browser = await puppeteer.launch({args: args_arr, dumpio: RANK_0_DEBUG});
+
     let page = await browser.newPage();
     await page.goto(url);
     console.log(`browser node 0 launched on url: ${url}`);

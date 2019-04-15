@@ -51,25 +51,44 @@
 | 02/27/19 | Implement master server unit testing (summation of work in PR #19) | 5 | 0 | 0 | 0 |
 | 03/05/19 | Worker nodes can recover on page refresh | 0 | 6 | 0 | 0 |
 | 03/05/19 | Developer can output data to volunteer ui | 0 | 2 | 0 | 0 |
+| 03/12/19 | Initial creation of keyword scraper | 0 | 0 | 2 | 0 |
 | 03/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/16/19 | Worker node rank 0 runs on headless chrome | 0 | 3 | 0 | 0 |
 | 03/16/19 | Add docs for setting up the development environment | 0 | 1 | 0 | 0 |
+| 03/16/19 | Debug link scraping for sample project | 0 | 0 | 5 | 0 |
 | 03/20/19 | Dockerize project service (summation of work in PR #22) | 3 | 0 | 0 | 0 |
 | 03/24/19 | Build out automatic cloud deployment functionality (summation of work in PR #23) | 16 | 0 | 0 | 0 |
 | 03/25/19 | Add api for rendering worker ui | 0 | 2 | 0 | 0 |
+| 03/25/19 | Debug link scraping for sample project | 0 | 0 | 5 | 0 | 
+| 03/25/19 | Benchmark sample project for poster graph | 0 | 1 | 4 | 1 |
+| 03/26/19 | Attempt to make sample project more async | 0 | 0 | 8 | 0 |
 | 03/25/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 03/27/19 | Add JS Hosting to Master (summation of work in PR #28) | 4 | 0 | 0 | 0 |
+| 03/27/19 | Continue to attempt to make sample project non-blocking | 0 | 1 | 6 | 0 |
 | 03/29/19 | Add work page to master (summation of work in PR #30) | 2 | 0 | 0 | 0 |
 | 03/30/19 | Worker nodes are able to taker over for each other | 0 | 10 | 0 | 0 |
 | 03/31/19 | Bring up localtunnel server for proxying | 4 | 2 | 0 | 0 |
+| 03/31/19 | Send links in batches for sample project | 0 | 0 | 3 | 0 |
 | 04/02/19 | Add project listing page (summation of work in PR #34) | 3 | 0 | 0 | 0 |
+| 04/02/19 | Stress test link scraping | 0 | 0 | 2 | 0 |
+| 04/03/19 | Make final poster edits | 0 | 0 | 1 | 4 |
 | 04/04/19 | Get production enviornment up and running (summation of work in PR #32) | 18 | 6 | 0 | 0 |
+| 04/04/19 | Improve sample project code | 0 | 0 | 8 | 0 |
+| 04/05/19 | Debug link parsing for sample project | 0 | 0 | 2 | 1 |
+| 04/05/19 | Add keyword scraping | 0 | 0 | 5 | 0 |
+| 04/06/19 | Debug and test keyword scraping | 0 | 0 | 6 | 1 |
+| 04/07/19 | Investigate database options | 0 | 0 | 2 | 1 |
+| 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
+| 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
 | 04/07/19 | Master file upload restrictions | 3 | 0 | 0 | 0 |
 | 04/08/19 | Work on project service to master communication | 4 | 0 | 0 | 0 |
 | 04/09/19 | Second thread project deploys | 2 | 0 | 0 | 0 |
 | 04/08/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 04/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| 04/12/19 | Refactor code, allow new workers to join | 0 | 0 | 8 | 0 |
 | 04/13/19 | Work on Master Docs | 1 | 0 | 0 | 0 |
-| SUM | SUM | 149 | 117 | 54 | 47 |
+| 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 0 |
+| 04/14/19 | Final changes | 0 | 0 | 4 | 0 |
+| SUM | SUM | 149 | 119 | 122 | 55 |
 
 

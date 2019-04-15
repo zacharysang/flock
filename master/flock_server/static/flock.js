@@ -609,6 +609,7 @@ flock.callPeer = function(peerId) {
                     callAck();
                 },
                 (errorCode, errorText) => {
+
                     
                     let errMsg = `Error during p2p call to peer with id: ${peerId} (${errorCode}: ${errorText})`;
                     
