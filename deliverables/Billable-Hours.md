@@ -88,6 +88,7 @@
 | 04/12/19 | Refactor code, allow new workers to join | 0 | 0 | 8 | 0 |
 | 04/13/19 | Work on Master Docs | 1 | 0 | 0 | 0 |
 | 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 0 |
-| SUM | SUM | 149 | 117 | 117 | 47 |
+| 04/14/19 | Final changes | 0 | 0 | 4 | 0 |
+| SUM | SUM | 149 | 117 | 122 | 47 |
 
 
