@@ -78,17 +78,19 @@
 | 04/05/19 | Add keyword scraping | 0 | 0 | 5 | 0 |
 | 04/06/19 | Debug and test keyword scraping | 0 | 0 | 6 | 1 |
 | 04/07/19 | Investigate database options | 0 | 0 | 2 | 1 |
-| 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
-| 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
 | 04/07/19 | Master file upload restrictions | 3 | 0 | 0 | 0 |
-| 04/08/19 | Work on project service to master communication | 4 | 0 | 0 | 0 |
+| 04/08/19 | Work on project service to master communication | 4 | 4 | 0 | 0 |
 | 04/09/19 | Second thread project deploys | 2 | 0 | 0 | 0 |
 | 04/08/19 | Team Meeting | 1 | 1 | 1 | 1 |
+| 04/10/19 | Improve worker redirections | 0 | 5 | 0 | 0 |
+| 04/11/19 | Cleanup code, improve outputs, stress test | 0 | 0 | 4 | 0 |
+| 04/11/19 | Invesigate D3, use quickchart.io, investigate rate limiting | 0 | 0 | 6 | 0 |
 | 04/12/19 | Team Meeting | 1 | 1 | 1 | 1 |
 | 04/12/19 | Refactor code, allow new workers to join | 0 | 0 | 8 | 0 |
+| 04/12/19 | Add guides for using worker store and ui | 0 | 3 | 0 | 0 |
 | 04/13/19 | Work on Master Docs | 1 | 0 | 0 | 0 |
 | 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 0 |
 | 04/14/19 | Final changes | 0 | 0 | 4 | 0 |
-| SUM | SUM | 149 | 119 | 122 | 55 |
+| SUM | SUM | 149 | 132 | 122 | 55 |
 
 
