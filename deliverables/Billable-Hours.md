@@ -106,6 +106,6 @@
 | 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 0 |
 | 04/14/19 | Evolutionary Algorithm Reliability Changes | 0 | 0 | 0 | 5 |
 | 04/14/19 | Final changes | 0 | 0 | 4 | 0 |
-| SUM | SUM | 149 | 132 | 122 | 55 |
+| SUM | SUM | 149 | 132 | 122 | 118 |
 
 
