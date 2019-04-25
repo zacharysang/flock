@@ -45,4 +45,15 @@ To end your flock project, visit the project detail page and click on the
 delete proejct button to stop it.
 
 # FAQ
-Coming soon!
+## I really can't edit my project?
+No. Projects on flock are immutable because of volunteer orphaning. 
+## How long do I have to wait for approval?
+Our moderators are routinely checking and verifying submitted projects, and your
+project will be accepted as soon as possible, provided there are no problems.
+## Are my secrets safe?
+Yes! Your secrets are stored only with flock. Your secrets are maintained on our
+server and in a container environment that is inaccessible to end users.
+## What is the minimum number of workers?
+The minimum number of workers is the amount of workers (node-0 included), that
+are needed for your project to operate. Your project will not start with fewer
+than this number of projects.
