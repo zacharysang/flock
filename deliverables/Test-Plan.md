@@ -26,9 +26,9 @@ The goal of our test plan is to ensure that all parts of the Flock project funct
 
 #### SP3
 2. Test edge cases of number of nodes to run project with
-3. Run sample project with 0, 1, and 10,000 nodes and ensure flock handles it gracefully
-4. Number of nodes to use (0, 1, and 10,000)
-5. Graceful error handling indicating too few (0, 1) or too many (10,000) nodes
+3. Run sample project with 0, 1, and 10 nodes and ensure flock handles it gracefully
+4. Number of nodes to use (0, 1, and 10)
+5. Graceful error handling indicating too few (0, 1) nodes, smooth communication between many (10) nodes.
 6. Boundary
 7. Blackbox
 8. Functional
