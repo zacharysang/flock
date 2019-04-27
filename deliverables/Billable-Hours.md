@@ -107,7 +107,7 @@
 | 04/13/19 | Try to resolve project race condition | 0 | 0 | 2 | 1 |
 | 04/14/19 | Evolutionary Algorithm Reliability Changes | 0 | 0 | 0 | 5 |
 | 04/14/19 | Final changes to sample project | 0 | 0 | 4 | 1 |
-| Spring | subtotal | 98 | 81 | 92 | 80 |
+| Spring semester | subtotal | 98 | 81 | 92 | 80 |
 | SUM | SUM | 150 | 137 | 137 | 122 |
 
 
