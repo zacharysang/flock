@@ -109,5 +109,5 @@
 | 04/14/19 | Final changes to sample project | 0 | 0 | 4 | 1 |
 | Spring semester | subtotal | 98 | 81 | 92 | 80 |
 | SUM | SUM | 150 | 137 | 137 | 122 |
-| Grand total | 546 | | | | |
+| Grand total | | | | | 546 |
 
